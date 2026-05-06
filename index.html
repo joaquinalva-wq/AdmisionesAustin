@@ -3,914 +3,847 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sistema de Admisiones · Austin EBS</title>
-<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<title>Austin EBS · Admisiones</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
 <style>
 :root {
-  --orange: #E8621A;
-  --green: #7CB518;
-  --teal: #3A607A;
-  --teal-dark: #2C4A5E;
-  --teal-light: #5A8BA8;
-  --cream: #F8F6F0;
-  --cream2: #F0EDE4;
-  --white: #FFFFFF;
-  --text: #2C2C2A;
-  --text2: #5A5A56;
-  --text3: #888884;
-  --border: rgba(60,60,58,0.12);
-  --border2: rgba(60,60,58,0.2);
-  --shadow: 0 2px 12px rgba(44,74,94,0.08);
-  --shadow2: 0 4px 24px rgba(44,74,94,0.14);
-  --radius: 10px;
-  --radius2: 16px;
+  --orange:#E8621A; --green:#7CB518; --teal:#3A607A; --teal-d:#2C4A5E; --teal-l:#5A8BA8;
+  --cream:#F8F6F0; --cream2:#EEE9DF; --white:#fff;
+  --text:#252520; --text2:#5A5A54; --text3:#95958E;
+  --bd:rgba(58,96,122,0.13); --bd2:rgba(58,96,122,0.22);
+  --sh:0 2px 14px rgba(44,74,94,.07); --sh2:0 6px 30px rgba(44,74,94,.13);
+  --r:10px; --r2:16px;
+  --c-nueva:#7CB518; --c-citado:#E8621A; --c-entrev:#5A8BA8;
+  --c-post:#3A607A; --c-mat:#2C4A5E; --c-esp:#C07A20; --c-des:#999990;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text);min-height:100vh}
 
-  --s-nueva: #7CB518;
-  --s-citado: #E8621A;
-  --s-entrevistado: #5A8BA8;
-  --s-postulado: #3A607A;
-  --s-matriculado: #2C4A5E;
-  --s-espera: #C07A20;
-  --s-desiste: #888884;
-}
+/* ── SCREENS ── */
+.screen{display:none;min-height:100vh}
+.screen.on{display:block}
 
-* { margin: 0; padding: 0; box-sizing: border-box; }
+/* ══════════════════════════════════
+   PORTAL FAMILIAS
+══════════════════════════════════ */
+#s-portal{background:var(--cream)}
 
-body {
-  font-family: 'DM Sans', sans-serif;
-  background: var(--cream);
-  color: var(--text);
-  min-height: 100vh;
+/* NAV PORTAL */
+.portal-nav{
+  position:sticky;top:0;z-index:200;
+  background:rgba(44,74,94,.96);
+  backdrop-filter:blur(8px);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 40px;height:62px;
 }
+.portal-nav-logo{display:flex;align-items:center;gap:10px;cursor:pointer}
+.logo-b{display:grid;grid-template-columns:1fr 1fr;gap:1.5px;width:30px;height:30px;transform:rotate(-3deg)}
+.lb{border-radius:2px;display:flex;align-items:center;justify-content:center}
+.lb span{color:#fff;font-family:'Lora',serif;font-size:7px;font-weight:600}
+.lb-a{background:var(--orange)}.lb-e{background:var(--green)}.lb-b{background:var(--green)}.lb-s{background:var(--teal-l)}
+.portal-nav-brand h2{color:#fff;font-family:'Lora',serif;font-size:15px;font-weight:600}
+.portal-nav-brand p{color:rgba(255,255,255,.5);font-size:10px;text-transform:uppercase;letter-spacing:.07em}
+.portal-nav-links{display:flex;gap:6px;align-items:center}
+.pnl{padding:8px 14px;color:rgba(255,255,255,.75);font-size:13px;cursor:pointer;border-radius:7px;transition:all .15s;border:none;background:none;font-family:'DM Sans',sans-serif}
+.pnl:hover{background:rgba(255,255,255,.1);color:#fff}
+.pnl.cta{background:var(--orange);color:#fff;font-weight:500}
+.pnl.cta:hover{background:#d4561a}
+.pnl.staff{background:rgba(255,255,255,.1);color:rgba(255,255,255,.65);font-size:12px}
 
-/* ── LOGIN ── */
-#login-screen {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, var(--teal-dark) 0%, var(--teal) 50%, #4A7A6A 100%);
-  position: relative;
-  overflow: hidden;
+/* HERO */
+.hero{
+  background:linear-gradient(160deg,var(--teal-d) 0%,var(--teal) 55%,#4A7A5A 100%);
+  padding:80px 40px 90px;text-align:center;position:relative;overflow:hidden;
 }
-#login-screen::before {
-  content: '';
-  position: absolute;
-  width: 600px; height: 600px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.04);
-  top: -200px; right: -100px;
-}
-#login-screen::after {
-  content: '';
-  position: absolute;
-  width: 400px; height: 400px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.03);
-  bottom: -150px; left: -80px;
-}
-.login-card {
-  background: white;
-  border-radius: 24px;
-  padding: 48px 44px 44px;
-  width: 420px;
-  box-shadow: 0 24px 80px rgba(0,0,0,0.25);
-  position: relative;
-  z-index: 1;
-}
-.login-logo {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-bottom: 36px;
-}
-.logo-blocks {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2px;
-  width: 48px;
-  height: 48px;
-  transform: rotate(-3deg);
-}
-.lb { border-radius: 3px; display: flex; align-items: center; justify-content: center; }
-.lb-a { background: var(--orange); }
-.lb-e { background: var(--green); }
-.lb-b { background: var(--green); }
-.lb-s { background: var(--teal); }
-.lb span { color: white; font-family: 'Lora', serif; font-size: 11px; font-weight: 600; }
-.login-brand h1 { font-family: 'Lora', serif; font-size: 20px; color: var(--teal-dark); font-weight: 600; }
-.login-brand p { font-size: 11px; color: var(--text3); letter-spacing: 0.08em; text-transform: uppercase; margin-top: 1px; }
-.login-title { font-size: 15px; font-weight: 500; color: var(--text2); margin-bottom: 24px; }
-.login-card label { font-size: 12px; font-weight: 500; color: var(--text2); display: block; margin-bottom: 6px; letter-spacing: 0.03em; }
-.login-card input {
-  width: 100%;
-  padding: 11px 14px;
-  border: 1.5px solid var(--border2);
-  border-radius: 9px;
-  font-size: 14px;
-  color: var(--text);
-  background: var(--cream);
-  outline: none;
-  transition: border-color .2s, background .2s;
-  margin-bottom: 16px;
-  font-family: 'DM Sans', sans-serif;
-}
-.login-card input:focus { border-color: var(--teal); background: white; }
-.btn-primary {
-  width: 100%;
-  padding: 13px;
-  background: var(--teal-dark);
-  color: white;
-  border: none;
-  border-radius: 10px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background .2s, transform .1s;
-  font-family: 'DM Sans', sans-serif;
-  letter-spacing: 0.02em;
-}
-.btn-primary:hover { background: var(--teal); }
-.btn-primary:active { transform: scale(0.99); }
-.login-hint { font-size: 12px; color: var(--text3); text-align: center; margin-top: 14px; }
-.login-error { background: #FEF2F2; border: 1px solid #FECACA; color: #DC2626; border-radius: 8px; padding: 10px 14px; font-size: 13px; margin-bottom: 16px; display: none; }
+.hero::before{content:'';position:absolute;width:500px;height:500px;border-radius:50%;background:rgba(255,255,255,.04);top:-160px;right:-80px}
+.hero::after{content:'';position:absolute;width:360px;height:360px;border-radius:50%;background:rgba(255,255,255,.03);bottom:-120px;left:-60px}
+.hero-logo-big{display:grid;grid-template-columns:1fr 1fr;gap:3px;width:60px;height:60px;transform:rotate(-3deg);margin:0 auto 20px}
+.lb-big{border-radius:4px;display:flex;align-items:center;justify-content:center}
+.lb-big span{color:#fff;font-family:'Lora',serif;font-size:14px;font-weight:600}
+.hero h1{font-family:'Lora',serif;font-size:38px;color:#fff;font-weight:600;line-height:1.2;position:relative;z-index:1}
+.hero p{color:rgba(255,255,255,.78);font-size:16px;margin-top:14px;max-width:560px;margin-left:auto;margin-right:auto;line-height:1.65;position:relative;z-index:1}
+.hero-btns{display:flex;gap:12px;justify-content:center;margin-top:30px;position:relative;z-index:1;flex-wrap:wrap}
+.h-btn{padding:13px 26px;border-radius:11px;font-size:14px;font-weight:500;cursor:pointer;border:none;font-family:'DM Sans',sans-serif;transition:all .15s}
+.h-btn-primary{background:var(--orange);color:#fff}
+.h-btn-primary:hover{background:#d4561a;transform:translateY(-1px)}
+.h-btn-secondary{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.25)}
+.h-btn-secondary:hover{background:rgba(255,255,255,.22)}
+.hero-chips{display:flex;gap:10px;justify-content:center;margin-top:20px;flex-wrap:wrap;position:relative;z-index:1}
+.h-chip{background:rgba(255,255,255,.12);color:rgba(255,255,255,.85);padding:5px 14px;border-radius:20px;font-size:12px}
 
-/* ── APP ── */
-#app { display: none; min-height: 100vh; }
+/* SECTIONS */
+.portal-section{padding:64px 40px;max-width:1000px;margin:0 auto}
+.section-label{font-size:11px;font-weight:600;color:var(--orange);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px}
+.section-h2{font-family:'Lora',serif;font-size:28px;color:var(--teal-d);font-weight:600;line-height:1.3}
+.section-lead{font-size:15px;color:var(--text2);line-height:1.7;margin-top:10px;max-width:600px}
 
-/* ── SIDEBAR ── */
-.sidebar {
-  position: fixed;
-  left: 0; top: 0; bottom: 0;
-  width: 230px;
-  background: var(--teal-dark);
-  display: flex;
-  flex-direction: column;
-  z-index: 100;
-  box-shadow: 2px 0 20px rgba(0,0,0,0.15);
-}
-.sidebar-header {
-  padding: 24px 20px 20px;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
-}
-.sidebar-logo { display: flex; align-items: center; gap: 10px; }
-.logo-blocks-sm {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.5px;
-  width: 34px;
-  height: 34px;
-  transform: rotate(-3deg);
-  flex-shrink: 0;
-}
-.lb-sm { border-radius: 2px; display: flex; align-items: center; justify-content: center; }
-.lb-sm span { color: white; font-family: 'Lora', serif; font-size: 8px; font-weight: 600; }
-.sidebar-logo-text h2 { color: white; font-family: 'Lora', serif; font-size: 14px; font-weight: 600; }
-.sidebar-logo-text span { color: rgba(255,255,255,0.5); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; }
-.sidebar-nav { flex: 1; padding: 16px 10px; overflow-y: auto; }
-.nav-section { font-size: 10px; color: rgba(255,255,255,0.35); letter-spacing: 0.1em; text-transform: uppercase; padding: 12px 10px 6px; font-weight: 500; }
-.nav-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 9px 10px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background .15s;
-  color: rgba(255,255,255,0.7);
-  font-size: 13.5px;
-  font-weight: 400;
-  text-decoration: none;
-  user-select: none;
-  margin-bottom: 2px;
-}
-.nav-item:hover { background: rgba(255,255,255,0.08); color: white; }
-.nav-item.active { background: rgba(255,255,255,0.15); color: white; font-weight: 500; }
-.nav-icon { width: 18px; text-align: center; font-size: 15px; flex-shrink: 0; opacity: 0.8; }
-.sidebar-footer {
-  padding: 16px;
-  border-top: 1px solid rgba(255,255,255,0.08);
-  font-size: 12px;
-  color: rgba(255,255,255,0.45);
-}
-.sidebar-user { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-.sidebar-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--green); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: white; }
-.sidebar-user-info span:first-child { display: block; font-size: 12px; color: rgba(255,255,255,0.8); font-weight: 500; }
-.sidebar-user-info span:last-child { font-size: 10px; color: rgba(255,255,255,0.4); }
-.btn-logout { font-size: 12px; color: rgba(255,255,255,0.4); cursor: pointer; background: none; border: none; padding: 0; font-family: inherit; transition: color .2s; }
-.btn-logout:hover { color: rgba(255,255,255,0.7); }
+/* NIVELES */
+.niveles-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-top:28px}
+.nivel-card{background:#fff;border-radius:var(--r2);border:1px solid var(--bd);padding:20px 18px;box-shadow:var(--sh);transition:all .2s}
+.nivel-card:hover{box-shadow:var(--sh2);transform:translateY(-2px)}
+.nivel-icon{font-size:24px;margin-bottom:10px}
+.nivel-title{font-size:14px;font-weight:600;color:var(--teal-d);margin-bottom:4px;font-family:'Lora',serif}
+.nivel-sub{font-size:12px;color:var(--text3);line-height:1.5}
+.nivel-range{display:inline-block;background:var(--cream2);color:var(--teal);font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;margin-top:6px}
 
-/* ── MAIN ── */
-.main-content {
-  margin-left: 230px;
-  min-height: 100vh;
-  background: var(--cream);
-}
-.topbar {
-  background: white;
-  border-bottom: 1px solid var(--border);
-  padding: 0 28px;
-  height: 60px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  position: sticky;
-  top: 0;
-  z-index: 50;
-}
-.topbar-title { font-size: 16px; font-weight: 600; color: var(--teal-dark); }
-.topbar-actions { display: flex; gap: 10px; align-items: center; }
-.page-content { padding: 28px; }
+/* PEDAGOGIA */
+.peda-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:28px}
+.peda-item{display:flex;gap:14px;background:#fff;border-radius:var(--r2);padding:18px;border:1px solid var(--bd);box-shadow:var(--sh)}
+.peda-dot{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;background:var(--cream2)}
+.peda-text h4{font-size:13px;font-weight:600;color:var(--teal-d);margin-bottom:4px}
+.peda-text p{font-size:12px;color:var(--text2);line-height:1.55}
 
-/* ── VIEWS ── */
-.view { display: none; }
-.view.active { display: block; }
+/* TARIFAS PORTAL */
+.tarifas-portal-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-top:28px}
+.tarifa-portal-card{background:#fff;border-radius:var(--r2);border:1px solid var(--bd);padding:20px;box-shadow:var(--sh)}
+.tp-nivel{font-size:11px;font-weight:600;color:var(--teal-l);letter-spacing:.07em;text-transform:uppercase;margin-bottom:8px}
+.tp-title{font-size:14px;font-weight:600;color:var(--teal-d);margin-bottom:12px;font-family:'Lora',serif}
+.tp-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bd);font-size:12px}
+.tp-row:last-child{border-bottom:none}
+.tp-label{color:var(--text2)}
+.tp-value{font-weight:600;color:var(--teal-d)}
+.tarifa-nota{font-size:11px;color:var(--text3);margin-top:16px;background:var(--cream);border-radius:8px;padding:10px 12px;line-height:1.6}
 
-/* ── STATS CARDS ── */
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 14px;
-  margin-bottom: 28px;
-}
-.stat-card {
-  background: white;
-  border-radius: var(--radius2);
-  padding: 18px 20px;
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow);
-  transition: box-shadow .2s;
-}
-.stat-card:hover { box-shadow: var(--shadow2); }
-.stat-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.07em; font-weight: 500; margin-bottom: 8px; }
-.stat-value { font-size: 28px; font-weight: 600; color: var(--teal-dark); line-height: 1; }
-.stat-sub { font-size: 12px; color: var(--text3); margin-top: 4px; }
-.stat-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
+/* PROCESO STEPS */
+.proceso-steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0;margin-top:28px;background:#fff;border-radius:var(--r2);border:1px solid var(--bd);overflow:hidden;box-shadow:var(--sh)}
+.paso{padding:20px 16px;border-right:1px solid var(--bd);text-align:center;position:relative}
+.paso:last-child{border-right:none}
+.paso-num{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;margin:0 auto 10px;color:#fff}
+.paso-title{font-size:12px;font-weight:600;color:var(--teal-d);margin-bottom:4px}
+.paso-desc{font-size:11px;color:var(--text3);line-height:1.5}
+.paso-arrow{position:absolute;right:-10px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:16px;z-index:1}
 
-/* ── PIPELINE BOARD ── */
-.pipeline-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 12px;
-  margin-bottom: 28px;
-}
-.pipeline-col {
-  background: white;
-  border-radius: var(--radius2);
-  border: 1px solid var(--border);
-  overflow: hidden;
-}
-.pipeline-header {
-  padding: 10px 12px;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.pipeline-count { font-size: 16px; font-weight: 600; }
-.pipeline-items { padding: 8px; min-height: 60px; max-height: 240px; overflow-y: auto; }
-.pipeline-item {
-  background: var(--cream);
-  border-radius: 7px;
-  padding: 7px 9px;
-  margin-bottom: 6px;
-  font-size: 12px;
-  cursor: pointer;
-  transition: background .15s;
-  border: 1px solid var(--border);
-}
-.pipeline-item:hover { background: var(--cream2); border-color: var(--border2); }
-.pipeline-item-name { font-weight: 500; color: var(--text); }
-.pipeline-item-course { color: var(--text3); font-size: 11px; margin-top: 2px; }
+/* CTA BOTTOM */
+.cta-bottom{background:linear-gradient(135deg,var(--teal-d),var(--teal));padding:56px 40px;text-align:center}
+.cta-bottom h2{font-family:'Lora',serif;font-size:26px;color:#fff;margin-bottom:12px}
+.cta-bottom p{color:rgba(255,255,255,.75);font-size:14px;margin-bottom:24px}
 
-/* ── STATUS COLORS ── */
-.s-nueva { color: var(--s-nueva); }
-.s-citado { color: var(--s-citado); }
-.s-entrevistado { color: var(--s-entrevistado); }
-.s-postulado { color: var(--s-postulado); }
-.s-matriculado { color: var(--s-matriculado); }
-.s-espera { color: var(--s-espera); }
-.s-desiste { color: var(--s-desiste); }
+/* ══════════════════════════════════
+   FORMULARIO POSTULACION
+══════════════════════════════════ */
+#s-postulacion{background:var(--cream)}
+.form-nav{background:var(--teal-d);padding:0 40px;height:58px;display:flex;align-items:center;justify-content:space-between}
+.form-nav-title{color:#fff;font-family:'Lora',serif;font-size:15px;font-weight:600}
+.form-nav-back{color:rgba(255,255,255,.7);font-size:13px;cursor:pointer;background:none;border:none;font-family:'DM Sans',sans-serif;display:flex;align-items:center;gap:6px}
+.form-nav-back:hover{color:#fff}
+.form-container{max-width:640px;margin:0 auto;padding:40px 20px 60px}
+.form-progress{display:flex;gap:0;margin-bottom:36px}
+.fp-step{flex:1;height:4px;background:var(--bd2);border-radius:2px;margin:0 2px;transition:background .3s}
+.fp-step.done{background:var(--green)}
+.fp-step.active{background:var(--orange)}
+.form-step{display:none}
+.form-step.on{display:block}
+.step-title{font-family:'Lora',serif;font-size:22px;color:var(--teal-d);margin-bottom:6px}
+.step-sub{font-size:13px;color:var(--text2);margin-bottom:24px;line-height:1.6}
+.fg{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
+.fg-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.flabel{font-size:12px;font-weight:500;color:var(--text2);letter-spacing:.02em}
+.finput,.fselect,.ftextarea{
+  padding:10px 13px;border:1.5px solid var(--bd2);border-radius:9px;
+  font-size:13.5px;color:var(--text);background:var(--cream);outline:none;
+  transition:border-color .2s,background .2s;font-family:'DM Sans',sans-serif;width:100%
+}
+.finput:focus,.fselect:focus,.ftextarea:focus{border-color:var(--teal);background:#fff}
+.ftextarea{resize:vertical;min-height:80px;line-height:1.5}
+.step-divider{border:none;border-top:1px solid var(--bd);margin:18px 0}
+.step-label-sec{font-size:11px;font-weight:600;color:var(--teal);text-transform:uppercase;letter-spacing:.07em;margin-bottom:14px}
+.step-btns{display:flex;gap:10px;margin-top:24px;justify-content:flex-end}
+.sbtn{padding:11px 22px;border-radius:10px;font-size:14px;font-weight:500;cursor:pointer;border:none;font-family:'DM Sans',sans-serif;transition:all .15s}
+.sbtn-next{background:var(--teal-d);color:#fff}
+.sbtn-next:hover{background:var(--teal)}
+.sbtn-back{background:var(--cream2);color:var(--text2)}
+.sbtn-back:hover{background:var(--bd2)}
+.sbtn-submit{background:var(--green);color:#fff}
+.sbtn-submit:hover{background:#6AA515}
+.form-success{text-align:center;padding:50px 20px}
+.success-icon{font-size:52px;margin-bottom:16px}
+.success-h{font-family:'Lora',serif;font-size:24px;color:var(--teal-d);margin-bottom:10px}
+.success-p{font-size:14px;color:var(--text2);line-height:1.7;max-width:420px;margin:0 auto}
 
-.bg-nueva { background: #EBF7D4; color: #4A7A10; }
-.bg-citado { background: #FEF0E6; color: #A84210; }
-.bg-entrevistado { background: #E8F2F8; color: #2C5A74; }
-.bg-postulado { background: #E4EDF3; color: #2C4A5E; }
-.bg-matriculado { background: #D4E4EE; color: #1E3A4E; }
-.bg-espera { background: #FEF5E6; color: #8A5510; }
-.bg-desiste { background: #F0F0EE; color: #555552; }
+/* ══════════════════════════════════
+   LOGIN ADMIN
+══════════════════════════════════ */
+#s-login{
+  min-height:100vh;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(140deg,var(--teal-d) 0%,var(--teal) 55%,#4A7A5A 100%);
+}
+.login-card{background:#fff;border-radius:22px;padding:44px 42px 40px;width:400px;box-shadow:0 20px 70px rgba(0,0,0,.22);position:relative;z-index:1}
+.login-logo{display:flex;align-items:center;gap:12px;margin-bottom:32px}
+.logo-b-md{display:grid;grid-template-columns:1fr 1fr;gap:2px;width:42px;height:42px;transform:rotate(-3deg)}
+.lb-md{border-radius:3px;display:flex;align-items:center;justify-content:center}
+.lb-md span{color:#fff;font-family:'Lora',serif;font-size:10px;font-weight:600}
+.login-brand h1{font-family:'Lora',serif;font-size:18px;color:var(--teal-d)}
+.login-brand p{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.07em}
+.login-sub{font-size:13px;color:var(--text2);margin-bottom:22px;font-weight:500}
+.login-err{background:#FEF2F2;border:1px solid #FECACA;color:#DC2626;border-radius:8px;padding:10px 13px;font-size:12.5px;margin-bottom:14px;display:none}
+.l-label{font-size:12px;font-weight:500;color:var(--text2);display:block;margin-bottom:5px}
+.l-input{width:100%;padding:10px 13px;border:1.5px solid var(--bd2);border-radius:9px;font-size:14px;color:var(--text);background:var(--cream);outline:none;transition:border-color .2s;margin-bottom:14px;font-family:'DM Sans',sans-serif}
+.l-input:focus{border-color:var(--teal);background:#fff}
+.l-submit{width:100%;padding:12px;background:var(--teal-d);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;transition:background .2s}
+.l-submit:hover{background:var(--teal)}
+.l-hint{font-size:11.5px;color:var(--text3);text-align:center;margin-top:12px}
+.l-portal-link{font-size:12px;color:var(--teal);text-align:center;margin-top:16px;cursor:pointer;text-decoration:underline}
 
-.ph-nueva { background: #EBF7D4; }
-.ph-citado { background: #FEF0E6; }
-.ph-entrevistado { background: #E8F2F8; }
-.ph-postulado { background: #E4EDF3; }
-.ph-matriculado { background: #D4E4EE; }
-.ph-espera { background: #FEF5E6; }
-.ph-desiste { background: #F0F0EE; }
+/* ══════════════════════════════════
+   PANEL ADMISIONES
+══════════════════════════════════ */
+#s-panel{display:none;min-height:100vh}
+#s-panel.on{display:flex}
 
-/* ── TABLE ── */
-.card-section {
-  background: white;
-  border-radius: var(--radius2);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow);
-  overflow: hidden;
+.sidebar{
+  position:fixed;left:0;top:0;bottom:0;width:224px;
+  background:var(--teal-d);display:flex;flex-direction:column;z-index:100;
+  box-shadow:2px 0 18px rgba(0,0,0,.15)
 }
-.section-header {
-  padding: 16px 22px;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
+.sb-head{padding:20px 18px;border-bottom:1px solid rgba(255,255,255,.08)}
+.sb-logo{display:flex;align-items:center;gap:9px}
+.sb-brand h2{color:#fff;font-family:'Lora',serif;font-size:14px}
+.sb-brand span{color:rgba(255,255,255,.45);font-size:10px;text-transform:uppercase;letter-spacing:.06em}
+.sb-nav{flex:1;padding:14px 8px;overflow-y:auto}
+.sb-sec{font-size:10px;color:rgba(255,255,255,.3);letter-spacing:.1em;text-transform:uppercase;padding:10px 10px 5px;font-weight:500}
+.sb-item{
+  display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:8px;
+  cursor:pointer;transition:background .13s;color:rgba(255,255,255,.65);
+  font-size:13px;font-weight:400;user-select:none;margin-bottom:1px;border:none;background:none;
+  font-family:'DM Sans',sans-serif;width:100%;text-align:left
 }
-.section-title { font-size: 14px; font-weight: 600; color: var(--teal-dark); }
-.filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-.filter-select {
-  padding: 7px 10px;
-  border: 1px solid var(--border2);
-  border-radius: 8px;
-  font-size: 12.5px;
-  color: var(--text);
-  background: var(--cream);
-  outline: none;
-  cursor: pointer;
-  font-family: 'DM Sans', sans-serif;
-}
-.search-input {
-  padding: 7px 12px;
-  border: 1px solid var(--border2);
-  border-radius: 8px;
-  font-size: 12.5px;
-  color: var(--text);
-  background: var(--cream);
-  outline: none;
-  width: 200px;
-  font-family: 'DM Sans', sans-serif;
-}
-.search-input:focus, .filter-select:focus { border-color: var(--teal); background: white; }
-table { width: 100%; border-collapse: collapse; }
-thead th {
-  padding: 11px 16px;
-  text-align: left;
-  font-size: 11px;
-  color: var(--text3);
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-  background: var(--cream);
-  border-bottom: 1px solid var(--border);
-  font-weight: 500;
-}
-tbody tr {
-  border-bottom: 1px solid var(--border);
-  transition: background .12s;
-  cursor: pointer;
-}
-tbody tr:hover { background: var(--cream); }
-tbody tr:last-child { border-bottom: none; }
-td { padding: 12px 16px; font-size: 13px; color: var(--text); vertical-align: middle; }
-.badge {
-  display: inline-block;
-  padding: 3px 9px;
-  border-radius: 20px;
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-}
+.sb-item:hover{background:rgba(255,255,255,.08);color:#fff}
+.sb-item.active{background:rgba(255,255,255,.16);color:#fff;font-weight:500}
+.sb-icon{width:17px;text-align:center;font-size:14px;flex-shrink:0}
+.sb-badge{margin-left:auto;background:var(--orange);color:#fff;font-size:10px;font-weight:600;padding:1px 6px;border-radius:10px;min-width:18px;text-align:center}
+.sb-foot{padding:14px;border-top:1px solid rgba(255,255,255,.08)}
+.sb-user{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.sb-av{width:26px;height:26px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:#fff;flex-shrink:0}
+.sb-user-info span{display:block;font-size:11.5px;color:rgba(255,255,255,.75);font-weight:500}
+.sb-user-info small{font-size:10px;color:rgba(255,255,255,.35)}
+.sb-logout{font-size:11.5px;color:rgba(255,255,255,.35);cursor:pointer;background:none;border:none;font-family:'DM Sans',sans-serif;padding:0;transition:color .2s}
+.sb-logout:hover{color:rgba(255,255,255,.6)}
 
-/* ── BUTTONS ── */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  border-radius: 9px;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  border: none;
-  transition: all .15s;
-  font-family: 'DM Sans', sans-serif;
-  white-space: nowrap;
-}
-.btn-teal { background: var(--teal-dark); color: white; }
-.btn-teal:hover { background: var(--teal); }
-.btn-green { background: var(--green); color: white; }
-.btn-green:hover { background: #6AA515; }
-.btn-outline { background: white; color: var(--text); border: 1px solid var(--border2); }
-.btn-outline:hover { background: var(--cream); border-color: var(--teal); color: var(--teal); }
-.btn-danger { background: #DC2626; color: white; }
-.btn-danger:hover { background: #B91C1C; }
-.btn-sm { padding: 5px 10px; font-size: 12px; }
+.main{margin-left:224px;flex:1;min-height:100vh;background:var(--cream)}
+.topbar{background:#fff;border-bottom:1px solid var(--bd);padding:0 26px;height:58px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.tb-title{font-size:15px;font-weight:600;color:var(--teal-d)}
+.tb-actions{display:flex;gap:8px;align-items:center}
+.page{padding:26px}
 
-/* ── MODAL ── */
-.modal-overlay {
-  position: fixed; inset: 0;
-  background: rgba(30,50,60,0.5);
-  z-index: 1000;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  backdrop-filter: blur(3px);
-}
-.modal-overlay.open { display: flex; }
-.modal {
-  background: white;
-  border-radius: 20px;
-  width: 100%;
-  max-width: 680px;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 24px 80px rgba(0,0,0,0.25);
-  animation: modalIn .2s ease;
-}
-@keyframes modalIn { from { opacity: 0; transform: translateY(12px) scale(0.98); } }
-.modal-header {
-  padding: 22px 26px 18px;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.modal-title { font-size: 16px; font-weight: 600; color: var(--teal-dark); font-family: 'Lora', serif; }
-.modal-close { font-size: 20px; cursor: pointer; color: var(--text3); background: none; border: none; line-height: 1; padding: 4px; border-radius: 6px; transition: background .15s; }
-.modal-close:hover { background: var(--cream2); }
-.modal-body { padding: 22px 26px; }
-.modal-footer { padding: 16px 26px 22px; display: flex; gap: 10px; justify-content: flex-end; border-top: 1px solid var(--border); }
+/* VIEWS */
+.view{display:none}.view.on{display:block}
 
-/* ── FORM ── */
-.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.form-group { display: flex; flex-direction: column; gap: 6px; }
-.form-group.full { grid-column: 1 / -1; }
-.form-label { font-size: 12px; font-weight: 500; color: var(--text2); letter-spacing: 0.03em; }
-.form-input, .form-select, .form-textarea {
-  padding: 9px 12px;
-  border: 1.5px solid var(--border2);
-  border-radius: 9px;
-  font-size: 13.5px;
-  color: var(--text);
-  background: var(--cream);
-  outline: none;
-  transition: border-color .2s, background .2s;
-  font-family: 'DM Sans', sans-serif;
-}
-.form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--teal); background: white; }
-.form-textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
-.form-divider { grid-column: 1 / -1; border: none; border-top: 1px solid var(--border); margin: 4px 0; }
-.section-sub { grid-column: 1 / -1; font-size: 11px; font-weight: 600; color: var(--teal); text-transform: uppercase; letter-spacing: 0.07em; padding-top: 6px; }
+/* STATS */
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:24px}
+.sc{background:#fff;border-radius:var(--r2);padding:16px 18px;border:1px solid var(--bd);box-shadow:var(--sh);transition:box-shadow .2s;cursor:pointer}
+.sc:hover{box-shadow:var(--sh2)}
+.sc-label{font-size:10.5px;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;font-weight:500;margin-bottom:6px}
+.sc-val{font-size:26px;font-weight:600;color:var(--teal-d);line-height:1}
+.sc-sub{font-size:11.5px;color:var(--text3);margin-top:4px;display:flex;align-items:center;gap:4px}
+.sc-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
 
-/* ── DETALLE ESTUDIANTE ── */
-.detail-header {
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
-  margin-bottom: 20px;
+/* NOTIF NUEVOS */
+.notif-banner{
+  background:linear-gradient(135deg,var(--green),#5C9A10);
+  border-radius:var(--r2);padding:16px 20px;
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:20px;gap:12px;flex-wrap:wrap;
+  animation:slideIn .3s ease
 }
-.detail-avatar {
-  width: 52px; height: 52px; border-radius: 50%;
-  background: var(--teal);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 20px; color: white; font-weight: 600; flex-shrink: 0;
-  font-family: 'Lora', serif;
-}
-.detail-info h2 { font-size: 18px; font-weight: 600; color: var(--teal-dark); font-family: 'Lora', serif; }
-.detail-info p { font-size: 13px; color: var(--text2); margin-top: 3px; }
-.detail-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
-.meta-tag { font-size: 11px; background: var(--cream2); color: var(--text2); padding: 3px 9px; border-radius: 20px; font-weight: 500; }
-.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
-.detail-field { background: var(--cream); border-radius: 9px; padding: 10px 12px; }
-.detail-field-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.07em; font-weight: 500; margin-bottom: 3px; }
-.detail-field-value { font-size: 13px; color: var(--text); font-weight: 400; }
-.timeline { margin-top: 16px; }
-.timeline-item { display: flex; gap: 12px; padding: 8px 0; }
-.timeline-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
-.timeline-content p { font-size: 13px; color: var(--text); }
-.timeline-content span { font-size: 11px; color: var(--text3); }
-.status-select {
-  padding: 8px 12px;
-  border: 1.5px solid var(--border2);
-  border-radius: 9px;
-  font-size: 13px;
-  color: var(--text);
-  background: var(--cream);
-  outline: none;
-  font-family: 'DM Sans', sans-serif;
-  cursor: pointer;
-  flex: 1;
-}
-.status-select:focus { border-color: var(--teal); background: white; }
-.status-row { display: flex; gap: 10px; align-items: center; padding: 12px; background: var(--cream); border-radius: 10px; margin-top: 10px; }
-.status-label { font-size: 12px; font-weight: 500; color: var(--text2); white-space: nowrap; }
+@keyframes slideIn{from{opacity:0;transform:translateY(-8px)}}
+.notif-text h4{color:#fff;font-size:14px;font-weight:600}
+.notif-text p{color:rgba(255,255,255,.8);font-size:12px;margin-top:2px}
+.notif-actions{display:flex;gap:8px;flex-shrink:0}
+.notif-btn{padding:8px 14px;border-radius:8px;font-size:12.5px;font-weight:500;cursor:pointer;border:none;font-family:'DM Sans',sans-serif}
+.notif-ver{background:#fff;color:var(--green)}
+.notif-dismiss{background:rgba(255,255,255,.2);color:#fff}
 
-/* ── EMAIL EDITOR ── */
-.email-preview {
-  background: var(--cream);
-  border: 1px solid var(--border2);
-  border-radius: 10px;
-  padding: 16px;
-  margin-top: 10px;
-  font-size: 13px;
-  line-height: 1.7;
-  color: var(--text);
-}
-.email-chip {
-  display: inline-block;
-  background: var(--teal);
-  color: white;
-  font-size: 10px;
-  padding: 2px 7px;
-  border-radius: 4px;
-  margin: 2px;
-  font-weight: 500;
-}
+/* PIPELINE */
+.pipeline-label{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.07em;margin-bottom:14px;padding:0 2px}
+.pipeline-cols{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-bottom:24px}
+.pcol{background:#fff;border-radius:var(--r2);border:1px solid var(--bd);overflow:hidden}
+.pcol-head{padding:9px 11px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--bd)}
+.pcol-name{font-size:10.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+.pcol-cnt{font-size:15px;font-weight:700}
+.pcol-body{padding:7px;min-height:50px;max-height:260px;overflow-y:auto}
+.pcard{background:var(--cream);border-radius:7px;padding:7px 8px;margin-bottom:5px;font-size:11.5px;cursor:pointer;transition:all .13s;border:1px solid var(--bd)}
+.pcard:hover{background:var(--cream2);border-color:var(--bd2);transform:translateY(-1px);box-shadow:0 2px 8px rgba(0,0,0,.07)}
+.pcard-name{font-weight:500;color:var(--text)}
+.pcard-curso{color:var(--text3);font-size:10.5px;margin-top:1.5px}
+.pcard-date{color:var(--text3);font-size:10px;margin-top:1.5px}
 
-/* ── TARIFAS ── */
-.tariff-card {
-  background: white;
-  border: 1px solid var(--border);
-  border-radius: var(--radius2);
-  box-shadow: var(--shadow);
-  overflow: hidden;
-  margin-bottom: 16px;
-}
-.tariff-header {
-  padding: 14px 20px;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.tariff-title { font-size: 14px; font-weight: 600; color: var(--teal-dark); font-family: 'Lora', serif; }
-.tariff-body { padding: 16px 20px; }
-.tariff-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--border);
-  font-size: 13px;
-}
-.tariff-row:last-child { border-bottom: none; }
-.tariff-row-label { color: var(--text2); }
-.tariff-row-value { font-weight: 600; color: var(--teal-dark); }
-.tariff-input {
-  padding: 5px 10px;
-  border: 1.5px solid var(--border2);
-  border-radius: 7px;
-  font-size: 13px;
-  color: var(--text);
-  background: var(--cream);
-  outline: none;
-  text-align: right;
-  width: 160px;
-  font-family: 'DM Sans', sans-serif;
-}
-.tariff-input:focus { border-color: var(--teal); background: white; }
+/* TABLE */
+.card-box{background:#fff;border-radius:var(--r2);border:1px solid var(--bd);box-shadow:var(--sh);overflow:hidden;margin-bottom:20px}
+.box-head{padding:14px 20px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.box-title{font-size:13.5px;font-weight:600;color:var(--teal-d)}
+.filters{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+.fsel{padding:6px 9px;border:1px solid var(--bd2);border-radius:7px;font-size:12px;color:var(--text);background:var(--cream);outline:none;cursor:pointer;font-family:'DM Sans',sans-serif}
+.fsearch{padding:6px 11px;border:1px solid var(--bd2);border-radius:7px;font-size:12px;color:var(--text);background:var(--cream);outline:none;width:190px;font-family:'DM Sans',sans-serif}
+.fsel:focus,.fsearch:focus{border-color:var(--teal);background:#fff}
+table{width:100%;border-collapse:collapse}
+thead th{padding:10px 15px;text-align:left;font-size:10.5px;color:var(--text3);letter-spacing:.07em;text-transform:uppercase;background:var(--cream);border-bottom:1px solid var(--bd);font-weight:500}
+tbody tr{border-bottom:1px solid var(--bd);transition:background .1s;cursor:pointer}
+tbody tr:hover{background:var(--cream)}
+tbody tr:last-child{border-bottom:none}
+td{padding:11px 15px;font-size:12.5px;color:var(--text);vertical-align:middle}
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:10.5px;font-weight:500}
 
-/* ── VACANTES ── */
-.vacantes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
-.vacante-card {
-  background: white;
-  border: 1px solid var(--border);
-  border-radius: var(--radius2);
-  padding: 16px;
-  box-shadow: var(--shadow);
-}
-.vacante-card-title { font-size: 13px; font-weight: 600; color: var(--teal-dark); margin-bottom: 8px; }
-.vacante-bar { background: var(--cream2); border-radius: 20px; height: 8px; overflow: hidden; margin: 8px 0; }
-.vacante-fill { height: 100%; border-radius: 20px; background: var(--green); transition: width .4s; }
-.vacante-fill.warn { background: var(--orange); }
-.vacante-fill.full { background: #DC2626; }
-.vacante-nums { font-size: 12px; color: var(--text2); display: flex; justify-content: space-between; }
-.vacante-input {
-  padding: 5px 8px;
-  border: 1.5px solid var(--border2);
-  border-radius: 7px;
-  font-size: 12px;
-  width: 60px;
-  text-align: center;
-  font-family: 'DM Sans', sans-serif;
-  color: var(--text);
-  background: var(--cream);
-  outline: none;
-}
-.vacante-input:focus { border-color: var(--teal); background: white; }
+/* BTN */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 13px;border-radius:8px;font-size:12.5px;font-weight:500;cursor:pointer;border:none;transition:all .13s;font-family:'DM Sans',sans-serif;white-space:nowrap}
+.btn-teal{background:var(--teal-d);color:#fff}.btn-teal:hover{background:var(--teal)}
+.btn-green{background:var(--green);color:#fff}.btn-green:hover{background:#6AA515}
+.btn-orange{background:var(--orange);color:#fff}.btn-orange:hover{background:#d4561a}
+.btn-out{background:#fff;color:var(--text);border:1px solid var(--bd2)}.btn-out:hover{border-color:var(--teal);color:var(--teal)}
+.btn-ghost{background:none;color:var(--text2);border:none}.btn-ghost:hover{color:var(--teal)}
+.btn-sm{padding:5px 10px;font-size:11.5px}
+.btn-danger{background:#DC2626;color:#fff}.btn-danger:hover{background:#B91C1C}
 
-/* ── CALENDAR LINK ── */
-.calendar-info {
-  background: linear-gradient(135deg, var(--teal-dark), var(--teal));
-  border-radius: var(--radius2);
-  padding: 20px 24px;
-  color: white;
-  margin-bottom: 20px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-.calendar-icon { font-size: 28px; }
-.calendar-text h3 { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
-.calendar-text p { font-size: 12px; opacity: 0.75; }
-.calendar-text a { color: white; font-size: 12px; opacity: 0.9; }
+/* MODAL */
+.overlay{position:fixed;inset:0;background:rgba(20,40,54,.5);z-index:1000;display:none;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)}
+.overlay.open{display:flex}
+.modal{background:#fff;border-radius:20px;width:100%;max-width:660px;max-height:92vh;overflow-y:auto;box-shadow:0 20px 70px rgba(0,0,0,.22);animation:mIn .2s ease}
+@keyframes mIn{from{opacity:0;transform:translateY(10px) scale(.98)}}
+.m-head{padding:20px 24px 16px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:2}
+.m-title{font-size:15px;font-weight:600;color:var(--teal-d);font-family:'Lora',serif}
+.m-close{font-size:18px;cursor:pointer;color:var(--text3);background:none;border:none;line-height:1;padding:4px;border-radius:6px;transition:background .13s}
+.m-close:hover{background:var(--cream2)}
+.m-body{padding:20px 24px}
+.m-foot{padding:14px 24px 20px;display:flex;gap:8px;justify-content:flex-end;border-top:1px solid var(--bd);position:sticky;bottom:0;background:#fff;z-index:2}
 
-/* ── NOTIF TOAST ── */
-.toast {
-  position: fixed;
-  bottom: 24px;
-  right: 24px;
-  background: var(--teal-dark);
-  color: white;
-  padding: 12px 18px;
-  border-radius: 10px;
-  font-size: 13.5px;
-  font-weight: 500;
-  box-shadow: 0 8px 30px rgba(0,0,0,0.25);
-  z-index: 9999;
-  transform: translateY(20px);
-  opacity: 0;
-  transition: all .3s;
-  max-width: 320px;
-}
-.toast.show { transform: translateY(0); opacity: 1; }
-.toast.error { background: #DC2626; }
-.toast.success { background: #16A34A; }
+/* FORM MODAL */
+.fgm{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
+.fgm-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fgm-full{grid-column:1/-1}
+.flabelm{font-size:11.5px;font-weight:500;color:var(--text2)}
+.finputm,.fselectm,.ftextm{padding:8px 11px;border:1.5px solid var(--bd2);border-radius:8px;font-size:13px;color:var(--text);background:var(--cream);outline:none;transition:border-color .2s,background .2s;font-family:'DM Sans',sans-serif;width:100%}
+.finputm:focus,.fselectm:focus,.ftextm:focus{border-color:var(--teal);background:#fff}
+.ftextm{resize:vertical;min-height:80px;line-height:1.5}
+.sec-sub-m{font-size:10.5px;font-weight:600;color:var(--teal);text-transform:uppercase;letter-spacing:.07em;padding-top:8px;border-top:1px solid var(--bd);margin-top:6px}
 
-/* ── TABS ── */
-.tabs { display: flex; gap: 2px; background: var(--cream2); padding: 4px; border-radius: 10px; margin-bottom: 22px; width: fit-content; }
-.tab { padding: 7px 16px; border-radius: 7px; font-size: 13px; cursor: pointer; color: var(--text2); font-weight: 400; transition: all .15s; }
-.tab.active { background: white; color: var(--teal-dark); font-weight: 500; box-shadow: 0 1px 6px rgba(0,0,0,0.08); }
+/* DETALLE POSTULANTE */
+.det-head{display:flex;align-items:flex-start;gap:14px;margin-bottom:18px}
+.det-av{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600;color:#fff;flex-shrink:0;font-family:'Lora',serif}
+.det-info h2{font-size:17px;font-weight:600;color:var(--teal-d);font-family:'Lora',serif}
+.det-info p{font-size:12.5px;color:var(--text2);margin-top:2px}
+.det-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.det-tag{font-size:10.5px;background:var(--cream2);color:var(--text2);padding:2px 8px;border-radius:12px;font-weight:500}
+.det-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.det-field{background:var(--cream);border-radius:8px;padding:9px 11px}
+.det-fl{font-size:9.5px;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:2px}
+.det-fv{font-size:12.5px;color:var(--text)}
 
-/* ── EMPTY STATE ── */
-.empty-state { text-align: center; padding: 48px 20px; color: var(--text3); }
-.empty-state .empty-icon { font-size: 36px; margin-bottom: 12px; }
-.empty-state p { font-size: 14px; }
+/* ACCION ESTADO */
+.estado-action{background:var(--cream);border-radius:10px;padding:14px;margin-top:14px}
+.ea-title{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
+.ea-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.ea-select{flex:1;min-width:160px;padding:8px 11px;border:1.5px solid var(--bd2);border-radius:8px;font-size:13px;color:var(--text);background:#fff;outline:none;font-family:'DM Sans',sans-serif;cursor:pointer}
+.ea-select:focus{border-color:var(--teal)}
 
-/* ── CONFIGURACION ── */
-.config-section { margin-bottom: 24px; }
-.config-section-title { font-size: 13px; font-weight: 600; color: var(--teal-dark); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
-.config-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); }
-.config-row:last-child { border-bottom: none; }
-.config-label { font-size: 13px; color: var(--text); }
-.config-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
-.config-input {
-  padding: 8px 12px;
-  border: 1.5px solid var(--border2);
-  border-radius: 9px;
-  font-size: 13px;
-  color: var(--text);
-  background: var(--cream);
-  outline: none;
-  font-family: 'DM Sans', sans-serif;
-  width: 280px;
-}
-.config-input:focus { border-color: var(--teal); background: white; }
+/* MAIL PREVIEW */
+.mail-prev{border:1px solid var(--bd2);border-radius:10px;overflow:hidden;margin-top:14px}
+.mp-head{background:var(--cream2);padding:10px 14px;font-size:12px}
+.mp-head-row{display:flex;gap:6px;align-items:center;padding:2px 0;font-size:12px;color:var(--text2)}
+.mp-head-label{color:var(--text3);min-width:50px;font-weight:500;font-size:11px}
+.mp-body{padding:14px;font-size:12.5px;color:var(--text);line-height:1.7;white-space:pre-wrap;max-height:200px;overflow-y:auto}
+.mp-edit-btn{font-size:11px;color:var(--teal);cursor:pointer;text-decoration:underline;padding:6px 14px;display:block;text-align:right;border-top:1px solid var(--bd)}
 
-/* ── PAGE HEADER ── */
-.page-header { margin-bottom: 24px; }
-.page-header h1 { font-size: 22px; font-weight: 600; color: var(--teal-dark); font-family: 'Lora', serif; }
-.page-header p { font-size: 13px; color: var(--text2); margin-top: 4px; }
+/* EMAIL EDITOR */
+.email-var{display:inline-block;background:var(--teal);color:#fff;font-size:10px;padding:1.5px 6px;border-radius:4px;margin:1.5px;font-weight:500}
 
-/* ── RESPONSIVE ── */
-@media (max-width: 768px) {
-  .sidebar { transform: translateX(-100%); }
-  .main-content { margin-left: 0; }
-  .pipeline-grid { grid-template-columns: 1fr 1fr; }
-}
+/* VACANTES */
+.vac-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(195px,1fr));gap:12px}
+.vac-card{background:#fff;border-radius:var(--r2);border:1px solid var(--bd);padding:14px 16px;box-shadow:var(--sh)}
+.vac-title{font-size:12.5px;font-weight:600;color:var(--teal-d);margin-bottom:8px}
+.vac-bar{background:var(--cream2);border-radius:20px;height:7px;overflow:hidden;margin:7px 0}
+.vac-fill{height:100%;border-radius:20px;background:var(--green);transition:width .4s}
+.vac-fill.warn{background:var(--orange)}
+.vac-fill.full{background:#DC2626}
+.vac-nums{font-size:11px;color:var(--text2);display:flex;justify-content:space-between}
+.vac-input{padding:4px 8px;border:1.5px solid var(--bd2);border-radius:6px;font-size:12px;width:54px;text-align:center;font-family:'DM Sans',sans-serif;color:var(--text);background:var(--cream);outline:none}
+.vac-input:focus{border-color:var(--teal);background:#fff}
 
-.pill-year {
-  background: var(--cream2);
-  color: var(--teal);
-  font-size: 10px;
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-weight: 600;
-}
+/* TARIFAS ADMIN */
+.tar-card{background:#fff;border-radius:var(--r2);border:1px solid var(--bd);box-shadow:var(--sh);overflow:hidden;margin-bottom:14px}
+.tar-head{padding:12px 18px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center}
+.tar-title{font-size:13px;font-weight:600;color:var(--teal-d);font-family:'Lora',serif}
+.tar-body{padding:14px 18px}
+.tar-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--bd);font-size:12.5px}
+.tar-row:last-child{border-bottom:none}
+.tar-label{color:var(--text2)}
+.tar-input{padding:5px 9px;border:1.5px solid var(--bd2);border-radius:7px;font-size:12.5px;color:var(--text);background:var(--cream);outline:none;text-align:right;width:155px;font-family:'DM Sans',sans-serif}
+.tar-input:focus{border-color:var(--teal);background:#fff}
 
-.email-template-name {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--teal);
-  margin-bottom: 4px;
-}
+/* CALENDARIO INFO */
+.cal-info{background:linear-gradient(135deg,var(--teal-d),var(--teal));border-radius:var(--r2);padding:18px 22px;color:#fff;margin-bottom:18px;display:flex;align-items:center;gap:14px}
+.cal-icon{font-size:26px}
+.cal-text h3{font-size:13.5px;font-weight:600;margin-bottom:3px}
+.cal-text p{font-size:11.5px;opacity:.72}
+.cal-text a{color:rgba(255,255,255,.9);font-size:11.5px}
 
-.discount-info {
-  font-size: 11px;
-  color: var(--text3);
-  background: var(--cream2);
-  border-radius: 8px;
-  padding: 8px 12px;
-  margin-top: 8px;
-}
+/* EMAIL TEMPLATES */
+.et-card{background:#fff;border-radius:var(--r2);border:1px solid var(--bd);box-shadow:var(--sh);overflow:hidden;margin-bottom:14px}
+.et-head{padding:12px 18px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center}
+.et-status-dot{width:8px;height:8px;border-radius:50%;margin-right:6px;display:inline-block}
+.et-title{font-size:13px;font-weight:600;color:var(--teal-d)}
+.et-sub{font-size:11px;color:var(--text3)}
+.et-body{padding:14px 18px}
 
-.flow-diagram {
-  display: flex;
-  align-items: center;
-  gap: 0;
-  background: white;
-  border: 1px solid var(--border);
-  border-radius: var(--radius2);
-  padding: 16px;
-  margin-bottom: 20px;
-  overflow-x: auto;
-  box-shadow: var(--shadow);
-}
-.flow-step {
-  display: flex;
-  align-items: center;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 80px;
-}
-.flow-dot {
-  width: 36px; height: 36px;
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 14px;
-  font-weight: 600;
-  color: white;
-}
-.flow-label { font-size: 11px; color: var(--text2); text-align: center; font-weight: 500; }
-.flow-arrow { color: var(--border2); font-size: 18px; padding: 0 4px; margin-top: -20px; }
+/* PÁGINA HEADER */
+.ph{margin-bottom:22px}
+.ph h1{font-size:21px;font-weight:600;color:var(--teal-d);font-family:'Lora',serif}
+.ph p{font-size:12.5px;color:var(--text2);margin-top:3px}
 
+/* TOAST */
+.toast{position:fixed;bottom:22px;right:22px;background:var(--teal-d);color:#fff;padding:11px 17px;border-radius:9px;font-size:13px;font-weight:500;box-shadow:0 6px 24px rgba(0,0,0,.22);z-index:9999;transform:translateY(16px);opacity:0;transition:all .28s;max-width:340px;line-height:1.5}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.ok{background:#16A34A}
+.toast.err{background:#DC2626}
+.toast.info{background:var(--orange)}
+
+/* CONFIG */
+.cfg-row{display:flex;align-items:flex-start;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--bd);gap:20px}
+.cfg-row:last-child{border-bottom:none}
+.cfg-label{font-size:13px;color:var(--text)}
+.cfg-sub{font-size:11px;color:var(--text3);margin-top:2px}
+.cfg-input{padding:8px 11px;border:1.5px solid var(--bd2);border-radius:9px;font-size:12.5px;color:var(--text);background:var(--cream);outline:none;font-family:'DM Sans',sans-serif;width:270px}
+.cfg-input:focus{border-color:var(--teal);background:#fff}
+
+/* EMPTY */
+.empty{text-align:center;padding:40px 20px;color:var(--text3)}
+.empty-ic{font-size:32px;margin-bottom:10px}
+
+/* STATUS COLORS */
+.bg-nueva{background:#EBF7D4;color:#3A6A0A}
+.bg-citado{background:#FEF0E6;color:#A84210}
+.bg-entrev{background:#E8F2F8;color:#2C5A74}
+.bg-post{background:#E4EDF3;color:#2C4A5E}
+.bg-mat{background:#D4E4EE;color:#1E3A4E}
+.bg-esp{background:#FEF5E6;color:#8A5510}
+.bg-des{background:#F0F0EE;color:#555552}
+.ph-nueva{background:#EBF7D4}
+.ph-citado{background:#FEF0E6}
+.ph-entrev{background:#E8F2F8}
+.ph-post{background:#E4EDF3}
+.ph-mat{background:#D4E4EE}
+.ph-esp{background:#FEF5E6}
+.ph-des{background:#F0F0EE}
+
+.pill{background:var(--cream2);color:var(--teal);font-size:10px;padding:2px 8px;border-radius:12px;font-weight:600}
+
+/* TABS */
+.tabs{display:flex;gap:2px;background:var(--cream2);padding:4px;border-radius:9px;margin-bottom:20px;width:fit-content}
+.tab{padding:6px 15px;border-radius:6px;font-size:12.5px;cursor:pointer;color:var(--text2);transition:all .13s}
+.tab.active{background:#fff;color:var(--teal-d);font-weight:500;box-shadow:0 1px 5px rgba(0,0,0,.07)}
+
+.section-divider{font-size:12px;font-weight:600;color:var(--teal-d);padding:16px 0 8px;border-bottom:1px solid var(--bd);margin-bottom:16px}
+
+/* HISTORIAL */
+.hist-item{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--bd)}
+.hist-item:last-child{border-bottom:none}
+.hist-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.hist-text p{font-size:12.5px;color:var(--text)}
+.hist-text span{font-size:11px;color:var(--text3)}
+
+@media(max-width:768px){.sidebar{transform:translateX(-100%)}.main{margin-left:0}.pipeline-cols{grid-template-columns:1fr 1fr}}
 </style>
 </head>
 <body>
 
-<!-- LOGIN -->
-<div id="login-screen">
-  <div class="login-card">
-    <div class="login-logo">
-      <div class="logo-blocks">
-        <div class="lb lb-a"><span>A</span></div>
-        <div class="lb lb-e"><span>e</span></div>
-        <div class="lb lb-b"><span>b</span></div>
-        <div class="lb lb-s"><span>s</span></div>
+<!-- ══ PORTAL FAMILIAS ══ -->
+<div id="s-portal" class="screen on">
+  <nav class="portal-nav">
+    <div class="portal-nav-logo" onclick="scrollTop()">
+      <div class="logo-b">
+        <div class="lb lb-a"><span>A</span></div><div class="lb lb-e"><span>e</span></div>
+        <div class="lb lb-b"><span>b</span></div><div class="lb lb-s"><span>s</span></div>
       </div>
-      <div class="login-brand">
-        <h1>Austin EBS</h1>
-        <p>eco bilingual school</p>
+      <div class="portal-nav-brand"><h2>Austin EBS</h2><p>eco bilingual school</p></div>
+    </div>
+    <div class="portal-nav-links">
+      <button class="pnl" onclick="scrollTo('#sec-niveles')">Niveles</button>
+      <button class="pnl" onclick="scrollTo('#sec-pedagogia')">Pedagogía</button>
+      <button class="pnl" onclick="scrollTo('#sec-proceso')">Proceso</button>
+      <a class="pnl" href="https://www.austinebs-ah.edu.ar" target="_blank" style="text-decoration:none">Sitio web ↗</a>
+      <button class="pnl cta" onclick="goPostulacion()">Postularse</button>
+      <button class="pnl staff" onclick="goLogin()">Ingresar · Staff</button>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <div class="hero-logo-big">
+      <div class="lb-big lb-a"><span>A</span></div><div class="lb-big lb-e"><span>e</span></div>
+      <div class="lb-big lb-b"><span>b</span></div><div class="lb-big lb-s"><span>s</span></div>
+    </div>
+    <h1>Austin Eco Bilingual School</h1>
+    <p>Una comunidad educativa bilingüe, innovadora y comprometida con el desarrollo integral de cada estudiante.</p>
+    <div class="hero-btns">
+      <button class="h-btn h-btn-primary" onclick="goPostulacion()">Iniciar postulación →</button>
+      <a href="https://www.austinebs-ah.edu.ar" target="_blank" class="h-btn h-btn-secondary" style="text-decoration:none">Conocer el colegio ↗</a>
+    </div>
+    <div class="hero-chips">
+      <span class="h-chip">🌿 Eco Friendly</span>
+      <span class="h-chip">🌎 IB World School</span>
+      <span class="h-chip">🗣️ Bilingüe Inglés-Español</span>
+      <span class="h-chip">🎓 K2 a 6to año</span>
+    </div>
+  </section>
+
+  <section class="portal-section" id="sec-niveles">
+    <div class="section-label">Oferta educativa</div>
+    <h2 class="section-h2">Niveles y modalidades</h2>
+    <p class="section-lead">Acompañamos el crecimiento de cada niño desde los 2 años hasta la finalización del secundario.</p>
+    <div class="niveles-grid">
+      <div class="nivel-card">
+        <div class="nivel-icon">🐣</div>
+        <div class="nivel-title">Kindergarten</div>
+        <div class="nivel-sub">Ambiente lúdico y bilingüe desde los primeros años.<br>Jornada simple y completa disponibles.</div>
+        <div class="nivel-range">K2 – K5 (2 a 5 años)</div>
+      </div>
+      <div class="nivel-card">
+        <div class="nivel-icon">📚</div>
+        <div class="nivel-title">Elementary School</div>
+        <div class="nivel-sub">Aprendizaje activo, bilingüe e interdisciplinario. Marco curricular IB adaptado.</div>
+        <div class="nivel-range">1ro a 6to año (6 a 12 años)</div>
+      </div>
+      <div class="nivel-card">
+        <div class="nivel-icon">🎓</div>
+        <div class="nivel-title">High School</div>
+        <div class="nivel-sub">Formación académica rigurosa orientada a la universidad. Bachillerato bilingüe.</div>
+        <div class="nivel-range">1ro a 6to año (12 a 18 años)</div>
+      </div>
+      <div class="nivel-card">
+        <div class="nivel-icon">⏰</div>
+        <div class="nivel-title">Jornadas</div>
+        <div class="nivel-sub"><strong>Simple:</strong> hasta las 13hs.<br><strong>Completa:</strong> hasta las 17hs. Incluye actividades extracurriculares.</div>
+        <div class="nivel-range">Ambas jornadas disponibles</div>
       </div>
     </div>
-    <div class="login-title">Sistema de Admisiones</div>
-    <div class="login-error" id="login-error">Credenciales incorrectas. Intente nuevamente.</div>
-    <label>Correo electrónico</label>
-    <input type="email" id="login-email" placeholder="admisiones@austinebs-ah.edu.ar" value="admisiones@austinebs-ah.edu.ar">
-    <label>Contraseña</label>
-    <input type="password" id="login-password" placeholder="••••••••" value="austin2026">
-    <button class="btn-primary" onclick="doLogin()">Ingresar al sistema</button>
-    <p class="login-hint">Demo: admisiones@austinebs-ah.edu.ar · austin2026</p>
+  </section>
+
+  <div style="background:#fff;padding:1px 0">
+  <section class="portal-section" id="sec-pedagogia">
+    <div class="section-label">Propuesta pedagógica</div>
+    <h2 class="section-h2">Un enfoque que transforma</h2>
+    <p class="section-lead">Nuestra propuesta integra lo mejor de la educación internacional con el contexto local, priorizando el desarrollo humano integral.</p>
+    <div class="peda-grid">
+      <div class="peda-item">
+        <div class="peda-dot">🌎</div>
+        <div class="peda-text"><h4>Marco IB (Bachillerato Internacional)</h4><p>Currículum internacionalmente reconocido que promueve el pensamiento crítico, la indagación y la ciudadanía global.</p></div>
+      </div>
+      <div class="peda-item">
+        <div class="peda-dot">🗣️</div>
+        <div class="peda-text"><h4>Bilingüismo real</h4><p>Clases dictadas en inglés y español con docentes nativos y bilingües. El idioma se adquiere de forma natural.</p></div>
+      </div>
+      <div class="peda-item">
+        <div class="peda-dot">🌿</div>
+        <div class="peda-text"><h4>Educación ambiental</h4><p>La sustentabilidad atraviesa toda la propuesta curricular. Huerta escolar, reciclaje y consciencia ecológica desde el aula.</p></div>
+      </div>
+      <div class="peda-item">
+        <div class="peda-dot">🤝</div>
+        <div class="peda-text"><h4>Comunidad y familia</h4><p>La familia es parte activa del proceso educativo. Espacios de participación, comunicación fluida y acompañamiento continuo.</p></div>
+      </div>
+      <div class="peda-item">
+        <div class="peda-dot">🎨</div>
+        <div class="peda-text"><h4>Aprendizaje por proyectos</h4><p>Metodología activa que integra disciplinas para resolver situaciones reales. Los alumnos son protagonistas de su aprendizaje.</p></div>
+      </div>
+      <div class="peda-item">
+        <div class="peda-dot">💡</div>
+        <div class="peda-text"><h4>Tecnología integrada</h4><p>Herramientas digitales incorporadas con sentido pedagógico. Desarrollo del pensamiento computacional desde edades tempranas.</p></div>
+      </div>
+    </div>
+  </section>
+  </div>
+
+  <section class="portal-section" id="sec-tarifas">
+    <div class="section-label">Conocé el colegio</div>
+    <h2 class="section-h2">Todo sobre Austin EBS</h2>
+    <p class="section-lead">En nuestra web oficial encontrás información completa sobre el proyecto educativo, instalaciones, noticias y más. Las tarifas y aranceles se comparten personalmente durante el proceso de admisión.</p>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:24px">
+      <a href="https://www.austinebs-ah.edu.ar" target="_blank" style="display:inline-flex;align-items:center;gap:8px;padding:13px 22px;background:var(--teal-d);color:#fff;border-radius:11px;font-size:14px;font-weight:500;text-decoration:none;transition:background .15s" onmouseover="this.style.background='var(--teal)'" onmouseout="this.style.background='var(--teal-d)'">
+        🌐 Visitar sitio web oficial ↗
+      </a>
+      <button class="h-btn h-btn-primary" onclick="goPostulacion()" style="display:inline-flex;align-items:center;gap:8px">
+        📋 Iniciar postulación →
+      </button>
+    </div>
+  </section>
+
+  <div style="background:#fff;padding:1px 0">
+  <section class="portal-section" id="sec-proceso">
+    <div class="section-label">¿Cómo es el proceso?</div>
+    <h2 class="section-h2">Del interés a la matrícula</h2>
+    <p class="section-lead">Un proceso sencillo y acompañado en 5 pasos:</p>
+    <div class="proceso-steps">
+      <div class="paso">
+        <div class="paso-num" style="background:var(--green)">1</div>
+        <div class="paso-title">Postulación</div>
+        <div class="paso-desc">Completás el formulario online con los datos del estudiante y la familia.</div>
+        <div class="paso-arrow">›</div>
+      </div>
+      <div class="paso">
+        <div class="paso-num" style="background:var(--c-citado)">2</div>
+        <div class="paso-title">Mail de bienvenida</div>
+        <div class="paso-desc">Recibís un correo con información y el link para agendar tu entrevista.</div>
+        <div class="paso-arrow">›</div>
+      </div>
+      <div class="paso">
+        <div class="paso-num" style="background:var(--c-entrev)">3</div>
+        <div class="paso-title">Entrevista</div>
+        <div class="paso-desc">Visita al colegio. Conocen el proyecto, las instalaciones y al equipo.</div>
+        <div class="paso-arrow">›</div>
+      </div>
+      <div class="paso">
+        <div class="paso-num" style="background:var(--c-post)">4</div>
+        <div class="paso-title">Postulación confirmada</div>
+        <div class="paso-desc">Si querés avanzar, se reserva la vacante con el pago de la matrícula.</div>
+        <div class="paso-arrow">›</div>
+      </div>
+      <div class="paso">
+        <div class="paso-num" style="background:var(--c-mat)">5</div>
+        <div class="paso-title">¡Bienvenidos!</div>
+        <div class="paso-desc">Confirmado el pago, el estudiante queda matriculado en la comunidad Austin.</div>
+      </div>
+    </div>
+  </section>
+  </div>
+
+  <div class="cta-bottom">
+    <h2>¿Listos para ser parte de Austin?</h2>
+    <p>El proceso de postulación toma menos de 5 minutos. Completá el formulario y el equipo de admisiones te contactará a la brevedad.</p>
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+      <button class="h-btn h-btn-primary" onclick="goPostulacion()">Iniciar postulación →</button>
+      <a href="https://www.austinebs-ah.edu.ar" target="_blank" class="h-btn h-btn-secondary" style="text-decoration:none">Ver sitio oficial ↗</a>
+    </div>
   </div>
 </div>
 
-<!-- APP -->
-<div id="app">
-  <!-- SIDEBAR -->
-  <aside class="sidebar">
-    <div class="sidebar-header">
-      <div class="sidebar-logo">
-        <div class="logo-blocks-sm">
-          <div class="lb-sm lb-a"><span>A</span></div>
-          <div class="lb-sm lb-e"><span>e</span></div>
-          <div class="lb-sm lb-b"><span>b</span></div>
-          <div class="lb-sm lb-s"><span>s</span></div>
+<!-- ══ FORMULARIO POSTULACION ══ -->
+<div id="s-postulacion" class="screen">
+  <nav class="form-nav">
+    <button class="form-nav-back" onclick="goPortal()">← Volver al inicio</button>
+    <div class="form-nav-title">Postulación · Austin EBS</div>
+    <div style="width:120px"></div>
+  </nav>
+  <div class="form-container">
+    <div class="form-progress" id="form-progress">
+      <div class="fp-step active" id="fp0"></div>
+      <div class="fp-step" id="fp1"></div>
+      <div class="fp-step" id="fp2"></div>
+    </div>
+
+    <!-- PASO 0 -->
+    <div class="form-step on" id="fstep-0">
+      <div class="step-title">Datos del estudiante</div>
+      <div class="step-sub">Completá los datos del niño o joven que desea postularse a Austin EBS.</div>
+      <div class="fg-row">
+        <div class="fg"><label class="flabel">Nombre del postulante *</label><input class="finput" id="pf-alumno-n" placeholder="Nombre"></div>
+        <div class="fg"><label class="flabel">Apellido *</label><input class="finput" id="pf-alumno-ap" placeholder="Apellido"></div>
+      </div>
+      <div class="fg-row">
+        <div class="fg"><label class="flabel">Fecha de nacimiento *</label><input class="finput" id="pf-nac" type="date"></div>
+        <div class="fg"><label class="flabel">DNI del estudiante</label><input class="finput" id="pf-dni" placeholder="Número de DNI"></div>
+      </div>
+      <div class="fg-row">
+        <div class="fg"><label class="flabel">Curso al que aplica *</label>
+          <select class="fselect" id="pf-curso">
+            <option value="">— Seleccioná —</option>
+            <option value="K2 (Puppies)">K2 · Puppies (2 años)</option>
+            <option value="K3 (Koalas/Dolphins)">K3 · Koalas / Dolphins (3 años)</option>
+            <option value="K4 (Foxes/Monkeys)">K4 · Foxes / Monkeys (4 años)</option>
+            <option value="K5 (Bears/Hippos)">K5 · Bears / Hippos (5 años)</option>
+            <option value="1er año Elementary">1er año Elementary</option>
+            <option value="2do año Elementary">2do año Elementary</option>
+            <option value="3er año Elementary">3er año Elementary</option>
+            <option value="4to año Elementary">4to año Elementary</option>
+            <option value="5to año Elementary">5to año Elementary</option>
+            <option value="6to año Elementary">6to año Elementary</option>
+            <option value="1er año High School">1er año High School</option>
+            <option value="2do año High School">2do año High School</option>
+            <option value="3er año High School">3er año High School</option>
+            <option value="4to año High School">4to año High School</option>
+            <option value="5to año High School">5to año High School</option>
+            <option value="6to año High School">6to año High School</option>
+          </select>
         </div>
-        <div class="sidebar-logo-text">
-          <h2>Austin EBS</h2>
-          <span>Admisiones</span>
+        <div class="fg"><label class="flabel">Jornada deseada</label>
+          <select class="fselect" id="pf-jornada">
+            <option value="Jornada Completa">Jornada Completa</option>
+            <option value="Jornada Simple">Jornada Simple (Kinder)</option>
+          </select>
+        </div>
+      </div>
+      <div class="fg"><label class="flabel">Colegio actual / anterior</label><input class="finput" id="pf-colegio-ant" placeholder="¿Dónde asiste actualmente?"></div>
+      <div class="fg"><label class="flabel">¿Cómo conociste Austin EBS?</label>
+        <select class="fselect" id="pf-como">
+          <option value="">— Seleccioná —</option>
+          <option>Recomendación de otra familia</option><option>Redes sociales</option>
+          <option>Página web</option><option>Búsqueda en Google</option><option>Evento del colegio</option><option>Otro</option>
+        </select>
+      </div>
+      <div class="step-btns"><button class="sbtn sbtn-next" onclick="stepNext(0)">Continuar →</button></div>
+    </div>
+
+    <!-- PASO 1 -->
+    <div class="form-step" id="fstep-1">
+      <div class="step-title">Datos de la familia</div>
+      <div class="step-sub">Información de contacto del padre, madre o tutor responsable.</div>
+      <div class="fg-row">
+        <div class="fg"><label class="flabel">Nombre *</label><input class="finput" id="pf-padre-n" placeholder="Nombre"></div>
+        <div class="fg"><label class="flabel">Apellido *</label><input class="finput" id="pf-padre-ap" placeholder="Apellido"></div>
+      </div>
+      <div class="fg"><label class="flabel">Relación con el estudiante</label>
+        <select class="fselect" id="pf-relacion">
+          <option>Padre / Madre</option><option>Tutor/a legal</option><option>Abuelo/a</option><option>Otro familiar</option>
+        </select>
+      </div>
+      <hr class="step-divider">
+      <div class="step-label-sec">Contacto</div>
+      <div class="fg-row">
+        <div class="fg"><label class="flabel">Email *</label><input class="finput" id="pf-email" type="email" placeholder="email@ejemplo.com"></div>
+        <div class="fg"><label class="flabel">Teléfono / WhatsApp *</label><input class="finput" id="pf-tel" placeholder="+54 11 0000-0000"></div>
+      </div>
+      <div class="fg"><label class="flabel">Dirección (opcional)</label><input class="finput" id="pf-dir" placeholder="Barrio / Localidad"></div>
+      <hr class="step-divider">
+      <div class="step-label-sec">Información adicional</div>
+      <div class="fg"><label class="flabel">¿Tienen otro hijo en Austin EBS?</label>
+        <select class="fselect" id="pf-hermano"><option value="no">No</option><option value="si">Sí</option></select>
+      </div>
+      <div class="fg"><label class="flabel">Consultas o información adicional</label>
+        <textarea class="ftextarea" id="pf-consulta" placeholder="¿Hay algo particular que quieran saber o compartir?"></textarea>
+      </div>
+      <div class="step-btns">
+        <button class="sbtn sbtn-back" onclick="stepBack(1)">← Volver</button>
+        <button class="sbtn sbtn-next" onclick="stepNext(1)">Continuar →</button>
+      </div>
+    </div>
+
+    <!-- PASO 2 -->
+    <div class="form-step" id="fstep-2">
+      <div class="step-title">Confirmar postulación</div>
+      <div class="step-sub">Revisá los datos antes de enviar. Una vez enviado, recibirás un mail de confirmación.</div>
+      <div id="pf-resumen" style="background:#fff;border:1px solid var(--bd);border-radius:12px;padding:16px;margin-bottom:20px;font-size:13px;line-height:1.8"></div>
+      <div style="background:var(--cream);border-radius:10px;padding:14px;font-size:12.5px;color:var(--text2);line-height:1.6;margin-bottom:20px">
+        ✅ Al enviar esta postulación, el equipo de Admisiones de Austin EBS recibirá una notificación y te contactará a la brevedad para coordinar una visita al colegio.
+      </div>
+      <div class="step-btns">
+        <button class="sbtn sbtn-back" onclick="stepBack(2)">← Volver</button>
+        <button class="sbtn sbtn-submit" onclick="submitPostulacion()">Enviar postulación ✓</button>
+      </div>
+    </div>
+
+    <!-- ÉXITO -->
+    <div class="form-step" id="fstep-success">
+      <div class="form-success">
+        <div class="success-icon">🎉</div>
+        <div class="success-h">¡Postulación enviada!</div>
+        <p class="success-p">Gracias por postularte a Austin EBS. En breve recibirás un correo de confirmación con los próximos pasos del proceso de admisión.</p>
+        <div style="margin-top:24px">
+          <button class="sbtn sbtn-next" onclick="goPortal()">Volver al inicio</button>
         </div>
       </div>
     </div>
-    <nav class="sidebar-nav">
-      <div class="nav-section">Principal</div>
-      <div class="nav-item active" onclick="showView('dashboard')">
-        <span class="nav-icon">◈</span> Panel de Control
+  </div>
+</div>
+
+<!-- ══ LOGIN ADMIN ══ -->
+<div id="s-login" class="screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="logo-b-md">
+        <div class="lb-md lb-a"><span>A</span></div><div class="lb-md lb-e"><span>e</span></div>
+        <div class="lb-md lb-b"><span>b</span></div><div class="lb-md lb-s"><span>s</span></div>
       </div>
-      <div class="nav-item" onclick="showView('postulantes')">
-        <span class="nav-icon">◉</span> Postulantes
-      </div>
-      <div class="nav-section">Gestión</div>
-      <div class="nav-item" onclick="showView('pipeline')">
-        <span class="nav-icon">⬡</span> Pipeline por Estado
-      </div>
-      <div class="nav-item" onclick="showView('vacantes')">
-        <span class="nav-icon">▣</span> Vacantes por Curso
-      </div>
-      <div class="nav-section">Comunicaciones</div>
-      <div class="nav-item" onclick="showView('emails')">
-        <span class="nav-icon">✉</span> Plantillas de Mail
-      </div>
-      <div class="nav-item" onclick="showView('tarifas')">
-        <span class="nav-icon">$</span> Tarifas 2026
-      </div>
-      <div class="nav-section">Sistema</div>
-      <div class="nav-item" onclick="showView('configuracion')">
-        <span class="nav-icon">⚙</span> Configuración
-      </div>
-    </nav>
-    <div class="sidebar-footer">
-      <div class="sidebar-user">
-        <div class="sidebar-avatar">LU</div>
-        <div class="sidebar-user-info">
-          <span>Laura Unamuno</span>
-          <span>Admisiones</span>
+      <div class="login-brand"><h1>Austin EBS</h1><p>eco bilingual school</p></div>
+    </div>
+    <div class="login-sub">Panel de Admisiones · Staff</div>
+    <div class="login-err" id="l-err">Credenciales incorrectas.</div>
+    <label class="l-label">Correo electrónico</label>
+    <input class="l-input" id="l-email" type="email" value="admisiones@austinebs-ah.edu.ar">
+    <label class="l-label">Contraseña</label>
+    <input class="l-input" id="l-pass" type="password" value="austin2026" onkeydown="if(e.key==='Enter')doLogin(event)">
+    <button class="l-submit" onclick="doLogin()">Ingresar</button>
+    <p class="l-hint">Demo: admisiones@austinebs-ah.edu.ar · austin2026</p>
+    <p class="l-portal-link" onclick="goPortal()">← Volver al portal de familias</p>
+  </div>
+</div>
+
+<!-- ══ PANEL ADMISIONES ══ -->
+<div id="s-panel">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sb-head">
+      <div class="sb-logo">
+        <div class="logo-b">
+          <div class="lb lb-a"><span>A</span></div><div class="lb lb-e"><span>e</span></div>
+          <div class="lb lb-b"><span>b</span></div><div class="lb lb-s"><span>s</span></div>
         </div>
+        <div class="sb-brand"><h2>Austin EBS</h2><span>Admisiones</span></div>
       </div>
-      <button class="btn-logout" onclick="doLogout()">← Cerrar sesión</button>
+    </div>
+    <nav class="sb-nav">
+      <div class="sb-sec">Principal</div>
+      <button class="sb-item active" id="nav-dashboard" onclick="showView('dashboard')"><span class="sb-icon">◈</span> Dashboard <span class="sb-badge" id="badge-nuevos" style="display:none">0</span></button>
+      <button class="sb-item" id="nav-pipeline" onclick="showView('pipeline')"><span class="sb-icon">⬡</span> Pipeline</button>
+      <button class="sb-item" id="nav-postulantes" onclick="showView('postulantes')"><span class="sb-icon">◉</span> Todos los postulantes</button>
+      <div class="sb-sec">Gestión</div>
+      <button class="sb-item" id="nav-vacantes" onclick="showView('vacantes')"><span class="sb-icon">▣</span> Vacantes por curso</button>
+      <div class="sb-sec">Comunicaciones</div>
+      <button class="sb-item" id="nav-emails" onclick="showView('emails')"><span class="sb-icon">✉</span> Plantillas de mail</button>
+      <button class="sb-item" id="nav-tarifas" onclick="showView('tarifas')"><span class="sb-icon">$</span> Tarifas 2026</button>
+      <div class="sb-sec">Sistema</div>
+      <button class="sb-item" id="nav-config" onclick="showView('config')"><span class="sb-icon">⚙</span> Configuración</button>
+    </nav>
+    <div class="sb-foot">
+      <div class="sb-user">
+        <div class="sb-av">AD</div>
+        <div class="sb-user-info"><span>Admisiones</span><small>admisiones@austinebs-ah.edu.ar</small></div>
+      </div>
+      <button class="sb-logout" onclick="doLogout()">← Cerrar sesión</button>
     </div>
   </aside>
 
-  <!-- MAIN -->
-  <main class="main-content">
+  <main class="main">
     <div class="topbar">
-      <div class="topbar-title" id="topbar-title">Panel de Control</div>
-      <div class="topbar-actions">
-        <button class="btn btn-teal" onclick="openNewModal()">+ Nuevo postulante</button>
+      <div class="tb-title" id="tb-title">Dashboard</div>
+      <div class="tb-actions">
+        <button class="btn btn-teal" onclick="openNuevoModal()">+ Agregar postulante</button>
       </div>
     </div>
-    <div class="page-content">
+    <div class="page">
 
       <!-- DASHBOARD -->
-      <div id="view-dashboard" class="view active">
-        <div class="page-header">
-          <h1>Panel de Control</h1>
-          <p>Resumen del proceso de admisiones · Ciclo 2026</p>
-        </div>
-
-        <!-- FLOW DIAGRAM -->
-        <div class="flow-diagram">
-          <div class="flow-step">
-            <div class="flow-dot" style="background:var(--s-nueva)">✦</div>
-            <div class="flow-label">Nueva consulta</div>
+      <div id="view-dashboard" class="view on">
+        <div class="ph"><h1>Dashboard</h1><p>Resumen del proceso de admisiones · Ciclo 2026</p></div>
+        <div id="notif-container"></div>
+        <div class="stats-row" id="stats-row"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+          <div class="card-box">
+            <div class="box-head"><div class="box-title">⚡ Requieren acción</div><button class="btn btn-ghost btn-sm" onclick="showView('pipeline')">Ver pipeline →</button></div>
+            <div id="accion-list" style="padding:8px 0"></div>
           </div>
-          <div class="flow-arrow">→</div>
-          <div class="flow-step">
-            <div class="flow-dot" style="background:var(--s-citado)">📅</div>
-            <div class="flow-label">Citado entrevista</div>
-          </div>
-          <div class="flow-arrow">→</div>
-          <div class="flow-step">
-            <div class="flow-dot" style="background:var(--s-entrevistado)">✓</div>
-            <div class="flow-label">Entrevistado</div>
-          </div>
-          <div class="flow-arrow">→</div>
-          <div class="flow-step">
-            <div class="flow-dot" style="background:var(--s-postulado)">◎</div>
-            <div class="flow-label">Postulado</div>
-          </div>
-          <div class="flow-arrow">→</div>
-          <div class="flow-step">
-            <div class="flow-dot" style="background:var(--s-matriculado)">★</div>
-            <div class="flow-label">Matriculado</div>
-          </div>
-          <div style="flex:1"></div>
-          <div class="flow-step">
-            <div class="flow-dot" style="background:var(--s-espera)">⏳</div>
-            <div class="flow-label">Lista espera</div>
-          </div>
-          <div class="flow-step" style="margin-left:8px">
-            <div class="flow-dot" style="background:var(--s-desiste)">✗</div>
-            <div class="flow-label">Desiste</div>
+          <div class="card-box">
+            <div class="box-head"><div class="box-title">📊 Por nivel</div></div>
+            <div id="nivel-dist" style="padding:14px 18px"></div>
           </div>
         </div>
-
-        <div class="stats-grid" id="stats-grid"></div>
-
-        <div class="card-section" style="margin-bottom:20px">
-          <div class="section-header">
-            <div class="section-title">Actividad reciente</div>
-            <button class="btn btn-outline btn-sm" onclick="showView('postulantes')">Ver todos →</button>
-          </div>
-          <table>
-            <thead>
-              <tr>
-                <th>Estudiante</th>
-                <th>Familia</th>
-                <th>Curso</th>
-                <th>Estado</th>
-                <th>Fecha</th>
-              </tr>
-            </thead>
-            <tbody id="recent-tbody"></tbody>
-          </table>
+        <div class="card-box">
+          <div class="box-head"><div class="box-title">🕐 Actividad reciente</div><button class="btn btn-ghost btn-sm" onclick="showView('postulantes')">Ver todos →</button></div>
+          <table><thead><tr><th>Estudiante</th><th>Familia</th><th>Curso</th><th>Estado</th><th>Fecha</th><th></th></tr></thead>
+          <tbody id="recent-tb"></tbody></table>
         </div>
+      </div>
+
+      <!-- PIPELINE -->
+      <div id="view-pipeline" class="view">
+        <div class="ph"><h1>Pipeline de admisiones</h1><p>Vista completa del flujo · Hacé clic en cualquier postulante para gestionar su proceso</p></div>
+        <div class="pipeline-label">Arrastrá los postulantes entre columnas o hacé clic para cambiar su estado</div>
+        <div class="pipeline-cols" id="pipeline-cols"></div>
       </div>
 
       <!-- POSTULANTES -->
       <div id="view-postulantes" class="view">
-        <div class="page-header">
-          <h1>Postulantes</h1>
-          <p>Gestión completa de todas las postulaciones</p>
-        </div>
-        <div class="card-section">
-          <div class="section-header">
-            <div class="section-title" id="postulantes-count">Todos los postulantes</div>
+        <div class="ph"><h1>Postulantes</h1><p>Listado completo · <span id="post-count-label">todos</span></p></div>
+        <div class="card-box">
+          <div class="box-head">
+            <div class="box-title" id="post-count">Cargando...</div>
             <div class="filters">
-              <input class="search-input" placeholder="🔍 Buscar nombre, familia..." id="search-input" oninput="filterPostulantes()">
-              <select class="filter-select" id="filter-estado" onchange="filterPostulantes()">
+              <input class="fsearch" id="f-q" placeholder="🔍 Buscar..." oninput="filterTable()">
+              <select class="fsel" id="f-est" onchange="filterTable()">
                 <option value="">Todos los estados</option>
                 <option value="nueva">Nueva consulta</option>
                 <option value="citado">Citado entrevista</option>
@@ -920,133 +853,83 @@ td { padding: 12px 16px; font-size: 13px; color: var(--text); vertical-align: mi
                 <option value="lista de espera">Lista de espera</option>
                 <option value="desiste">Desiste</option>
               </select>
-              <select class="filter-select" id="filter-nivel" onchange="filterPostulantes()">
+              <select class="fsel" id="f-niv" onchange="filterTable()">
                 <option value="">Todos los niveles</option>
                 <option value="Kindergarten">Kindergarten</option>
                 <option value="Elementary">Elementary</option>
                 <option value="High School">High School</option>
               </select>
-              <select class="filter-select" id="filter-year" onchange="filterPostulantes()">
+              <select class="fsel" id="f-anio" onchange="filterTable()">
                 <option value="">Todos los años</option>
-                <option value="2026">2026</option>
-                <option value="2027">2027</option>
+                <option value="2026">2026</option><option value="2027">2027</option>
               </select>
             </div>
           </div>
-          <table>
-            <thead>
-              <tr>
-                <th>Estudiante</th>
-                <th>Familia (Padre/Tutor)</th>
-                <th>Nivel / Curso</th>
-                <th>Año</th>
-                <th>Estado</th>
-                <th>Contacto</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody id="postulantes-tbody"></tbody>
-          </table>
+          <table><thead><tr><th>Estudiante</th><th>Padre/Tutor</th><th>Curso</th><th>Año</th><th>Estado</th><th>Contacto</th><th>Acción</th></tr></thead>
+          <tbody id="post-tb"></tbody></table>
         </div>
-      </div>
-
-      <!-- PIPELINE -->
-      <div id="view-pipeline" class="view">
-        <div class="page-header">
-          <h1>Pipeline por Estado</h1>
-          <p>Vista Kanban del flujo de admisiones</p>
-        </div>
-        <div class="pipeline-grid" id="pipeline-grid"></div>
       </div>
 
       <!-- VACANTES -->
       <div id="view-vacantes" class="view">
-        <div class="page-header">
-          <h1>Vacantes por Curso</h1>
-          <p>Configurá la disponibilidad de lugares por grado</p>
+        <div class="ph"><h1>Vacantes por curso</h1><p>Definí la disponibilidad de lugares · El sistema avisa cuando un curso está lleno</p></div>
+        <div style="background:#fff;border-radius:var(--r2);border:1px solid var(--bd);padding:14px 18px;margin-bottom:18px;font-size:12.5px;color:var(--text2);line-height:1.6">
+          <strong>¿Para qué sirve esto?</strong> Cuando un curso se llena (ocupados ≥ total), al cambiar el estado de un postulante de ese curso a "Postulado", el sistema sugiere automáticamente "Lista de espera".
         </div>
-        <div class="vacantes-grid" id="vacantes-grid"></div>
-        <div style="margin-top:16px">
-          <button class="btn btn-teal" onclick="saveVacantes()">Guardar cambios</button>
-        </div>
+        <div class="vac-grid" id="vac-grid"></div>
+        <div style="margin-top:16px"><button class="btn btn-teal" onclick="saveVacantes()">Guardar vacantes</button></div>
       </div>
 
       <!-- EMAILS -->
       <div id="view-emails" class="view">
-        <div class="page-header">
-          <h1>Plantillas de Mail</h1>
-          <p>Editá los correos que se envían automáticamente en cada estado</p>
+        <div class="ph"><h1>Plantillas de mail</h1><p>Editá el contenido de cada correo automático · Se envían al cambiar el estado del postulante</p></div>
+        <div class="cal-info">
+          <div class="cal-icon">📅</div>
+          <div class="cal-text"><h3>Link de agenda de entrevistas</h3><p>Se incluye automáticamente en el mail de "Citado entrevista"</p><a id="cal-link-display" href="#" target="_blank">calendar.app.google/WrfYGGSiRH3smkxL8</a></div>
         </div>
-        <div class="calendar-info">
-          <div class="calendar-icon">📅</div>
-          <div class="calendar-text">
-            <h3>Link de agenda de entrevistas</h3>
-            <p>Incluido automáticamente en el mail de "Citado entrevista"</p>
-            <a href="https://calendar.app.google/WrfYGGSiRH3smkxL8" target="_blank">calendar.app.google/WrfYGGSiRH3smkxL8</a>
-          </div>
-        </div>
-        <div id="email-templates-container"></div>
+        <div id="email-templates"></div>
       </div>
 
       <!-- TARIFAS -->
       <div id="view-tarifas" class="view">
-        <div class="page-header">
-          <h1>Tarifas Ciclo Lectivo 2026</h1>
-          <p>Actualizá los valores de matrícula y cuotas. Se usan en los mails automáticos.</p>
+        <div class="ph"><h1>Tarifas 2026</h1><p>Los valores se muestran en el portal de familias y en los mails automáticos</p></div>
+        <div id="tarifas-admin"></div>
+        <div style="background:var(--cream);border-radius:9px;padding:10px 14px;font-size:12px;color:var(--text3);margin:10px 0 16px">
+          Descuentos hermanos: 2do 10% · 3ro 25% · 4to 50% · 5to 50% (solo sobre cuotas, no matrícula)
         </div>
-        <div id="tarifas-container"></div>
-        <div class="discount-info">
-          <strong>Descuentos por hermanos:</strong> 2do hijo: 10% · 3er hijo: 25% · 4to hijo: 50% · 5to hijo: 50%<br>
-          Los descuentos aplican solo sobre cuotas, no sobre matrícula.
-        </div>
-        <div style="margin-top:16px">
-          <button class="btn btn-teal" onclick="saveTarifas()">Guardar tarifas</button>
-        </div>
+        <button class="btn btn-teal" onclick="saveTarifas()">Guardar tarifas</button>
       </div>
 
-      <!-- CONFIGURACION -->
-      <div id="view-configuracion" class="view">
-        <div class="page-header">
-          <h1>Configuración</h1>
-          <p>Parámetros del sistema de admisiones</p>
-        </div>
-        <div class="card-section">
-          <div class="section-header"><div class="section-title">Datos del remitente</div></div>
-          <div class="modal-body">
-            <div class="config-section">
-              <div class="config-row">
-                <div><div class="config-label">Nombre del remitente</div><div class="config-sub">Aparece en el campo "De:" del mail</div></div>
-                <input class="config-input" id="cfg-nombre" value="Laura Unamuno (Admisiones Austin EBS)">
-              </div>
-              <div class="config-row">
-                <div><div class="config-label">Email de admisiones</div><div class="config-sub">Dirección desde donde se envían los mails</div></div>
-                <input class="config-input" id="cfg-email" value="admisiones@austinebs-ah.edu.ar">
-              </div>
-              <div class="config-row">
-                <div><div class="config-label">Link agenda de entrevistas</div><div class="config-sub">Google Calendar público para reservar cita</div></div>
-                <input class="config-input" id="cfg-calendar" value="https://calendar.app.google/WrfYGGSiRH3smkxL8">
-              </div>
-              <div class="config-row">
-                <div><div class="config-label">Link Google Drive (brochure)</div><div class="config-sub">Carpeta con documentos para familias</div></div>
-                <input class="config-input" id="cfg-drive" value="https://drive.google.com/drive/folders/1c0vFf1MWUcSC8-lqBjBCGDQ-hbXxGQDA">
+      <!-- CONFIG -->
+      <div id="view-config" class="view">
+        <div class="ph"><h1>Configuración</h1><p>Datos del sistema de admisiones</p></div>
+        <div class="card-box">
+          <div class="box-head"><div class="box-title">Datos del remitente de mails</div></div>
+          <div class="m-body">
+            <div class="cfg-row"><div><div class="cfg-label">Nombre del remitente</div><div class="cfg-sub">Aparece en el campo "De:" de cada mail</div></div><input class="cfg-input" id="cfg-nombre" value="Admisiones Austin EBS"></div>
+            <div class="cfg-row"><div><div class="cfg-label">Email de admisiones</div><div class="cfg-sub">Dirección desde la que se envían los correos</div></div><input class="cfg-input" id="cfg-email" value="admisiones@austinebs-ah.edu.ar"></div>
+            <div class="cfg-row"><div><div class="cfg-label">Link agenda entrevistas</div><div class="cfg-sub">Se incluye en el mail de "Citado entrevista"</div></div><input class="cfg-input" id="cfg-calendar" value="https://calendar.app.google/WrfYGGSiRH3smkxL8"></div>
+            <div class="cfg-row"><div><div class="cfg-label">Link Google Drive (brochure)</div><div class="cfg-sub">Para familias que deseen más información</div></div><input class="cfg-input" id="cfg-drive" value="https://drive.google.com/drive/folders/1c0vFf1MWUcSC8-lqBjBCGDQ-hbXxGQDA"></div>
+            <div class="cfg-row"><div><div class="cfg-label">EmailJS Service ID</div><div class="cfg-sub">ID del servicio de email en <a href="https://www.emailjs.com" target="_blank" style="color:var(--teal)">emailjs.com</a> · ej: <code style="font-size:11px;background:var(--cream);padding:1px 5px;border-radius:4px">service_abc1234</code></div></div><input class="cfg-input" id="cfg-ejsid" placeholder="service_XXXXXXX"></div>
+            <div class="cfg-row"><div><div class="cfg-label">EmailJS Template ID</div><div class="cfg-sub">ID de la plantilla · ej: <code style="font-size:11px;background:var(--cream);padding:1px 5px;border-radius:4px">template_abc1234</code></div></div><input class="cfg-input" id="cfg-ejstpl" placeholder="template_XXXXXXX"></div>
+            <div class="cfg-row"><div><div class="cfg-label">EmailJS Public Key</div><div class="cfg-sub">Clave pública de tu cuenta (Account → API Keys)</div></div><input class="cfg-input" id="cfg-ejskey" placeholder="xxxxxxxxxxxxxxxxxxxx"></div>
+            <div class="cfg-row">
+              <div><div class="cfg-label">Estado del envío de mails</div><div class="cfg-sub" id="ejs-status-text">Configurá los campos de EmailJS para activar el envío real</div></div>
+              <div style="display:flex;gap:8px;align-items:center">
+                <span id="ejs-status-badge" style="font-size:11px;padding:4px 10px;border-radius:20px;font-weight:600;background:#FEF5E6;color:#8A5510">⚡ No configurado</span>
+                <button class="btn btn-out btn-sm" onclick="testMail()">Enviar mail de prueba</button>
               </div>
             </div>
           </div>
-          <div class="modal-footer">
-            <button class="btn btn-teal" onclick="saveConfig()">Guardar configuración</button>
-          </div>
+          <div class="m-foot"><button class="btn btn-teal" onclick="saveConfig()">Guardar configuración</button></div>
         </div>
-
-        <div class="card-section" style="margin-top:20px">
-          <div class="section-header"><div class="section-title">Integración con Google Sheets</div></div>
-          <div class="modal-body">
-            <p style="font-size:13px;color:var(--text2);line-height:1.7">
-              Este sistema puede sincronizarse con el Google Sheets de respuestas del formulario de postulación. El App Script ya está configurado en tu planilla — los datos y estados se reflejan automáticamente.<br><br>
-              <strong>Planilla de respuestas:</strong><br>
-              <a href="https://docs.google.com/spreadsheets/d/1OhlkHsgxrVUA7QCCrdBC6_lxEwR3hu3laVAepRgPnPc" target="_blank" style="color:var(--teal);font-size:12px">docs.google.com/spreadsheets/d/1OhlkHsgxrVUA7QCCrdBC6_lxEwR3hu3...</a><br><br>
-              <strong>Formulario de postulación:</strong><br>
-              <a href="https://forms.gle/6wk59tfXEPwvSsy26" target="_blank" style="color:var(--teal);font-size:12px">forms.gle/6wk59tfXEPwvSsy26</a>
-            </p>
+        <div class="card-box" style="margin-top:16px">
+          <div class="box-head"><div class="box-title">Integración Google Sheets / App Script</div></div>
+          <div class="m-body" style="font-size:12.5px;color:var(--text2);line-height:1.8">
+            Este sistema convive con el Google Sheets y App Script existentes.<br>
+            <strong>Flujo actual:</strong> Formulario Google → Sheets → App Script envía mails según cambios en col. P.<br>
+            <strong>Este sistema:</strong> reemplaza el formulario y centraliza la gestión. Los mails se envían directamente desde aquí.<br><br>
+            <a href="https://docs.google.com/spreadsheets/d/1OhlkHsgxrVUA7QCCrdBC6_lxEwR3hu3laVAepRgPnPc" target="_blank" style="color:var(--teal)">Ver Google Sheets de respuestas →</a>
           </div>
         </div>
       </div>
@@ -1055,15 +938,12 @@ td { padding: 12px 16px; font-size: 13px; color: var(--text); vertical-align: mi
   </main>
 </div>
 
-<!-- MODAL DETALLE / NUEVO POSTULANTE -->
-<div class="modal-overlay" id="modal-overlay" onclick="closeModalOnBg(event)">
+<!-- MODAL -->
+<div class="overlay" id="overlay" onclick="closeMOnBg(event)">
   <div class="modal" id="modal">
-    <div class="modal-header">
-      <div class="modal-title" id="modal-title">Nuevo Postulante</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
-    </div>
-    <div class="modal-body" id="modal-body"></div>
-    <div class="modal-footer" id="modal-footer"></div>
+    <div class="m-head"><div class="m-title" id="m-title"></div><button class="m-close" onclick="closeM()">✕</button></div>
+    <div class="m-body" id="m-body"></div>
+    <div class="m-foot" id="m-foot"></div>
   </div>
 </div>
 
@@ -1071,529 +951,750 @@ td { padding: 12px 16px; font-size: 13px; color: var(--text); vertical-align: mi
 <div class="toast" id="toast"></div>
 
 <script>
-// ─── DATA ───
+// ═══════════════════════════════════════
+// DATA & STATE
+// ═══════════════════════════════════════
 const ESTADOS = ['nueva','citado','entrevistado','postulado','matriculado','lista de espera','desiste'];
-const ESTADOS_LABEL = {
-  nueva:'Nueva consulta', citado:'Citado entrevista', entrevistado:'Entrevistado',
-  postulado:'Postulado', matriculado:'Matriculado', 'lista de espera':'Lista de espera', desiste:'Desiste'
-};
-const CURSOS = [
-  'K2 (Puppies)','K3 (Koalas/Dolphins)','K4 (Foxes/Monkeys)','K5 (Bears/Hippos)',
-  '1er año Elementary','2do año Elementary','3er año Elementary',
-  '4to año Elementary','5to año Elementary','6to año Elementary',
-  '1er año High School','2do año High School','3er año High School',
-  '4to año High School','5to año High School','6to año High School'
-];
-const NIVEL_MAP = (c) => c.includes('K') ? 'Kindergarten' : c.includes('Elementary') ? 'Elementary' : 'High School';
+const EL = { nueva:'Nueva consulta', citado:'Citado entrevista', entrevistado:'Entrevistado', postulado:'Postulado', matriculado:'Matriculado', 'lista de espera':'Lista de espera', desiste:'Desiste' };
+const ECLS = { nueva:'bg-nueva', citado:'bg-citado', entrevistado:'bg-entrev', postulado:'bg-post', matriculado:'bg-mat', 'lista de espera':'bg-esp', desiste:'bg-des' };
+const EPCLS = { nueva:'ph-nueva', citado:'ph-citado', entrevistado:'ph-entrev', postulado:'ph-post', matriculado:'ph-mat', 'lista de espera':'ph-esp', desiste:'ph-des' };
+const ECOL = { nueva:'var(--c-nueva)', citado:'var(--c-citado)', entrevistado:'var(--c-entrev)', postulado:'var(--c-post)', matriculado:'var(--c-mat)', 'lista de espera':'var(--c-esp)', desiste:'var(--c-des)' };
+const CURSOS = ['K2 (Puppies)','K3 (Koalas/Dolphins)','K4 (Foxes/Monkeys)','K5 (Bears/Hippos)','1er año Elementary','2do año Elementary','3er año Elementary','4to año Elementary','5to año Elementary','6to año Elementary','1er año High School','2do año High School','3er año High School','4to año High School','5to año High School','6to año High School'];
+const NIVEL = c => c.startsWith('K') ? 'Kindergarten' : c.includes('Elementary') ? 'Elementary' : 'High School';
 
 let DB = {
-  postulantes: [
-    { id:1, alumno:'Valentina Rodríguez', padre:'Carolina Rodríguez', email:'carolina.rodriguez@gmail.com', tel:'+54 11 4532-9871', curso:'2do año Elementary', nivel:'Elementary', anio:2026, estado:'matriculado', fecha:'2026-03-15', obs:'Confirmó matrícula. Pago recibido.', jornada:'Jornada Completa' },
-    { id:2, alumno:'Mateo García', padre:'Fernando García', email:'fgarcia@hotmail.com', tel:'+54 11 5634-1122', curso:'1er año High School', nivel:'High School', anio:2026, estado:'postulado', fecha:'2026-04-02', obs:'Esperando comprobante de pago.', jornada:'Jornada Completa' },
-    { id:3, alumno:'Sofía López', padre:'María López', email:'mlopez@yahoo.com', tel:'+54 11 3322-8890', curso:'K3 (Koalas/Dolphins)', nivel:'Kindergarten', anio:2026, estado:'citado', fecha:'2026-04-10', obs:'Entrevista agendada para el 14/6.', jornada:'Jornada Simple' },
-    { id:4, alumno:'Tomás Martínez', padre:'Roberto Martínez', email:'rmartinez@gmail.com', tel:'+54 11 6677-4321', curso:'4to año High School', nivel:'High School', anio:2026, estado:'entrevistado', fecha:'2026-04-18', obs:'Entrevista realizada. Interesados.', jornada:'Jornada Completa' },
-    { id:5, alumno:'Camila Fernández', padre:'Ana Fernández', email:'afernandez@outlook.com', tel:'+54 11 9988-5566', curso:'K5 (Bears/Hippos)', nivel:'Kindergarten', anio:2026, estado:'nueva', fecha:'2026-04-25', obs:'', jornada:'Jornada Completa' },
-    { id:6, alumno:'Santiago Pérez', padre:'Lucas Pérez', email:'lperez@gmail.com', tel:'+54 11 1234-5678', curso:'3er año Elementary', nivel:'Elementary', anio:2026, estado:'lista de espera', fecha:'2026-04-01', obs:'Curso completo. En espera.', jornada:'Jornada Completa' },
-    { id:7, alumno:'Isabella Torres', padre:'Claudia Torres', email:'ctorres@gmail.com', tel:'+54 11 7890-1234', curso:'6to año Elementary', nivel:'Elementary', anio:2026, estado:'desiste', fecha:'2026-03-20', obs:'Familia decidió otro colegio.', jornada:'Jornada Completa' },
-    { id:8, alumno:'Nicolás Herrera', padre:'Marcelo Herrera', email:'mherrera@yahoo.com', tel:'+54 11 2233-4455', curso:'2do año High School', nivel:'High School', anio:2026, estado:'matriculado', fecha:'2026-03-28', obs:'Matriculado. Bienvenido.', jornada:'Jornada Completa' },
-    { id:9, alumno:'Emma Sánchez', padre:'Patricia Sánchez', email:'psanchez@gmail.com', tel:'+54 11 6655-4433', curso:'K2 (Puppies)', nivel:'Kindergarten', anio:2027, estado:'nueva', fecha:'2026-05-01', obs:'', jornada:'Jornada Simple' },
-    { id:10, alumno:'Agustín Morales', padre:'Diego Morales', email:'dmorales@outlook.com', tel:'+54 11 5544-3322', curso:'5to año Elementary', nivel:'Elementary', anio:2027, estado:'citado', fecha:'2026-04-30', obs:'', jornada:'Jornada Completa' },
-  ],
-  nextId: 11,
+  nextId: 1,
+  postulantes: [],
   vacantes: {
-    'K2 (Puppies)': {total:15, usados:3},
-    'K3 (Koalas/Dolphins)': {total:15, usados:8},
-    'K4 (Foxes/Monkeys)': {total:15, usados:12},
-    'K5 (Bears/Hippos)': {total:15, usados:10},
-    '1er año Elementary': {total:20, usados:6},
-    '2do año Elementary': {total:20, usados:14},
-    '3er año Elementary': {total:20, usados:20},
-    '4to año Elementary': {total:20, usados:9},
-    '5to año Elementary': {total:20, usados:11},
-    '6to año Elementary': {total:20, usados:7},
-    '1er año High School': {total:18, usados:13},
-    '2do año High School': {total:18, usados:16},
-    '3er año High School': {total:18, usados:5},
-    '4to año High School': {total:18, usados:8},
-    '5to año High School': {total:18, usados:3},
-    '6to año High School': {total:18, usados:2},
+    'K2 (Puppies)':{t:15,u:0},'K3 (Koalas/Dolphins)':{t:15,u:0},'K4 (Foxes/Monkeys)':{t:15,u:0},'K5 (Bears/Hippos)':{t:15,u:0},
+    '1er año Elementary':{t:20,u:0},'2do año Elementary':{t:20,u:0},'3er año Elementary':{t:20,u:0},'4to año Elementary':{t:20,u:0},'5to año Elementary':{t:20,u:0},'6to año Elementary':{t:20,u:0},
+    '1er año High School':{t:20,u:0},'2do año High School':{t:20,u:0},'3er año High School':{t:20,u:0},'4to año High School':{t:20,u:0},'5to año High School':{t:20,u:0},'6to año High School':{t:20,u:0}
   },
   tarifas: {
-    kinder: {
-      k2_matricula: 618243.75, k2_simple: 494595, k2_completa: 658512,
-      k3_matricula: 746713.75, k3_simple: 494595, k3_completa: 597371,
-      k45_matricula: 746713.75, k45_completa: 597371
-    },
-    elementary: { matricula: 926812.5, completa: 741450 },
-    hs13: { matricula: 1056251.25, completa: 845001 },
-    hs46: { matricula: 1093611.25, completa: 874889 }
+    k2_m:618243.75, k2_s:494595, k2_c:658512,
+    k3_m:746713.75, k3_s:494595, k3_c:597371,
+    k45_m:746713.75, k45_c:597371,
+    el_m:926812.5, el_c:741450,
+    hs13_m:1056251.25, hs13_c:845001,
+    hs46_m:1093611.25, hs46_c:874889
   },
-  emailTemplates: {
-    nueva: { subject:'¡Gracias por postular a Austin EBS!', body:'Hola {{padre}},\n\nSoy Laura Unamuno, parte del staff de Austin Eco Bilingual School y encargada del proceso de admisiones.\n\n¡Nos alegra muchísimo tu postulación para {{alumno}}! Para conocer el proyecto en detalle y las tarifas, podés ver el brochure y los aranceles aquí:\n{{link_drive}}\n\nPara empezar con el proceso, ingresá al siguiente link y reservá un horario disponible de visita con entrevista para conocer el proyecto educativo en profundidad y las instalaciones del colegio:\n{{link_calendario}}\n\nQuedo a disposición por cualquier consulta.\n\nSaludos cordiales,\nLaura Unamuno\nAdmisiones – Austin EBS' },
-    citado: { subject:'¡Tu entrevista quedó agendada!', body:'Hola {{padre}},\n\nGracias por agendar su entrevista para conocer el Colegio Austin-EBS. Será un gusto recibirlos en la fecha y hora seleccionada.\n\nQuedo a disposición por cualquier consulta. Dejo el link del calendario por cualquier inconveniente o modificación:\n{{link_calendario}}\n\n¡Nos vemos pronto!\nLaura' },
-    entrevistado: { subject:'¡Gracias por la entrevista!', body:'Hola {{padre}},\n\nFue un gusto recibirlos y conocerlos. Estamos orgullosos de que nos contemplen para la elección escolar de {{alumno}}.\n\nPara seguir acompañándolos en el proceso, les pedimos que completen este breve formulario post entrevista:\nhttps://forms.gle/rsQwi9ps1chN2q8x5\n\nEn caso de querer avanzar, esperamos su confirmación por este medio.\n\nUn afectuoso saludo,\nLaura' },
-    postulado: { subject:'Siguiente paso en el proceso de admisión', body:'Hola {{padre}},\n\nGracias por la postulación de {{alumno}}.\n\nEstamos muy contentos de enviar los pasos a seguir para continuar con la reserva de vacante. Podrán encontrar las tarifas en el siguiente enlace:\n{{link_tarifas}}\n\nEl proceso quedará confirmado una vez que recibamos el comprobante de pago de la reserva de vacante por este medio.\n\nUn afectuoso saludo,\nLaura' },
-    matriculado: { subject:'¡Bienvenidos a la familia Austin EBS!', body:'Hola {{padre}},\n\nHemos recibido su comprobante de pago y {{alumno}} ya se encuentra matriculado/a. ¡Bienvenidos a la comunidad Austin!\n\nEstoy para lo que necesiten.\nLaura' },
-    'lista de espera': { subject:'Actualización: lista de espera', body:'Hola {{padre}},\n\nPor el momento, la postulación de {{alumno}} se encuentra en lista de espera. Les avisaremos ante cualquier novedad. ¡Muchas gracias!\n\n¡Quedo a disposición, saludos!\nLaura' },
-    desiste: { subject:'Proceso de admisión: baja solicitada', body:'Hola {{padre}},\n\nTomamos nota de que no continuarán con la postulación de {{alumno}}. Gracias por habernos considerado.\n\nSi desean retomar más adelante, cuenten conmigo.\nLaura' }
+  emails: {
+    nueva:{
+      subj:'¡Gracias por postular a Austin EBS!',
+      body:'Hola {{padre}},\n\nSoy parte del staff de Austin Eco Bilingual School, encargada del proceso de admisiones.\n\n¡Nos alegra muchísimo tu postulación para {{alumno}}! Para conocer el proyecto en detalle y las tarifas, podés ver el brochure y los aranceles aquí:\n{{link_drive}}\n\nPara empezar con el proceso, ingresá al siguiente link y reservá un horario disponible de visita con entrevista para conocer el proyecto educativo en profundidad y las instalaciones del colegio:\n{{link_calendario}}\n\nQuedo a disposición por cualquier consulta.\n\nSaludos cordiales,\nAdmisiones – Austin EBS'
+    },
+    citado:{
+      subj:'¡Tu entrevista quedó agendada!',
+      body:'Hola {{padre}},\n\nGracias por agendar su entrevista para conocer el Colegio Austin EBS. Será un gusto recibirlos en la fecha y hora seleccionada.\n\nQuedo a disposición por cualquier consulta. Dejo el link del calendario por cualquier inconveniente o modificación que quieran hacer:\n{{link_calendario}}\n\n¡Nos vemos pronto!\nAdmisiones – Austin EBS'
+    },
+    entrevistado:{
+      subj:'¡Gracias por la entrevista!',
+      body:'Hola {{padre}},\n\nFue un gusto recibirlos y conocerlos. Estamos orgullosos de que nos contemplen para la elección escolar de {{alumno}}.\n\nPara seguir acompañándolos en el proceso, les pedimos que completen este breve formulario post entrevista:\nhttps://forms.gle/rsQwi9ps1chN2q8x5\n\nEn caso de querer avanzar, esperamos su confirmación por este medio.\n\nUn afectuoso saludo,\nAdmisiones – Austin EBS'
+    },
+    postulado:{
+      subj:'Siguiente paso en el proceso de admisión',
+      body:'Hola {{padre}},\n\nGracias por la postulación de {{alumno}}.\n\nEstamos muy contentos de acompañarlos en los pasos a seguir para continuar con la reserva de vacante. Podrán encontrar las tarifas en el siguiente enlace:\n{{link_drive}}\n\nEl proceso quedará confirmado una vez que recibamos el comprobante de pago de la reserva de vacante por este medio.\n\nUn afectuoso saludo,\nAdmisiones – Austin EBS'
+    },
+    matriculado:{
+      subj:'¡Bienvenidos a la familia Austin EBS!',
+      body:'Hola {{padre}},\n\nHemos recibido su comprobante de pago y {{alumno}} ya se encuentra matriculado/a. ¡Bienvenidos a la comunidad Austin!\n\nEstamos para lo que necesiten.\n\nAdmisiones – Austin EBS'
+    },
+    'lista de espera':{
+      subj:'Actualización: lista de espera',
+      body:'Hola {{padre}},\n\nPor el momento, la postulación de {{alumno}} se encuentra en lista de espera. Les avisaremos ante cualquier novedad. ¡Muchas gracias!\n\nQuedamos a disposición.\nAdmisiones – Austin EBS'
+    },
+    desiste:{
+      subj:'Proceso de admisión: baja solicitada',
+      body:'Hola {{padre}},\n\nTomamos nota de que no continuarán con la postulación de {{alumno}}. Gracias por habernos considerado.\n\nSi desean retomar más adelante, cuenten con nosotros.\n\nAdmisiones – Austin EBS'
+    }
   },
   config: {
-    nombre:'Laura Unamuno (Admisiones Austin EBS)',
+    nombre:'Admisiones Austin EBS',
     email:'admisiones@austinebs-ah.edu.ar',
     calendar:'https://calendar.app.google/WrfYGGSiRH3smkxL8',
-    drive:'https://drive.google.com/drive/folders/1c0vFf1MWUcSC8-lqBjBCGDQ-hbXxGQDA'
-  }
+    drive:'https://drive.google.com/drive/folders/1c0vFf1MWUcSC8-lqBjBCGDQ-hbXxGQDA',
+    ejsid:'', ejstpl:'', ejskey:''
+  },
+  pendingNotif: []
 };
 
-// ─── AUTH ───
-function doLogin() {
-  const email = document.getElementById('login-email').value;
-  const pass = document.getElementById('login-password').value;
-  if (email === 'admisiones@austinebs-ah.edu.ar' && pass === 'austin2026') {
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
-    renderDashboard();
-  } else {
-    document.getElementById('login-error').style.display = 'block';
+// ═══════════════════════════════════════
+// SCREEN NAVIGATION
+// ═══════════════════════════════════════
+function go(id){ document.querySelectorAll('.screen,#s-panel').forEach(s=>{ s.classList.remove('on'); s.style.display='none'; }); const el=document.getElementById(id); if(el){ el.style.display= id==='s-panel'?'flex':'block'; el.classList.add('on'); } }
+function goPortal(){ go('s-portal'); }
+function goLogin(){ go('s-login'); }
+function goPostulacion(){ currentStep=0; showStep(0); go('s-postulacion'); }
+function scrollTo(id){ const el=document.querySelector(id); if(el) el.scrollIntoView({behavior:'smooth'}); }
+function scrollTop(){ window.scrollTo({top:0,behavior:'smooth'}); }
+
+// ═══════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════
+function doLogin(e){
+  const em=document.getElementById('l-email').value;
+  const pw=document.getElementById('l-pass').value;
+  if(em==='admisiones@austinebs-ah.edu.ar' && pw==='austin2026'){
+    go('s-panel');
+    renderAll();
+  } else { document.getElementById('l-err').style.display='block'; }
+}
+document.getElementById('l-pass').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
+function doLogout(){ go('s-login'); }
+
+// ═══════════════════════════════════════
+// PANEL VIEWS
+// ═══════════════════════════════════════
+function showView(v){
+  document.querySelectorAll('.view').forEach(el=>el.classList.remove('on'));
+  document.querySelectorAll('.sb-item').forEach(el=>el.classList.remove('active'));
+  document.getElementById('view-'+v).classList.add('on');
+  const nb=document.getElementById('nav-'+v); if(nb) nb.classList.add('active');
+  const titles={dashboard:'Dashboard',pipeline:'Pipeline de admisiones',postulantes:'Postulantes',vacantes:'Vacantes por curso',emails:'Plantillas de mail',tarifas:'Tarifas 2026',config:'Configuración'};
+  document.getElementById('tb-title').textContent=titles[v]||v;
+  if(v==='dashboard') renderDashboard();
+  if(v==='pipeline') renderPipeline();
+  if(v==='postulantes') renderTable();
+  if(v==='vacantes') renderVacantes();
+  if(v==='emails') renderEmails();
+  if(v==='tarifas') renderTarifasAdmin();
+  if(v==='config') renderConfig();
+}
+
+function renderAll(){ renderDashboard(); }
+
+// ═══════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════
+function renderDashboard(){
+  const ps=DB.postulantes;
+  const cnt=e=>ps.filter(p=>p.estado===e).length;
+  const total=ps.length, mat=cnt('matriculado'), post=cnt('postulado'), nuevas=cnt('nueva'), espera=cnt('lista de espera'), citados=cnt('citado');
+
+  // Badge sidebar
+  const nN=nuevas; const bb=document.getElementById('badge-nuevos');
+  bb.textContent=nN; bb.style.display=nN>0?'inline':'none';
+
+  // Notificaciones de nuevos
+  const nc=document.getElementById('notif-container'); nc.innerHTML='';
+  if(DB.pendingNotif.length>0){
+    DB.pendingNotif.forEach(id=>{
+      const p=DB.postulantes.find(x=>x.id===id); if(!p) return;
+      const d=document.createElement('div'); d.className='notif-banner';
+      d.innerHTML=`<div class="notif-text"><h4>🔔 Nueva postulación: ${p.alumno}</h4><p>${p.curso} · ${p.padre} · ${p.email}</p></div>
+      <div class="notif-actions">
+        <button class="notif-btn notif-ver" onclick="openDetalle(${id})">Ver y enviar mail</button>
+        <button class="notif-btn notif-dismiss" onclick="dismissNotif(${id})">Descartar</button>
+      </div>`; nc.appendChild(d);
+    });
   }
-}
-document.getElementById('login-password').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
-function doLogout() {
-  document.getElementById('app').style.display = 'none';
-  document.getElementById('login-screen').style.display = 'flex';
-}
 
-// ─── NAV ───
-function showView(name) {
-  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  document.getElementById('view-'+name).classList.add('active');
-  const items = document.querySelectorAll('.nav-item');
-  items.forEach(i => { if(i.textContent.trim().toLowerCase().includes(name.split('-')[0])) i.classList.add('active'); });
-  const titles = { dashboard:'Panel de Control', postulantes:'Postulantes', pipeline:'Pipeline por Estado', vacantes:'Vacantes por Curso', emails:'Plantillas de Mail', tarifas:'Tarifas 2026', configuracion:'Configuración' };
-  document.getElementById('topbar-title').textContent = titles[name] || name;
-  if(name==='dashboard') renderDashboard();
-  if(name==='postulantes') renderPostulantes();
-  if(name==='pipeline') renderPipeline();
-  if(name==='vacantes') renderVacantes();
-  if(name==='emails') renderEmails();
-  if(name==='tarifas') renderTarifas();
-}
+  // Stats
+  document.getElementById('stats-row').innerHTML=[
+    {l:'Total',v:total,s:'postulantes ciclo 2026-27'},
+    {l:'Matriculados',v:mat,s:`${total?Math.round(mat/total*100):0}% conversión`,c:'var(--c-mat)'},
+    {l:'Postulados',v:post,s:'pendientes de matrícula',c:'var(--c-post)'},
+    {l:'Nuevas consultas',v:nuevas,s:'sin acción aún',c:'var(--c-nueva)'},
+    {l:'Citados',v:citados,s:'entrevista pendiente',c:'var(--c-citado)'},
+    {l:'Lista espera',v:espera,s:'curso lleno',c:'var(--c-esp)'},
+  ].map(s=>`<div class="sc" onclick="filterAndGo(${s.c?`'`+findEstadoByColor(s.c)+`'`:'null'})">
+    <div class="sc-label">${s.l}</div>
+    <div class="sc-val">${s.v}</div>
+    <div class="sc-sub">${s.c?`<span class="sc-dot" style="background:${s.c}"></span>`:''}${s.s}</div>
+  </div>`).join('');
 
-// ─── COLORS ───
-function estadoBadge(e) {
-  const map = { nueva:'bg-nueva', citado:'bg-citado', entrevistado:'bg-entrevistado', postulado:'bg-postulado', matriculado:'bg-matriculado', 'lista de espera':'bg-espera', desiste:'bg-desiste' };
-  return `<span class="badge ${map[e]||'bg-nueva'}">${ESTADOS_LABEL[e]||e}</span>`;
-}
-
-// ─── DASHBOARD ───
-function renderDashboard() {
-  const ps = DB.postulantes;
-  const total = ps.length;
-  const mat = ps.filter(p=>p.estado==='matriculado').length;
-  const post = ps.filter(p=>p.estado==='postulado').length;
-  const nuevas = ps.filter(p=>p.estado==='nueva').length;
-  const espera = ps.filter(p=>p.estado==='lista de espera').length;
-  const stats = [
-    { label:'Total postulantes', value:total, sub:`Ciclo 2026-2027` },
-    { label:'Matriculados', value:mat, sub:`${Math.round(mat/total*100)}% conversión`, dot:'var(--s-matriculado)' },
-    { label:'Postulados', value:post, sub:`Pendientes de matrícula`, dot:'var(--s-postulado)' },
-    { label:'Nuevas consultas', value:nuevas, sub:`Sin acción`, dot:'var(--s-nueva)' },
-    { label:'Lista de espera', value:espera, sub:`Por curso lleno`, dot:'var(--s-espera)' },
-  ];
-  document.getElementById('stats-grid').innerHTML = stats.map(s=>`
-    <div class="stat-card">
-      <div class="stat-label">${s.label}</div>
-      <div class="stat-value">${s.value}</div>
-      <div class="stat-sub">${s.dot?`<span class="stat-dot" style="background:${s.dot}"></span>`:''}${s.sub}</div>
+  // Requieren acción
+  const accion=ps.filter(p=>p.estado==='nueva'||p.estado==='entrevistado'||p.estado==='postulado').slice(0,6);
+  document.getElementById('accion-list').innerHTML=accion.length===0
+    ?`<div class="empty"><div class="empty-ic">✓</div><p>Todo al día</p></div>`
+    :accion.map(p=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 18px;border-bottom:1px solid var(--bd);font-size:12.5px">
+      <div><strong>${p.alumno}</strong> <span style="color:var(--text3);font-size:11px">· ${p.curso}</span></div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="badge ${ECLS[p.estado]}">${EL[p.estado]}</span>
+        <button class="btn btn-sm btn-teal" onclick="openDetalle(${p.id})">Gestionar →</button>
+      </div>
     </div>`).join('');
-  const recent = [...ps].sort((a,b)=>b.fecha.localeCompare(a.fecha)).slice(0,7);
-  document.getElementById('recent-tbody').innerHTML = recent.map(p=>`
-    <tr onclick="openDetailModal(${p.id})">
+
+  // Distribución por nivel
+  const niveles=['Kindergarten','Elementary','High School'];
+  document.getElementById('nivel-dist').innerHTML=niveles.map(n=>{
+    const tot=ps.filter(p=>p.nivel===n).length;
+    const pct=total?Math.round(tot/total*100):0;
+    const col=n==='Kindergarten'?'var(--green)':n==='Elementary'?'var(--orange)':'var(--teal)';
+    return `<div style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span>${n}</span><span style="color:var(--text3)">${tot} · ${pct}%</span></div>
+      <div style="background:var(--cream2);border-radius:20px;height:7px;overflow:hidden"><div style="width:${pct}%;height:100%;border-radius:20px;background:${col};transition:width .4s"></div></div>
+    </div>`;
+  }).join('');
+
+  // Recientes
+  const rec=[...ps].sort((a,b)=>b.fecha.localeCompare(a.fecha)).slice(0,7);
+  document.getElementById('recent-tb').innerHTML=rec.map(p=>`
+    <tr onclick="openDetalle(${p.id})">
       <td><strong>${p.alumno}</strong></td>
       <td style="color:var(--text2)">${p.padre}</td>
-      <td><span class="pill-year">${p.nivel}</span> ${p.curso}</td>
-      <td>${estadoBadge(p.estado)}</td>
-      <td style="color:var(--text3);font-size:12px">${formatDate(p.fecha)}</td>
+      <td><span class="pill">${p.nivel}</span> ${p.curso}</td>
+      <td>${badge(p.estado)}</td>
+      <td style="color:var(--text3);font-size:11.5px">${fDate(p.fecha)}</td>
+      <td><button class="btn btn-sm btn-teal" onclick="event.stopPropagation();openDetalle(${p.id})">Gestionar</button></td>
     </tr>`).join('');
 }
 
-// ─── POSTULANTES TABLE ───
-function renderPostulantes(filtered=null) {
-  const ps = filtered || DB.postulantes;
-  document.getElementById('postulantes-count').textContent = `${ps.length} postulante${ps.length!==1?'s':''}`;
-  document.getElementById('postulantes-tbody').innerHTML = ps.length===0
-    ? `<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">◎</div><p>No se encontraron resultados</p></div></td></tr>`
-    : ps.map(p=>`
-    <tr onclick="openDetailModal(${p.id})">
+function findEstadoByColor(c){ return null; }
+function filterAndGo(e){ if(e){ document.getElementById('f-est').value=e||''; filterTable(); showView('postulantes'); } }
+function dismissNotif(id){ DB.pendingNotif=DB.pendingNotif.filter(x=>x!==id); renderDashboard(); }
+
+// ═══════════════════════════════════════
+// PIPELINE
+// ═══════════════════════════════════════
+function renderPipeline(){
+  document.getElementById('pipeline-cols').innerHTML=ESTADOS.map(e=>{
+    const ps=DB.postulantes.filter(p=>p.estado===e);
+    return `<div class="pcol">
+      <div class="pcol-head ${EPCLS[e]}">
+        <span class="pcol-name" style="color:${ECOL[e]}">${EL[e]}</span>
+        <span class="pcol-cnt" style="color:${ECOL[e]}">${ps.length}</span>
+      </div>
+      <div class="pcol-body">
+        ${ps.length===0?`<div style="font-size:11px;color:var(--text3);padding:8px 6px;text-align:center">—</div>`:''}
+        ${ps.map(p=>`<div class="pcard" onclick="openDetalle(${p.id})">
+          <div class="pcard-name">${p.alumno}</div>
+          <div class="pcard-curso">${p.curso}</div>
+          <div class="pcard-date">${fDate(p.fecha)}</div>
+        </div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════
+// TABLA POSTULANTES
+// ═══════════════════════════════════════
+function renderTable(list=null){
+  const ps=list||DB.postulantes;
+  document.getElementById('post-count').textContent=`${ps.length} postulante${ps.length!==1?'s':''}`;
+  document.getElementById('post-count-label').textContent=`${ps.length} resultado${ps.length!==1?'s':''}`;
+  document.getElementById('post-tb').innerHTML=ps.length===0
+    ?`<tr><td colspan="7"><div class="empty"><div class="empty-ic">◎</div><p>Sin resultados</p></div></td></tr>`
+    :ps.map(p=>`<tr onclick="openDetalle(${p.id})">
       <td><strong>${p.alumno}</strong></td>
       <td style="color:var(--text2)">${p.padre}</td>
       <td><small style="color:var(--text3)">${p.nivel} ·</small> ${p.curso}</td>
-      <td><span class="pill-year">${p.anio}</span></td>
-      <td>${estadoBadge(p.estado)}</td>
-      <td style="color:var(--text2);font-size:12px">${p.email}</td>
-      <td onclick="event.stopPropagation()">
-        <button class="btn btn-outline btn-sm" onclick="openDetailModal(${p.id})">Ver</button>
-      </td>
+      <td><span class="pill">${p.anio}</span></td>
+      <td>${badge(p.estado)}</td>
+      <td style="color:var(--text2);font-size:11.5px">${p.email}</td>
+      <td onclick="event.stopPropagation()"><button class="btn btn-sm btn-teal" onclick="openDetalle(${p.id})">Gestionar</button></td>
     </tr>`).join('');
 }
-
-function filterPostulantes() {
-  const q = document.getElementById('search-input').value.toLowerCase();
-  const estado = document.getElementById('filter-estado').value;
-  const nivel = document.getElementById('filter-nivel').value;
-  const anio = document.getElementById('filter-year').value;
-  const filtered = DB.postulantes.filter(p => {
-    const matchQ = !q || p.alumno.toLowerCase().includes(q) || p.padre.toLowerCase().includes(q) || p.email.toLowerCase().includes(q);
-    const matchE = !estado || p.estado===estado;
-    const matchN = !nivel || p.nivel===nivel;
-    const matchA = !anio || String(p.anio)===anio;
-    return matchQ && matchE && matchN && matchA;
-  });
-  renderPostulantes(filtered);
+function filterTable(){
+  const q=document.getElementById('f-q').value.toLowerCase();
+  const est=document.getElementById('f-est').value;
+  const niv=document.getElementById('f-niv').value;
+  const anio=document.getElementById('f-anio').value;
+  renderTable(DB.postulantes.filter(p=>
+    (!q||p.alumno.toLowerCase().includes(q)||p.padre.toLowerCase().includes(q)||p.email.toLowerCase().includes(q))&&
+    (!est||p.estado===est)&&(!niv||p.nivel===niv)&&(!anio||String(p.anio)===anio)
+  ));
 }
 
-// ─── PIPELINE ───
-function renderPipeline() {
-  const cols = ESTADOS.map(e => {
-    const ps = DB.postulantes.filter(p=>p.estado===e);
-    const colorMap = { nueva:'var(--s-nueva)',citado:'var(--s-citado)',entrevistado:'var(--s-entrevistado)',postulado:'var(--s-postulado)',matriculado:'var(--s-matriculado)','lista de espera':'var(--s-espera)',desiste:'var(--s-desiste)' };
-    const bgMap = { nueva:'ph-nueva',citado:'ph-citado',entrevistado:'ph-entrevistado',postulado:'ph-postulado',matriculado:'ph-matriculado','lista de espera':'ph-espera',desiste:'ph-desiste' };
-    return `<div class="pipeline-col">
-      <div class="pipeline-header ${bgMap[e]}">
-        <span style="color:${colorMap[e]}">${ESTADOS_LABEL[e]}</span>
-        <span class="pipeline-count" style="color:${colorMap[e]}">${ps.length}</span>
+// ═══════════════════════════════════════
+// MODAL DETALLE
+// ═══════════════════════════════════════
+function openDetalle(id){
+  const p=DB.postulantes.find(x=>x.id===id); if(!p) return;
+  const init=p.alumno.split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase();
+  document.getElementById('m-title').textContent='Gestión del postulante';
+  document.getElementById('m-body').innerHTML=`
+    <div class="det-head">
+      <div class="det-av" style="background:${ECOL[p.estado]}">${init}</div>
+      <div class="det-info">
+        <h2>${p.alumno}</h2>
+        <p>Familia: ${p.padre} · ${p.email} · ${p.tel||'—'}</p>
+        <div class="det-tags">
+          ${badge(p.estado)}
+          <span class="det-tag">${p.nivel}</span>
+          <span class="det-tag">${p.curso}</span>
+          <span class="det-tag">${p.jornada}</span>
+          <span class="det-tag">Ciclo ${p.anio}</span>
+        </div>
       </div>
-      <div class="pipeline-items">
-        ${ps.length===0?'<div style="font-size:11px;color:var(--text3);padding:8px;text-align:center">—</div>':''}
-        ${ps.map(p=>`
-          <div class="pipeline-item" onclick="openDetailModal(${p.id})">
-            <div class="pipeline-item-name">${p.alumno}</div>
-            <div class="pipeline-item-course">${p.curso}</div>
-          </div>`).join('')}
+    </div>
+    <div class="det-grid">
+      <div class="det-field"><div class="det-fl">Email</div><div class="det-fv">${p.email}</div></div>
+      <div class="det-field"><div class="det-fl">Teléfono</div><div class="det-fv">${p.tel||'—'}</div></div>
+      <div class="det-field"><div class="det-fl">Postulado</div><div class="det-fv">${fDate(p.fecha)}</div></div>
+      <div class="det-field"><div class="det-fl">Vacante disponible</div><div class="det-fv">${getVacDisp(p.curso)}</div></div>
+    </div>
+    <div style="margin-bottom:14px">
+      <div class="flabelm" style="margin-bottom:5px">Observaciones internas</div>
+      <textarea class="ftextm" id="obs-${id}" style="min-height:65px">${p.obs}</textarea>
+    </div>
+
+    <div class="estado-action">
+      <div class="ea-title">⚡ Cambiar estado y enviar mail automático</div>
+      <div class="ea-row">
+        <select class="ea-select" id="new-est-${id}" onchange="previewMail(${id})">
+          ${ESTADOS.map(e=>`<option value="${e}" ${p.estado===e?'selected':''}>${EL[e]}</option>`).join('')}
+        </select>
+        <button class="btn btn-orange" onclick="changeEstado(${id})">Actualizar estado</button>
+        <button class="btn btn-teal" onclick="sendMailOnly(${id})">✉ Enviar mail</button>
       </div>
+      <div id="mail-prev-${id}"></div>
+    </div>
+
+    <div style="margin-top:16px">
+      <div class="flabelm" style="margin-bottom:8px;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em">Historial</div>
+      <div>${(p.hist||[]).slice().reverse().map(h=>`
+        <div class="hist-item">
+          <div class="hist-dot" style="background:${ECOL[h.e]||'var(--text3)'}"></div>
+          <div class="hist-text"><p>${EL[h.e]||h.e}</p><span>${fDate(h.f)}</span></div>
+        </div>`).join('')}</div>
     </div>`;
-  });
-  document.getElementById('pipeline-grid').innerHTML = cols.join('');
+
+  document.getElementById('m-foot').innerHTML=`
+    <button class="btn btn-out" onclick="closeM()">Cerrar</button>
+    <button class="btn btn-teal" onclick="saveObs(${id})">Guardar observaciones</button>`;
+
+  openM();
+  setTimeout(()=>previewMail(id),50);
 }
 
-// ─── VACANTES ───
-function renderVacantes() {
-  const html = CURSOS.map(c => {
-    const v = DB.vacantes[c] || {total:20, usados:0};
-    const pct = Math.min(100, Math.round(v.usados / v.total * 100));
-    const fillClass = pct>=100?'full':pct>=80?'warn':'';
-    return `<div class="vacante-card">
-      <div class="vacante-card-title">${c}</div>
+function getVacDisp(curso){
+  const v=DB.vacantes[curso]; if(!v) return '—';
+  const lib=v.t-v.u;
+  if(lib<=0) return `<span style="color:#DC2626;font-weight:600">Curso lleno</span>`;
+  return `<span style="color:var(--green);font-weight:600">${lib} lugar${lib!==1?'es':''}</span>`;
+}
+
+function previewMail(id){
+  const p=DB.postulantes.find(x=>x.id===id); if(!p) return;
+  const selEl=document.getElementById('new-est-'+id); if(!selEl) return;
+  const est=selEl.value;
+  const tmpl=DB.emails[est];
+  const prevEl=document.getElementById('mail-prev-'+id); if(!prevEl) return;
+  if(!tmpl){ prevEl.innerHTML=''; return; }
+  const body=fillVars(tmpl.body, p);
+  prevEl.innerHTML=`
+    <div class="mail-prev">
+      <div class="mp-head">
+        <div class="mp-head-row"><span class="mp-head-label">Para:</span> ${p.email}</div>
+        <div class="mp-head-row"><span class="mp-head-label">Asunto:</span> ${tmpl.subj}</div>
+        <div class="mp-head-row"><span class="mp-head-label">De:</span> ${DB.config.nombre} &lt;${DB.config.email}&gt;</div>
+      </div>
+      <div class="mp-body">${body}</div>
+      <span class="mp-edit-btn" onclick="showView('emails');closeM()">Editar plantilla →</span>
+    </div>`;
+}
+
+function fillVars(text, p){
+  return text
+    .replace(/{{alumno}}/g, p.alumno)
+    .replace(/{{padre}}/g, p.padre)
+    .replace(/{{curso}}/g, p.curso)
+    .replace(/{{link_calendario}}/g, DB.config.calendar)
+    .replace(/{{link_drive}}/g, DB.config.drive)
+    .replace(/{{link_tarifas}}/g, DB.config.drive);
+}
+
+function saveObs(id){
+  const p=DB.postulantes.find(x=>x.id===id); if(!p) return;
+  const el=document.getElementById('obs-'+id); if(!el) return;
+  p.obs=el.value; saveDB(); toast('Observaciones guardadas','ok');
+}
+
+// ═══════════════════════════════════════
+// PERSISTENCIA (localStorage)
+// Los datos se guardan automáticamente en cada acción.
+// Se mantienen al recargar la página o reabrir el navegador.
+// ═══════════════════════════════════════
+function saveDB(){
+  try{
+    localStorage.setItem('austin_ebs_v1', JSON.stringify({
+      nextId:DB.nextId, postulantes:DB.postulantes,
+      vacantes:DB.vacantes, tarifas:DB.tarifas,
+      emails:DB.emails, config:DB.config
+    }));
+  } catch(e){ console.warn('localStorage no disponible'); }
+}
+function loadDB(){
+  try{
+    const s=localStorage.getItem('austin_ebs_v1');
+    if(!s) return;
+    const d=JSON.parse(s);
+    if(d.nextId) DB.nextId=d.nextId;
+    if(d.postulantes) DB.postulantes=d.postulantes;
+    if(d.vacantes) DB.vacantes=d.vacantes;
+    if(d.tarifas) DB.tarifas=d.tarifas;
+    if(d.emails) DB.emails=d.emails;
+    if(d.config) DB.config=d.config;
+  } catch(e){ console.warn('Error al cargar datos guardados'); }
+}
+
+(id){
+  const p=DB.postulantes.find(x=>x.id===id); if(!p) return;
+  const selEl=document.getElementById('new-est-'+id); if(!selEl) return;
+  const newEst=selEl.value;
+  if(p.estado===newEst){ toast('El estado ya es '+EL[newEst],''); return; }
+  // Guardar obs antes de cerrar
+  const obsEl=document.getElementById('obs-'+id); if(obsEl) p.obs=obsEl.value;
+  // Aviso si curso lleno y van a postulado
+  if(newEst==='postulado'){
+    const v=DB.vacantes[p.curso];
+    if(v && v.u>=v.t){ toast('⚠️ Curso lleno — considerá usar "Lista de espera"','info'); }
+  }
+  p.estado=newEst;
+  p.hist=p.hist||[];
+  p.hist.push({e:newEst, f:new Date().toISOString().split('T')[0]});
+  saveDB();
+  enviarMail(p, newEst, (ok,mode)=>{
+    if(ok && mode==='mailto') toast(`Estado → ${EL[newEst]} · Abriendo cliente de correo...`,'info');
+    else if(ok) toast(`✓ Estado → ${EL[newEst]} · Mail enviado a ${p.email}`,'ok');
+    else toast(`Estado actualizado. Error al enviar mail — revisá Configuración.`,'err');
+  });
+  closeM();
+  renderDashboard();
+  const pv=document.getElementById('view-pipeline'); if(pv.classList.contains('on')) renderPipeline();
+  const tv=document.getElementById('view-postulantes'); if(tv.classList.contains('on')) filterTable();
+  dismissNotif(id);
+}
+
+function sendMailOnly(id){
+  const p=DB.postulantes.find(x=>x.id===id); if(!p) return;
+  const selEl=document.getElementById('new-est-'+id); if(!selEl) return;
+  enviarMail(p, selEl.value, (ok,mode)=>{
+    if(ok && mode==='mailto') toast('Abriendo cliente de correo...','info');
+    else if(ok) toast(`✉ Mail enviado a ${p.email}`,'ok');
+    else toast('Error al enviar. Revisá Configuración → EmailJS.','err');
+  });
+}
+
+// ═══════════════════════════════════════
+// ENVÍO DE MAIL (EmailJS + mailto fallback)
+// ═══════════════════════════════════════
+function enviarMail(p, estado, callback){
+  const tmpl=DB.emails[estado]; if(!tmpl) { if(callback) callback(false); return; }
+  const body=fillVars(tmpl.body,p);
+  const subj=tmpl.subj;
+  const cfg=DB.config;
+
+  // EmailJS configurado → envío real
+  if(cfg.ejsid && cfg.ejstpl && cfg.ejskey){
+    if(typeof emailjs==='undefined'){
+      toast('EmailJS cargando, reintentando...','');
+      setTimeout(()=>enviarMail(p,estado,callback),1500); return;
+    }
+    emailjs.send(cfg.ejsid, cfg.ejstpl, {
+      to_email: p.email,
+      to_name:  p.padre,
+      from_name: cfg.nombre,
+      reply_to: cfg.email,
+      subject:  subj,
+      message:  body
+    }, cfg.ejskey)
+    .then(()=>{ if(callback) callback(true); })
+    .catch(err=>{ console.error('EmailJS:',err); if(callback) callback(false,'EmailJS error: '+err.text); });
+  } else {
+    // Fallback: abrir cliente de correo del dispositivo
+    const mailto=`mailto:${encodeURIComponent(p.email)}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`;
+    window.open(mailto,'_blank');
+    if(callback) callback(true,'mailto');
+  }
+}
+
+// ═══════════════════════════════════════
+// NUEVO POSTULANTE (manual)
+// ═══════════════════════════════════════
+function openNuevoModal(){
+  const opts=CURSOS.map(c=>`<option value="${c}">${c}</option>`).join('');
+  document.getElementById('m-title').textContent='Agregar postulante manualmente';
+  document.getElementById('m-body').innerHTML=`
+    <div style="background:var(--cream);border-radius:9px;padding:10px 13px;font-size:12px;color:var(--text2);margin-bottom:16px;line-height:1.6">
+      Usá esto para agregar postulantes que lleguen por teléfono, WhatsApp u otros canales fuera del formulario web.
+    </div>
+    <div class="fgm-row">
+      <div class="fgm"><label class="flabelm">Nombre del estudiante *</label><input class="finputm" id="nm-alumno" placeholder="Nombre y apellido"></div>
+      <div class="fgm"><label class="flabelm">Curso *</label><select class="fselectm" id="nm-curso">${opts}</select></div>
+    </div>
+    <div class="fgm-row">
+      <div class="fgm"><label class="flabelm">Jornada</label><select class="fselectm" id="nm-jornada"><option>Jornada Completa</option><option>Jornada Simple</option></select></div>
+      <div class="fgm"><label class="flabelm">Año ciclo</label><select class="fselectm" id="nm-anio"><option value="2026">2026</option><option value="2027">2027</option></select></div>
+    </div>
+    <div class="sec-sub-m" style="margin:12px 0 10px">Familia</div>
+    <div class="fgm-row">
+      <div class="fgm"><label class="flabelm">Padre/Madre/Tutor *</label><input class="finputm" id="nm-padre" placeholder="Nombre y apellido"></div>
+      <div class="fgm"><label class="flabelm">Email *</label><input class="finputm" id="nm-email" type="email" placeholder="email@ejemplo.com"></div>
+    </div>
+    <div class="fgm"><label class="flabelm">Teléfono</label><input class="finputm" id="nm-tel" placeholder="+54 11 0000-0000"></div>
+    <div class="fgm" style="margin-top:10px"><label class="flabelm">Observaciones</label><textarea class="ftextm" id="nm-obs" style="min-height:60px"></textarea></div>`;
+  document.getElementById('m-foot').innerHTML=`
+    <button class="btn btn-out" onclick="closeM()">Cancelar</button>
+    <button class="btn btn-teal" onclick="saveNuevo()">Guardar y enviar mail de bienvenida</button>`;
+  openM();
+}
+
+function saveNuevo(){
+  const alumno=(document.getElementById('nm-alumno').value||'').trim();
+  const padre=(document.getElementById('nm-padre').value||'').trim();
+  const email=(document.getElementById('nm-email').value||'').trim();
+  const curso=document.getElementById('nm-curso').value;
+  if(!alumno||!padre||!email){ toast('Completá los campos obligatorios','err'); return; }
+  const p={
+    id:DB.nextId++, alumno, padre, email,
+    tel:document.getElementById('nm-tel').value,
+    curso, nivel:NIVEL(curso),
+    jornada:document.getElementById('nm-jornada').value,
+    anio:parseInt(document.getElementById('nm-anio').value),
+    estado:'nueva',
+    obs:document.getElementById('nm-obs').value,
+    fecha:new Date().toISOString().split('T')[0],
+    hist:[{e:'nueva',f:new Date().toISOString().split('T')[0]}]
+  };
+  DB.postulantes.unshift(p);
+  DB.pendingNotif.push(p.id);
+  saveDB();
+  enviarMail(p,'nueva',(ok,mode)=>{
+    if(ok && mode==='mailto') toast(`✓ ${alumno} agregado · Abriendo cliente de correo...`,'info');
+    else if(ok) toast(`✓ ${alumno} agregado · Mail de bienvenida enviado`,'ok');
+    else toast(`${alumno} agregado. Sin mail configurado — revisá Configuración.`,'err');
+  });
+  closeM();
+  renderDashboard();
+}
+
+// ═══════════════════════════════════════
+// VACANTES
+// ═══════════════════════════════════════
+function renderVacantes(){
+  document.getElementById('vac-grid').innerHTML=CURSOS.map(c=>{
+    const v=DB.vacantes[c]||{t:20,u:0};
+    const pct=Math.min(100,Math.round(v.u/v.t*100));
+    const fc=pct>=100?'full':pct>=80?'warn':'';
+    const key=c.replace(/[\s()\/]/g,'_');
+    return `<div class="vac-card">
+      <div class="vac-title">${c}</div>
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-        <div style="font-size:11px;color:var(--text3)">Total:</div>
-        <input class="vacante-input" type="number" id="vac-${c.replace(/\s/g,'_')}" value="${v.total}" min="0" max="50" onchange="updateVacBar('${c.replace(/'/g,"\\'")}')">
+        <span style="font-size:11px;color:var(--text3)">Total:</span>
+        <input class="vac-input" type="number" id="vt-${key}" value="${v.t}" min="0" max="60">
       </div>
-      <div class="vacante-bar"><div class="vacante-fill ${fillClass}" id="bar-${c.replace(/\s/g,'_')}" style="width:${pct}%"></div></div>
-      <div class="vacante-nums">
-        <span>${v.usados} ocupadas</span>
-        <span>${v.total - v.usados} disponibles</span>
-      </div>
+      <div class="vac-bar"><div class="vac-fill ${fc}" style="width:${pct}%"></div></div>
+      <div class="vac-nums"><span>${v.u} ocupadas</span><span>${Math.max(0,v.t-v.u)} libres</span></div>
     </div>`;
-  });
-  document.getElementById('vacantes-grid').innerHTML = html.join('');
+  }).join('');
+}
+function saveVacantes(){
+  CURSOS.forEach(c=>{ const key=c.replace(/[\s()\/]/g,'_'); const el=document.getElementById('vt-'+key); if(el){ DB.vacantes[c]=DB.vacantes[c]||{t:20,u:0}; DB.vacantes[c].t=parseInt(el.value)||20; } });
+  saveDB(); toast('Vacantes actualizadas','ok');
 }
 
-function updateVacBar(c) {
-  const key = c.replace(/\s/g,'_');
-  const val = parseInt(document.getElementById('vac-'+key)?.value) || 0;
-  const v = DB.vacantes[c] || {total:20,usados:0};
-  const pct = Math.min(100, Math.round(v.usados / val * 100));
-  const bar = document.getElementById('bar-'+key);
-  if(bar){ bar.style.width=pct+'%'; bar.className='vacante-fill '+(pct>=100?'full':pct>=80?'warn':''); }
-}
-
-function saveVacantes() {
-  CURSOS.forEach(c => {
-    const key = c.replace(/\s/g,'_');
-    const el = document.getElementById('vac-'+key);
-    if(el) { DB.vacantes[c] = DB.vacantes[c]||{total:20,usados:0}; DB.vacantes[c].total = parseInt(el.value)||20; }
-  });
-  showToast('Vacantes actualizadas', 'success');
-}
-
-// ─── EMAILS ───
-function renderEmails() {
-  const html = ESTADOS.map(e => `
-    <div class="tariff-card">
-      <div class="tariff-header">
+// ═══════════════════════════════════════
+// EMAIL TEMPLATES
+// ═══════════════════════════════════════
+function renderEmails(){
+  document.getElementById('cal-link-display').textContent=DB.config.calendar;
+  document.getElementById('cal-link-display').href=DB.config.calendar;
+  document.getElementById('email-templates').innerHTML=ESTADOS.map(e=>`
+    <div class="et-card">
+      <div class="et-head">
         <div>
-          <div class="email-template-name">Estado: ${ESTADOS_LABEL[e]}</div>
-          <div style="font-size:11px;color:var(--text3)">Mail automático al cambiar a este estado</div>
+          <div class="et-title"><span class="et-status-dot" style="background:${ECOL[e]}"></span>Mail al pasar a: <strong>${EL[e]}</strong></div>
+          <div class="et-sub">Se envía automáticamente al actualizar el estado del postulante</div>
         </div>
         <button class="btn btn-teal btn-sm" onclick="saveEmail('${e}')">Guardar</button>
       </div>
-      <div class="tariff-body">
-        <div class="form-group" style="margin-bottom:12px">
-          <div class="form-label">Asunto</div>
-          <input class="form-input" id="email-subj-${e}" value="${DB.emailTemplates[e]?.subject||''}">
-        </div>
-        <div class="form-group">
-          <div class="form-label">Cuerpo del mensaje</div>
-          <textarea class="form-textarea" id="email-body-${e}" style="min-height:130px">${DB.emailTemplates[e]?.body||''}</textarea>
-        </div>
-        <div style="margin-top:8px;font-size:11px;color:var(--text3)">
-          Variables disponibles: 
-          <span class="email-chip">{{alumno}}</span>
-          <span class="email-chip">{{padre}}</span>
-          <span class="email-chip">{{curso}}</span>
-          <span class="email-chip">{{link_calendario}}</span>
-          <span class="email-chip">{{link_drive}}</span>
-          <span class="email-chip">{{link_tarifas}}</span>
+      <div class="et-body">
+        <div class="fgm" style="margin-bottom:12px"><label class="flabelm">Asunto del correo</label><input class="finputm" id="esubj-${e}" value="${(DB.emails[e]?.subj||'')}"></div>
+        <div class="fgm"><label class="flabelm">Cuerpo del mensaje</label><textarea class="ftextm" id="ebody-${e}" style="min-height:130px">${(DB.emails[e]?.body||'')}</textarea></div>
+        <div style="margin-top:8px;font-size:11px;color:var(--text3)">Variables:
+          <span class="email-var">{{alumno}}</span><span class="email-var">{{padre}}</span><span class="email-var">{{curso}}</span><span class="email-var">{{link_calendario}}</span><span class="email-var">{{link_drive}}</span><span class="email-var">{{link_tarifas}}</span>
         </div>
       </div>
     </div>`).join('');
-  document.getElementById('email-templates-container').innerHTML = html;
+}
+function saveEmail(e){ DB.emails[e]={subj:document.getElementById('esubj-'+e).value,body:document.getElementById('ebody-'+e).value}; saveDB(); toast(`Plantilla "${EL[e]}" guardada`,'ok'); }
+
+// ═══════════════════════════════════════
+// TARIFAS
+// ═══════════════════════════════════════
+function renderTarifasAdmin(){
+  const t=DB.tarifas;
+  document.getElementById('tarifas-admin').innerHTML=`
+    <div class="tar-card"><div class="tar-head"><div class="tar-title">Kindergarten</div></div><div class="tar-body">
+      <div class="tar-row"><span class="tar-label">K2 (Puppies) – Matrícula</span><input class="tar-input" id="t-k2m" value="${t.k2_m}"></div>
+      <div class="tar-row"><span class="tar-label">K2 – Jornada Simple</span><input class="tar-input" id="t-k2s" value="${t.k2_s}"></div>
+      <div class="tar-row"><span class="tar-label">K2 – Jornada Completa</span><input class="tar-input" id="t-k2c" value="${t.k2_c}"></div>
+      <div class="tar-row"><span class="tar-label">K3 – Matrícula</span><input class="tar-input" id="t-k3m" value="${t.k3_m}"></div>
+      <div class="tar-row"><span class="tar-label">K3 – Jornada Simple</span><input class="tar-input" id="t-k3s" value="${t.k3_s}"></div>
+      <div class="tar-row"><span class="tar-label">K3 – Jornada Completa</span><input class="tar-input" id="t-k3c" value="${t.k3_c}"></div>
+      <div class="tar-row"><span class="tar-label">K4 y K5 – Matrícula</span><input class="tar-input" id="t-k45m" value="${t.k45_m}"></div>
+      <div class="tar-row"><span class="tar-label">K4 y K5 – Jornada Completa</span><input class="tar-input" id="t-k45c" value="${t.k45_c}"></div>
+    </div></div>
+    <div class="tar-card"><div class="tar-head"><div class="tar-title">Elementary School (1ro – 6to año)</div></div><div class="tar-body">
+      <div class="tar-row"><span class="tar-label">Matrícula</span><input class="tar-input" id="t-elm" value="${t.el_m}"></div>
+      <div class="tar-row"><span class="tar-label">Jornada Completa</span><input class="tar-input" id="t-elc" value="${t.el_c}"></div>
+    </div></div>
+    <div class="tar-card"><div class="tar-head"><div class="tar-title">High School 1ro – 3ro</div></div><div class="tar-body">
+      <div class="tar-row"><span class="tar-label">Matrícula</span><input class="tar-input" id="t-h13m" value="${t.hs13_m}"></div>
+      <div class="tar-row"><span class="tar-label">Jornada Completa</span><input class="tar-input" id="t-h13c" value="${t.hs13_c}"></div>
+    </div></div>
+    <div class="tar-card"><div class="tar-head"><div class="tar-title">High School 4to – 6to</div></div><div class="tar-body">
+      <div class="tar-row"><span class="tar-label">Matrícula</span><input class="tar-input" id="t-h46m" value="${t.hs46_m}"></div>
+      <div class="tar-row"><span class="tar-label">Jornada Completa</span><input class="tar-input" id="t-h46c" value="${t.hs46_c}"></div>
+    </div></div>`;
+}
+function saveTarifas(){
+  const g=id=>{const el=document.getElementById(id); return el?parseFloat(el.value)||0:0;};
+  DB.tarifas={k2_m:g('t-k2m'),k2_s:g('t-k2s'),k2_c:g('t-k2c'),k3_m:g('t-k3m'),k3_s:g('t-k3s'),k3_c:g('t-k3c'),k45_m:g('t-k45m'),k45_c:g('t-k45c'),el_m:g('t-elm'),el_c:g('t-elc'),hs13_m:g('t-h13m'),hs13_c:g('t-h13c'),hs46_m:g('t-h46m'),hs46_c:g('t-h46c')};
+  saveDB(); toast('Tarifas actualizadas · Se usan en los mails automáticos','ok');
 }
 
-function saveEmail(e) {
-  DB.emailTemplates[e] = {
-    subject: document.getElementById('email-subj-'+e).value,
-    body: document.getElementById('email-body-'+e).value
-  };
-  showToast(`Plantilla "${ESTADOS_LABEL[e]}" guardada`, 'success');
+// ═══════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════
+function renderConfig(){
+  document.getElementById('cfg-nombre').value=DB.config.nombre;
+  document.getElementById('cfg-email').value=DB.config.email;
+  document.getElementById('cfg-calendar').value=DB.config.calendar;
+  document.getElementById('cfg-drive').value=DB.config.drive;
+  document.getElementById('cfg-ejsid').value=DB.config.ejsid||'';
+  document.getElementById('cfg-ejstpl').value=DB.config.ejstpl||'';
+  document.getElementById('cfg-ejskey').value=DB.config.ejskey||'';
+  setTimeout(updateEjsStatus,50);
+}
+function saveConfig(){
+  DB.config.nombre=document.getElementById('cfg-nombre').value;
+  DB.config.email=document.getElementById('cfg-email').value;
+  DB.config.calendar=document.getElementById('cfg-calendar').value;
+  DB.config.drive=document.getElementById('cfg-drive').value;
+  DB.config.ejsid=document.getElementById('cfg-ejsid').value.trim();
+  DB.config.ejstpl=document.getElementById('cfg-ejstpl').value.trim();
+  DB.config.ejskey=document.getElementById('cfg-ejskey').value.trim();
+  // Init EmailJS si hay credenciales
+  if(DB.config.ejskey && typeof emailjs!=='undefined'){
+    try{ emailjs.init(DB.config.ejskey); } catch(e){ console.warn('EmailJS init:',e); }
+  }
+  updateEjsStatus();
+  saveDB();
+  toast('Configuración guardada','ok');
 }
 
-// ─── TARIFAS ───
-function renderTarifas() {
-  const t = DB.tarifas;
-  const fmt = v => '$ ' + Number(v).toLocaleString('es-AR',{minimumFractionDigits:2});
-  document.getElementById('tarifas-container').innerHTML = `
-    <div class="tariff-card">
-      <div class="tariff-header"><div class="tariff-title">Kindergarten</div></div>
-      <div class="tariff-body">
-        <div class="tariff-row"><span class="tariff-row-label">K2 (Puppies) – Matrícula</span><input class="tariff-input" id="t-k2m" value="${t.kinder.k2_matricula}"></div>
-        <div class="tariff-row"><span class="tariff-row-label">K2 – Jornada Simple</span><input class="tariff-input" id="t-k2s" value="${t.kinder.k2_simple}"></div>
-        <div class="tariff-row"><span class="tariff-row-label">K2 – Jornada Completa</span><input class="tariff-input" id="t-k2c" value="${t.kinder.k2_completa}"></div>
-        <div class="tariff-row"><span class="tariff-row-label">K3 (Koalas/Dolphins) – Matrícula</span><input class="tariff-input" id="t-k3m" value="${t.kinder.k3_matricula}"></div>
-        <div class="tariff-row"><span class="tariff-row-label">K3 – Jornada Simple</span><input class="tariff-input" id="t-k3s" value="${t.kinder.k3_simple}"></div>
-        <div class="tariff-row"><span class="tariff-row-label">K3 – Jornada Completa</span><input class="tariff-input" id="t-k3c" value="${t.kinder.k3_completa}"></div>
-        <div class="tariff-row"><span class="tariff-row-label">K4 y K5 – Matrícula</span><input class="tariff-input" id="t-k45m" value="${t.kinder.k45_matricula}"></div>
-        <div class="tariff-row"><span class="tariff-row-label">K4 y K5 – Jornada Completa</span><input class="tariff-input" id="t-k45c" value="${t.kinder.k45_completa}"></div>
-      </div>
-    </div>
-    <div class="tariff-card">
-      <div class="tariff-header"><div class="tariff-title">Elementary School (1er – 6to año)</div></div>
-      <div class="tariff-body">
-        <div class="tariff-row"><span class="tariff-row-label">Matrícula</span><input class="tariff-input" id="t-em" value="${t.elementary.matricula}"></div>
-        <div class="tariff-row"><span class="tariff-row-label">Jornada Completa</span><input class="tariff-input" id="t-ec" value="${t.elementary.completa}"></div>
-      </div>
-    </div>
-    <div class="tariff-card">
-      <div class="tariff-header"><div class="tariff-title">High School 1ro – 3ro</div></div>
-      <div class="tariff-body">
-        <div class="tariff-row"><span class="tariff-row-label">Matrícula</span><input class="tariff-input" id="t-h13m" value="${t.hs13.matricula}"></div>
-        <div class="tariff-row"><span class="tariff-row-label">Jornada Completa</span><input class="tariff-input" id="t-h13c" value="${t.hs13.completa}"></div>
-      </div>
-    </div>
-    <div class="tariff-card">
-      <div class="tariff-header"><div class="tariff-title">High School 4to – 6to</div></div>
-      <div class="tariff-body">
-        <div class="tariff-row"><span class="tariff-row-label">Matrícula</span><input class="tariff-input" id="t-h46m" value="${t.hs46.matricula}"></div>
-        <div class="tariff-row"><span class="tariff-row-label">Jornada Completa</span><input class="tariff-input" id="t-h46c" value="${t.hs46.completa}"></div>
-      </div>
+function updateEjsStatus(){
+  const badge=document.getElementById('ejs-status-badge');
+  const text=document.getElementById('ejs-status-text');
+  if(!badge||!text) return;
+  const cfg=DB.config;
+  if(cfg.ejsid && cfg.ejstpl && cfg.ejskey){
+    badge.style.cssText='font-size:11px;padding:4px 10px;border-radius:20px;font-weight:600;background:#EBF7D4;color:#3A6A0A';
+    badge.textContent='✓ Activo — mails reales';
+    text.textContent='Los mails se envían directamente desde el sistema vía EmailJS';
+  } else {
+    badge.style.cssText='font-size:11px;padding:4px 10px;border-radius:20px;font-weight:600;background:#FEF5E6;color:#8A5510';
+    badge.textContent='⚡ No configurado';
+    text.textContent='Sin EmailJS: los mails abrirán el cliente de correo del dispositivo (mailto)';
+  }
+}
+
+function testMail(){
+  const cfg=DB.config;
+  if(!cfg.ejsid||!cfg.ejstpl||!cfg.ejskey){ toast('Primero guardá los datos de EmailJS','err'); return; }
+  if(typeof emailjs==='undefined'){ toast('EmailJS aún cargando, esperá unos segundos',''); return; }
+  toast('Enviando mail de prueba...','');
+  emailjs.send(cfg.ejsid, cfg.ejstpl, {
+    to_email: cfg.email, to_name: 'Admisiones', from_name: cfg.nombre,
+    reply_to: cfg.email, subject: 'Test · Sistema Austin EBS',
+    message: 'Este es un mail de prueba del Sistema de Admisiones Austin EBS. Si lo recibís, el sistema está correctamente configurado. ✓'
+  }, cfg.ejskey)
+  .then(()=>toast('✓ Mail de prueba enviado a '+cfg.email,'ok'))
+  .catch(e=>toast('Error: '+e.text+' — revisá los datos de EmailJS','err'));
+}
+
+// ═══════════════════════════════════════
+// FORMULARIO POSTULACIÓN (portal)
+// ═══════════════════════════════════════
+let currentStep=0;
+function showStep(n){
+  document.querySelectorAll('.form-step').forEach((s,i)=>s.classList.toggle('on',i===n));
+  document.querySelectorAll('.fp-step').forEach((s,i)=>{
+    s.classList.toggle('done',i<n); s.classList.toggle('active',i===n);
+  });
+  currentStep=n;
+}
+function stepNext(from){
+  if(from===0){
+    if(!document.getElementById('pf-alumno-n').value.trim()||!document.getElementById('pf-alumno-ap').value.trim()||!document.getElementById('pf-curso').value){ toast('Completá los campos obligatorios','err'); return; }
+  }
+  if(from===1){
+    if(!document.getElementById('pf-padre-n').value.trim()||!document.getElementById('pf-email').value.trim()||!document.getElementById('pf-tel').value.trim()){ toast('Completá los campos obligatorios','err'); return; }
+    buildResumen();
+  }
+  showStep(from+1);
+}
+function stepBack(from){ showStep(from-1); }
+function buildResumen(){
+  const alumno=`${document.getElementById('pf-alumno-n').value} ${document.getElementById('pf-alumno-ap').value}`.trim();
+  const padre=`${document.getElementById('pf-padre-n').value} ${document.getElementById('pf-padre-ap').value}`.trim();
+  document.getElementById('pf-resumen').innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 16px">
+      <div><span style="color:var(--text3);font-size:11px">ESTUDIANTE</span><br><strong>${alumno}</strong></div>
+      <div><span style="color:var(--text3);font-size:11px">CURSO</span><br><strong>${document.getElementById('pf-curso').value}</strong></div>
+      <div><span style="color:var(--text3);font-size:11px">JORNADA</span><br>${document.getElementById('pf-jornada').value}</div>
+      <div><span style="color:var(--text3);font-size:11px">PADRE/TUTOR</span><br>${padre}</div>
+      <div><span style="color:var(--text3);font-size:11px">EMAIL</span><br>${document.getElementById('pf-email').value}</div>
+      <div><span style="color:var(--text3);font-size:11px">TELÉFONO</span><br>${document.getElementById('pf-tel').value}</div>
     </div>`;
 }
-
-function saveTarifas() {
-  const g = id => parseFloat(document.getElementById(id)?.value)||0;
-  DB.tarifas.kinder = { k2_matricula:g('t-k2m'), k2_simple:g('t-k2s'), k2_completa:g('t-k2c'), k3_matricula:g('t-k3m'), k3_simple:g('t-k3s'), k3_completa:g('t-k3c'), k45_matricula:g('t-k45m'), k45_completa:g('t-k45c') };
-  DB.tarifas.elementary = { matricula:g('t-em'), completa:g('t-ec') };
-  DB.tarifas.hs13 = { matricula:g('t-h13m'), completa:g('t-h13c') };
-  DB.tarifas.hs46 = { matricula:g('t-h46m'), completa:g('t-h46c') };
-  showToast('Tarifas actualizadas correctamente', 'success');
-}
-
-function saveConfig() {
-  DB.config.nombre = document.getElementById('cfg-nombre').value;
-  DB.config.email = document.getElementById('cfg-email').value;
-  DB.config.calendar = document.getElementById('cfg-calendar').value;
-  DB.config.drive = document.getElementById('cfg-drive').value;
-  showToast('Configuración guardada', 'success');
-}
-
-// ─── MODAL ───
-function openNewModal() {
-  const courses_opts = CURSOS.map(c=>`<option value="${c}">${c}</option>`).join('');
-  document.getElementById('modal-title').textContent = 'Nuevo Postulante';
-  document.getElementById('modal-body').innerHTML = `
-    <div class="form-grid">
-      <div class="section-sub">Datos del estudiante</div>
-      <div class="form-group">
-        <label class="form-label">Nombre del postulante *</label>
-        <input class="form-input" id="nf-alumno" placeholder="Nombre y apellido">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Curso al que aplica *</label>
-        <select class="form-select" id="nf-curso">${courses_opts}</select>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Jornada</label>
-        <select class="form-select" id="nf-jornada">
-          <option>Jornada Completa</option>
-          <option>Jornada Simple</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Año del ciclo</label>
-        <select class="form-select" id="nf-anio">
-          <option value="2026">2026</option>
-          <option value="2027">2027</option>
-        </select>
-      </div>
-      <hr class="form-divider">
-      <div class="section-sub">Datos de la familia</div>
-      <div class="form-group">
-        <label class="form-label">Nombre del padre/madre/tutor *</label>
-        <input class="form-input" id="nf-padre" placeholder="Nombre y apellido">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Email *</label>
-        <input class="form-input" id="nf-email" type="email" placeholder="email@ejemplo.com">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Teléfono</label>
-        <input class="form-input" id="nf-tel" placeholder="+54 11 0000-0000">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Estado inicial</label>
-        <select class="form-select" id="nf-estado">
-          ${ESTADOS.map(e=>`<option value="${e}">${ESTADOS_LABEL[e]}</option>`).join('')}
-        </select>
-      </div>
-      <div class="form-group full">
-        <label class="form-label">Observaciones</label>
-        <textarea class="form-textarea" id="nf-obs" placeholder="Notas internas..."></textarea>
-      </div>
-    </div>`;
-  document.getElementById('modal-footer').innerHTML = `
-    <button class="btn btn-outline" onclick="closeModal()">Cancelar</button>
-    <button class="btn btn-teal" onclick="saveNewPostulante()">Guardar postulante</button>`;
-  openModal();
-}
-
-function saveNewPostulante() {
-  const alumno = document.getElementById('nf-alumno').value.trim();
-  const padre = document.getElementById('nf-padre').value.trim();
-  const email = document.getElementById('nf-email').value.trim();
-  const curso = document.getElementById('nf-curso').value;
-  if(!alumno||!padre||!email) { showToast('Completá los campos obligatorios', 'error'); return; }
-  const p = {
-    id: DB.nextId++, alumno, padre, email,
-    tel: document.getElementById('nf-tel').value,
-    curso, nivel: NIVEL_MAP(curso),
-    jornada: document.getElementById('nf-jornada').value,
-    anio: parseInt(document.getElementById('nf-anio').value),
-    estado: document.getElementById('nf-estado').value,
-    obs: document.getElementById('nf-obs').value,
-    fecha: new Date().toISOString().split('T')[0]
+function submitPostulacion(){
+  const alumno=`${document.getElementById('pf-alumno-n').value} ${document.getElementById('pf-alumno-ap').value}`.trim();
+  const padre=`${document.getElementById('pf-padre-n').value} ${document.getElementById('pf-padre-ap').value}`.trim();
+  const curso=document.getElementById('pf-curso').value;
+  const p={
+    id:DB.nextId++, alumno, padre,
+    email:document.getElementById('pf-email').value,
+    tel:document.getElementById('pf-tel').value,
+    curso, nivel:NIVEL(curso),
+    jornada:document.getElementById('pf-jornada').value,
+    anio:2026, estado:'nueva',
+    obs:document.getElementById('pf-consulta').value,
+    fecha:new Date().toISOString().split('T')[0],
+    hist:[{e:'nueva',f:new Date().toISOString().split('T')[0]}]
   };
   DB.postulantes.unshift(p);
-  closeModal();
-  showToast(`${alumno} agregado/a. Mail automático enviado.`, 'success');
-  renderDashboard();
+  DB.pendingNotif.push(p.id);
+  saveDB();
+  // Enviar mail de bienvenida
+  enviarMail(p,'nueva',()=>{});
+  // Mostrar éxito
+  document.querySelectorAll('.form-step').forEach(s=>s.classList.remove('on'));
+  document.getElementById('fstep-success').classList.add('on');
 }
 
-function openDetailModal(id) {
-  const p = DB.postulantes.find(x=>x.id===id);
-  if(!p) return;
-  const initials = p.alumno.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();
-  const colorMap = { nueva:'var(--s-nueva)',citado:'var(--s-citado)',entrevistado:'var(--s-entrevistado)',postulado:'var(--s-postulado)',matriculado:'var(--s-matriculado)','lista de espera':'var(--s-espera)',desiste:'var(--s-desiste)' };
-  document.getElementById('modal-title').textContent = 'Detalle del postulante';
-  document.getElementById('modal-body').innerHTML = `
-    <div class="detail-header">
-      <div class="detail-avatar" style="background:${colorMap[p.estado]||'var(--teal)'}">${initials}</div>
-      <div class="detail-info">
-        <h2>${p.alumno}</h2>
-        <p>Familia: ${p.padre}</p>
-        <div class="detail-meta">
-          ${estadoBadge(p.estado)}
-          <span class="meta-tag">${p.nivel}</span>
-          <span class="meta-tag">${p.curso}</span>
-          <span class="meta-tag">${p.jornada}</span>
-          <span class="meta-tag">Ciclo ${p.anio}</span>
-        </div>
-      </div>
-    </div>
-    <div class="detail-grid">
-      <div class="detail-field"><div class="detail-field-label">Email</div><div class="detail-field-value">${p.email}</div></div>
-      <div class="detail-field"><div class="detail-field-label">Teléfono</div><div class="detail-field-value">${p.tel||'—'}</div></div>
-      <div class="detail-field"><div class="detail-field-label">Fecha postulación</div><div class="detail-field-value">${formatDate(p.fecha)}</div></div>
-      <div class="detail-field"><div class="detail-field-label">Año ciclo</div><div class="detail-field-value">${p.anio}</div></div>
-    </div>
-    ${p.obs?`<div class="detail-field" style="margin-bottom:14px"><div class="detail-field-label">Observaciones</div><div class="detail-field-value">${p.obs}</div></div>`:''}
-    
-    <div style="margin-bottom:14px">
-      <div class="form-label" style="margin-bottom:6px">Observaciones internas</div>
-      <textarea class="form-textarea" id="edit-obs-${id}" style="min-height:70px">${p.obs}</textarea>
-    </div>
-    
-    <div class="status-row">
-      <span class="status-label">Cambiar estado:</span>
-      <select class="status-select" id="edit-status-${id}">
-        ${ESTADOS.map(e=>`<option value="${e}" ${p.estado===e?'selected':''}>${ESTADOS_LABEL[e]}</option>`).join('')}
-      </select>
-      <button class="btn btn-teal btn-sm" onclick="changeStatus(${id})">Actualizar y enviar mail</button>
-    </div>`;
-  document.getElementById('modal-footer').innerHTML = `
-    <button class="btn btn-outline" onclick="closeModal()">Cerrar</button>
-    <button class="btn btn-teal" onclick="saveObs(${id})">Guardar observaciones</button>`;
-  openModal();
+// ═══════════════════════════════════════
+// MODAL UTILS
+// ═══════════════════════════════════════
+function openM(){ document.getElementById('overlay').classList.add('open'); }
+function closeM(){ document.getElementById('overlay').classList.remove('open'); }
+function closeMOnBg(e){ if(e.target===document.getElementById('overlay')) closeM(); }
+
+// ═══════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════
+function badge(e){ return `<span class="badge ${ECLS[e]||''}">${EL[e]||e}</span>`; }
+function fDate(d){ if(!d) return '—'; const p=d.split('-'); return `${p[2]}/${p[1]}/${p[0]}`; }
+function toast(msg,type=''){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast show'+(type?' '+type:'');
+  clearTimeout(t._t); t._t=setTimeout(()=>t.className='toast',4000);
 }
 
-function saveObs(id) {
-  const p = DB.postulantes.find(x=>x.id===id);
-  if(p) { p.obs = document.getElementById('edit-obs-'+id).value; }
-  showToast('Observaciones guardadas', 'success');
-}
+// ═══════════════════════════════════════
+// INIT — carga datos guardados y EmailJS
+// ═══════════════════════════════════════
+loadDB(); // Recuperar datos de la sesión anterior
 
-function changeStatus(id) {
-  const p = DB.postulantes.find(x=>x.id===id);
-  const newStatus = document.getElementById('edit-status-'+id).value;
-  if(!p||p.estado===newStatus) return;
-  const prev = p.estado;
-  p.estado = newStatus;
-  closeModal();
-  showToast(`Estado actualizado → ${ESTADOS_LABEL[newStatus]}. Mail enviado automáticamente a ${p.email}`, 'success');
-  const cv = document.getElementById('view-postulantes');
-  if(cv.classList.contains('active')) renderPostulantes();
-  const cpv = document.getElementById('view-pipeline');
-  if(cpv.classList.contains('active')) renderPipeline();
-  renderDashboard();
-}
-
-function openModal() {
-  document.getElementById('modal-overlay').classList.add('open');
-}
-function closeModal() {
-  document.getElementById('modal-overlay').classList.remove('open');
-}
-function closeModalOnBg(e) {
-  if(e.target===document.getElementById('modal-overlay')) closeModal();
-}
-
-// ─── UTILS ───
-function formatDate(d) {
-  if(!d) return '—';
-  const parts = d.split('-');
-  return `${parts[2]}/${parts[1]}/${parts[0]}`;
-}
-
-function showToast(msg, type='') {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = 'toast show' + (type?' '+type:'');
-  clearTimeout(t._to);
-  t._to = setTimeout(()=>{ t.className='toast'; }, 3800);
-}
-
-// ─── INIT ───
-renderDashboard();
+// Cargar EmailJS
+const ejsScript=document.createElement('script');
+ejsScript.src='https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js';
+ejsScript.onload=()=>{ if(DB.config.ejskey){ try{ emailjs.init(DB.config.ejskey); }catch(e){} } };
+document.head.appendChild(ejsScript);
 </script>
 </body>
 </html>
