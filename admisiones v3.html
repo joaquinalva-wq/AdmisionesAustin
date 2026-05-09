@@ -1,0 +1,1898 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Austin EBS · Admisiones</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --or:#E8621A;--gr:#7CB518;--tl:#3A607A;--td:#2C4A5E;--tl2:#5A8BA8;
+  --cr:#F8F6F0;--cr2:#EEE9DF;--wh:#fff;
+  --tx:#252520;--tx2:#5A5A54;--tx3:#95958E;
+  --bd:rgba(58,96,122,.13);--bd2:rgba(58,96,122,.22);
+  --sh:0 2px 14px rgba(44,74,94,.07);--sh2:0 8px 32px rgba(44,74,94,.14);
+  --r:10px;--r2:16px;
+  --cn:#7CB518;--cc:#E8621A;--ce:#5A8BA8;--cp:#3A607A;--cm:#2C4A5E;--cs:#C07A20;--cd:#999990;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'DM Sans',sans-serif;background:var(--cr);color:var(--tx);min-height:100vh}
+.screen{display:none;min-height:100vh}
+#s-portal{background:var(--cr)}
+#s-panel{display:none;min-height:100vh}
+
+/* ── PORTAL NAV ── */
+.pnav{position:sticky;top:0;z-index:200;background:rgba(44,74,94,.97);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:space-between;padding:0 40px;height:62px}
+.pnav-logo{display:flex;align-items:center;gap:10px;cursor:pointer;text-decoration:none}
+.lb4{display:grid;grid-template-columns:1fr 1fr;gap:1.5px;width:30px;height:30px;transform:rotate(-3deg)}
+.lb4 div{border-radius:2px;display:flex;align-items:center;justify-content:center}
+.lb4 div span{color:#fff;font-family:'Lora',serif;font-size:7px;font-weight:600}
+.la{background:var(--or)}.le{background:var(--gr)}.lb{background:var(--gr)}.ls{background:var(--tl2)}
+.pnav-brand h2{color:#fff;font-family:'Lora',serif;font-size:15px;font-weight:600}
+.pnav-brand p{color:rgba(255,255,255,.5);font-size:10px;text-transform:uppercase;letter-spacing:.07em}
+.pnav-links{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
+.pnl{padding:7px 12px;color:rgba(255,255,255,.72);font-size:13px;cursor:pointer;border-radius:7px;transition:all .15s;border:none;background:none;font-family:'DM Sans',sans-serif;white-space:nowrap}
+.pnl:hover{background:rgba(255,255,255,.1);color:#fff}
+.pnl.cta{background:var(--or);color:#fff;font-weight:500;padding:8px 16px}
+.pnl.cta:hover{background:#d4561a}
+.pnl.staff{background:rgba(255,255,255,.08);color:rgba(255,255,255,.6);font-size:12px}
+@media(max-width:680px){.pnav{padding:0 16px}.pnl:not(.cta):not(.staff){display:none}}
+
+/* ── HERO ── */
+.hero{position:relative;padding:90px 40px 100px;text-align:center;overflow:hidden;min-height:480px;display:flex;align-items:center;justify-content:center}
+.hero-bg{position:absolute;inset:0;background-image:url('https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=1400&q=80');background-size:cover;background-position:center 40%}
+.hero-overlay{position:absolute;inset:0;background:linear-gradient(160deg,rgba(44,74,94,.88) 0%,rgba(44,74,94,.78) 50%,rgba(60,96,80,.82) 100%)}
+.hero-content{position:relative;z-index:1;max-width:680px}
+.hero-logo{display:grid;grid-template-columns:1fr 1fr;gap:3px;width:56px;height:56px;transform:rotate(-3deg);margin:0 auto 20px}
+.hero-logo div{border-radius:4px;display:flex;align-items:center;justify-content:center}
+.hero-logo div span{color:#fff;font-family:'Lora',serif;font-size:13px;font-weight:600}
+.hero h1{font-family:'Lora',serif;font-size:38px;color:#fff;font-weight:600;line-height:1.2}
+.hero p{color:rgba(255,255,255,.82);font-size:16px;margin-top:14px;line-height:1.65}
+.hero-btns{display:flex;gap:12px;justify-content:center;margin-top:28px;flex-wrap:wrap}
+.hbtn{padding:13px 24px;border-radius:11px;font-size:14px;font-weight:500;cursor:pointer;border:none;font-family:'DM Sans',sans-serif;transition:all .15s;text-decoration:none;display:inline-flex;align-items:center;gap:8px}
+.hbtn-p{background:var(--or);color:#fff}.hbtn-p:hover{background:#d4561a;transform:translateY(-1px)}
+.hbtn-s{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.25)}.hbtn-s:hover{background:rgba(255,255,255,.22)}
+.hero-chips{display:flex;gap:8px;justify-content:center;margin-top:18px;flex-wrap:wrap}
+.hchip{background:rgba(255,255,255,.14);color:rgba(255,255,255,.88);padding:4px 12px;border-radius:20px;font-size:11.5px}
+@media(max-width:600px){.hero{padding:70px 20px 80px}.hero h1{font-size:28px}.hero p{font-size:14px}}
+
+/* ── PORTAL SECTIONS ── */
+.psec{padding:64px 40px;max-width:1040px;margin:0 auto}
+.slabel{font-size:11px;font-weight:600;color:var(--or);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.sh2{font-family:'Lora',serif;font-size:28px;color:var(--td);font-weight:600;line-height:1.3}
+.slead{font-size:15px;color:var(--tx2);line-height:1.7;margin-top:10px;max-width:600px}
+@media(max-width:600px){.psec{padding:40px 20px}.sh2{font-size:22px}}
+
+/* NIVELES */
+.nivgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-top:24px}
+.nivc{background:#fff;border-radius:var(--r2);border:1px solid var(--bd);padding:20px 18px;box-shadow:var(--sh);transition:all .2s}
+.nivc:hover{box-shadow:var(--sh2);transform:translateY(-2px)}
+.nivc-ic{font-size:22px;margin-bottom:10px}
+.nivc-t{font-size:14px;font-weight:600;color:var(--td);margin-bottom:4px;font-family:'Lora',serif}
+.nivc-s{font-size:12px;color:var(--tx3);line-height:1.5}
+.nivc-r{display:inline-block;background:var(--cr2);color:var(--tl);font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;margin-top:6px}
+
+/* PEDAGOGIA */
+.pedgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:24px}
+.pedi{display:flex;gap:13px;background:#fff;border-radius:var(--r2);padding:18px;border:1px solid var(--bd);box-shadow:var(--sh)}
+.pedi-ic{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;background:var(--cr2)}
+.pedi h4{font-size:13px;font-weight:600;color:var(--td);margin-bottom:3px}
+.pedi p{font-size:12px;color:var(--tx2);line-height:1.55}
+@media(max-width:600px){.pedgrid{grid-template-columns:1fr}}
+
+/* PROCESO */
+.proceso{display:grid;grid-template-columns:repeat(5,1fr);gap:0;background:#fff;border-radius:var(--r2);border:1px solid var(--bd);overflow:hidden;box-shadow:var(--sh);margin-top:24px}
+.paso{padding:20px 14px;border-right:1px solid var(--bd);text-align:center;position:relative}
+.paso:last-child{border-right:none}
+.paso-n{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;margin:0 auto 10px;color:#fff}
+.paso-t{font-size:12px;font-weight:600;color:var(--td);margin-bottom:4px}
+.paso-d{font-size:11px;color:var(--tx3);line-height:1.5}
+@media(max-width:600px){.proceso{grid-template-columns:1fr 1fr}.paso{border-right:none;border-bottom:1px solid var(--bd)}}
+
+/* CTA BOTTOM */
+.ctab{background:linear-gradient(135deg,var(--td),var(--tl));padding:56px 40px;text-align:center}
+.ctab h2{font-family:'Lora',serif;font-size:26px;color:#fff;margin-bottom:10px}
+.ctab p{color:rgba(255,255,255,.75);font-size:14px;margin-bottom:22px}
+
+/* FOOTER PORTAL */
+.pfooter{background:var(--td);padding:28px 40px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.pfooter p{font-size:12px;color:rgba(255,255,255,.5)}
+.pfooter a{color:rgba(255,255,255,.65);font-size:12px;text-decoration:none}
+.pfooter a:hover{color:#fff}
+
+/* ── FORMULARIO POSTULACION ── */
+#s-postulacion{background:var(--cr)}
+.fnav{background:var(--td);padding:0 40px;height:58px;display:flex;align-items:center;justify-content:space-between}
+.fnav-t{color:#fff;font-family:'Lora',serif;font-size:15px;font-weight:600}
+.fbk{color:rgba(255,255,255,.7);font-size:13px;cursor:pointer;background:none;border:none;font-family:'DM Sans',sans-serif;display:flex;align-items:center;gap:5px}
+.fbk:hover{color:#fff}
+.fwrap{max-width:660px;margin:0 auto;padding:36px 20px 60px}
+.fbar{display:flex;gap:3px;margin-bottom:32px}
+.fs{flex:1;height:4px;background:var(--bd2);border-radius:2px;transition:background .3s}
+.fs.done{background:var(--gr)}.fs.active{background:var(--or)}
+.fstep{display:none}.fstep.on{display:block}
+.fstep-h{font-family:'Lora',serif;font-size:22px;color:var(--td);margin-bottom:5px}
+.fstep-s{font-size:13px;color:var(--tx2);margin-bottom:22px;line-height:1.6}
+.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
+.fgrow{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:500px){.fgrow{grid-template-columns:1fr}}
+.flabel{font-size:12px;font-weight:500;color:var(--tx2);letter-spacing:.02em}
+.flabel .req{color:var(--or)}
+.fi,.fsel,.fta{padding:10px 13px;border:1.5px solid var(--bd2);border-radius:9px;font-size:13.5px;color:var(--tx);background:var(--cr);outline:none;transition:border-color .2s,background .2s;font-family:'DM Sans',sans-serif;width:100%}
+.fi:focus,.fsel:focus,.fta:focus{border-color:var(--tl);background:#fff}
+.fi.err,.fsel.err{border-color:#DC2626;background:#FEF2F2}
+.fta{resize:vertical;min-height:80px;line-height:1.5}
+.fdiv{border:none;border-top:1px solid var(--bd);margin:16px 0}
+.fsec{font-size:11px;font-weight:600;color:var(--tl);text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px}
+.fbtns{display:flex;gap:10px;margin-top:22px;justify-content:flex-end;flex-wrap:wrap}
+.sbtn{padding:11px 22px;border-radius:10px;font-size:14px;font-weight:500;cursor:pointer;border:none;font-family:'DM Sans',sans-serif;transition:all .15s}
+.sbtn-n{background:var(--td);color:#fff}.sbtn-n:hover{background:var(--tl)}
+.sbtn-b{background:var(--cr2);color:var(--tx2)}.sbtn-b:hover{background:var(--bd2)}
+.sbtn-ok{background:var(--gr);color:#fff}.sbtn-ok:hover{background:#6AA515}
+.fhermano{background:linear-gradient(135deg,#EBF7D4,#D4F0A8);border:1.5px solid var(--gr);border-radius:10px;padding:10px 14px;font-size:12.5px;color:#3A6A0A;display:none;margin-top:8px;line-height:1.6}
+.fhermano.on{display:block}
+.fsuccess{text-align:center;padding:50px 20px}
+.fsuccess-ic{font-size:52px;margin-bottom:16px}
+.fsuccess-h{font-family:'Lora',serif;font-size:24px;color:var(--td);margin-bottom:10px}
+.fsuccess-p{font-size:14px;color:var(--tx2);line-height:1.7;max-width:420px;margin:0 auto}
+
+/* ── LOGIN ── */
+#s-login{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(140deg,var(--td) 0%,var(--tl) 55%,#4A7A5A 100%)}
+.lcard{background:#fff;border-radius:22px;padding:44px 42px 40px;width:400px;max-width:calc(100vw - 40px);box-shadow:0 20px 70px rgba(0,0,0,.22)}
+.llogo{display:flex;align-items:center;gap:12px;margin-bottom:30px}
+.lb4m{display:grid;grid-template-columns:1fr 1fr;gap:2px;width:42px;height:42px;transform:rotate(-3deg)}
+.lb4m div{border-radius:3px;display:flex;align-items:center;justify-content:center}
+.lb4m div span{color:#fff;font-family:'Lora',serif;font-size:10px;font-weight:600}
+.lbrand h1{font-family:'Lora',serif;font-size:18px;color:var(--td)}
+.lbrand p{font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.07em}
+.lsub{font-size:13px;color:var(--tx2);margin-bottom:20px;font-weight:500}
+.lerr{background:#FEF2F2;border:1px solid #FECACA;color:#DC2626;border-radius:8px;padding:10px 13px;font-size:12.5px;margin-bottom:14px;display:none}
+.ll{font-size:12px;font-weight:500;color:var(--tx2);display:block;margin-bottom:5px}
+.li{width:100%;padding:10px 13px;border:1.5px solid var(--bd2);border-radius:9px;font-size:14px;color:var(--tx);background:var(--cr);outline:none;transition:border-color .2s;margin-bottom:14px;font-family:'DM Sans',sans-serif}
+.li:focus{border-color:var(--tl);background:#fff}
+.lbtn{width:100%;padding:12px;background:var(--td);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;transition:background .2s}
+.lbtn:hover{background:var(--tl)}
+.lhint{font-size:11.5px;color:var(--tx3);text-align:center;margin-top:12px}
+.lback{font-size:12px;color:var(--tl);text-align:center;margin-top:14px;cursor:pointer;text-decoration:underline}
+
+/* ── PANEL SIDEBAR ── */
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:228px;background:var(--td);display:flex;flex-direction:column;z-index:100;box-shadow:2px 0 18px rgba(0,0,0,.15)}
+.sbh{padding:18px 16px;border-bottom:1px solid rgba(255,255,255,.08)}
+.sblogo{display:flex;align-items:center;gap:9px}
+.sbbrand h2{color:#fff;font-family:'Lora',serif;font-size:14px}
+.sbbrand span{color:rgba(255,255,255,.45);font-size:10px;text-transform:uppercase;letter-spacing:.06em}
+.sbnav{flex:1;padding:12px 8px;overflow-y:auto}
+.sbsec{font-size:10px;color:rgba(255,255,255,.28);letter-spacing:.1em;text-transform:uppercase;padding:10px 10px 4px;font-weight:500}
+.sbi{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:8px;cursor:pointer;transition:background .13s;color:rgba(255,255,255,.65);font-size:13px;font-weight:400;user-select:none;margin-bottom:1px;border:none;background:none;font-family:'DM Sans',sans-serif;width:100%;text-align:left;position:relative}
+.sbi:hover{background:rgba(255,255,255,.08);color:#fff}
+.sbi.active{background:rgba(255,255,255,.16);color:#fff;font-weight:500}
+.sbi-ic{width:17px;text-align:center;font-size:14px;flex-shrink:0}
+.sbi-badge{margin-left:auto;background:var(--or);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;min-width:18px;text-align:center}
+.sbi-badge.green{background:var(--gr)}
+.sbfoot{padding:14px;border-top:1px solid rgba(255,255,255,.08)}
+.sbuser{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.sbav{width:26px;height:26px;border-radius:50%;background:var(--gr);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:#fff;flex-shrink:0}
+.sbuser-i span{display:block;font-size:11.5px;color:rgba(255,255,255,.75);font-weight:500}
+.sbuser-i small{font-size:10px;color:rgba(255,255,255,.35)}
+.sbout{font-size:11.5px;color:rgba(255,255,255,.35);cursor:pointer;background:none;border:none;font-family:'DM Sans',sans-serif;padding:0;transition:color .2s}
+.sbout:hover{color:rgba(255,255,255,.65)}
+
+/* ── MAIN ── */
+.main{margin-left:228px;flex:1;min-height:100vh;background:var(--cr)}
+.topbar{background:#fff;border-bottom:1px solid var(--bd);padding:0 26px;height:58px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.tb-t{font-size:15px;font-weight:600;color:var(--td)}
+.tb-a{display:flex;gap:8px;align-items:center}
+.pg{padding:24px}
+.view{display:none}.view.on{display:block}
+
+/* STATS */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:11px;margin-bottom:20px}
+.stc{background:#fff;border-radius:var(--r2);padding:15px 17px;border:1px solid var(--bd);box-shadow:var(--sh);transition:box-shadow .2s;cursor:pointer;position:relative;overflow:hidden}
+.stc::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;border-radius:2px 0 0 2px}
+.stc:hover{box-shadow:var(--sh2)}
+.stc-lbl{font-size:10.5px;color:var(--tx3);text-transform:uppercase;letter-spacing:.07em;font-weight:500;margin-bottom:5px}
+.stc-val{font-size:26px;font-weight:600;color:var(--td);line-height:1}
+.stc-sub{font-size:11px;color:var(--tx3);margin-top:3px;display:flex;align-items:center;gap:4px}
+.stc-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+
+/* NOTIF BANNER */
+.notif-b{background:linear-gradient(135deg,var(--gr),#5C9A10);border-radius:var(--r2);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:10px;flex-wrap:wrap;animation:sli .3s ease}
+@keyframes sli{from{opacity:0;transform:translateY(-8px)}}
+.notif-b.warn{background:linear-gradient(135deg,#C07A20,#A06010)}
+.notif-t h4{color:#fff;font-size:13.5px;font-weight:600}
+.notif-t p{color:rgba(255,255,255,.8);font-size:12px;margin-top:1px}
+.notif-a{display:flex;gap:7px;flex-shrink:0}
+.nbtn{padding:7px 13px;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;border:none;font-family:'DM Sans',sans-serif}
+.nbtn-v{background:#fff;color:var(--gr)}
+.nbtn-v.warn-v{color:#C07A20}
+.nbtn-d{background:rgba(255,255,255,.2);color:#fff}
+
+/* PIPELINE */
+.pcols{display:grid;grid-template-columns:repeat(7,1fr);gap:9px;margin-bottom:22px}
+.pcol{background:#fff;border-radius:var(--r2);border:1px solid var(--bd);overflow:hidden}
+.pch{padding:9px 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--bd)}
+.pch-n{font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+.pch-c{font-size:15px;font-weight:700}
+.pcb{padding:6px;min-height:50px;max-height:280px;overflow-y:auto}
+.pcard{background:var(--cr);border-radius:7px;padding:7px 8px;margin-bottom:5px;font-size:11.5px;cursor:pointer;transition:all .13s;border:1px solid var(--bd)}
+.pcard:hover{background:var(--cr2);border-color:var(--bd2);transform:translateY(-1px);box-shadow:0 2px 8px rgba(0,0,0,.07)}
+.pcard-n{font-weight:500;color:var(--tx)}
+.pcard-c{color:var(--tx3);font-size:10.5px;margin-top:1px}
+.pcard-d{color:var(--tx3);font-size:10px;margin-top:1px}
+.pcard.inactivo{border-left:3px solid #DC2626}
+@media(max-width:900px){.pcols{grid-template-columns:repeat(4,1fr)}}
+
+/* TABLE */
+.cbox{background:#fff;border-radius:var(--r2);border:1px solid var(--bd);box-shadow:var(--sh);overflow:hidden;margin-bottom:18px}
+.cbox-h{padding:13px 19px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.cbox-t{font-size:13.5px;font-weight:600;color:var(--td)}
+.filts{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+.fsel2{padding:6px 9px;border:1px solid var(--bd2);border-radius:7px;font-size:12px;color:var(--tx);background:var(--cr);outline:none;cursor:pointer;font-family:'DM Sans',sans-serif}
+.fsrch{padding:6px 11px;border:1px solid var(--bd2);border-radius:7px;font-size:12px;color:var(--tx);background:var(--cr);outline:none;width:180px;font-family:'DM Sans',sans-serif}
+.fsel2:focus,.fsrch:focus{border-color:var(--tl);background:#fff}
+table{width:100%;border-collapse:collapse}
+thead th{padding:9px 14px;text-align:left;font-size:10.5px;color:var(--tx3);letter-spacing:.07em;text-transform:uppercase;background:var(--cr);border-bottom:1px solid var(--bd);font-weight:500}
+tbody tr{border-bottom:1px solid var(--bd);transition:background .1s;cursor:pointer}
+tbody tr:hover{background:var(--cr)}
+tbody tr:last-child{border-bottom:none}
+tbody tr.inactivo-row td:first-child::before{content:'⚠ ';color:#DC2626;font-size:11px}
+td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:10.5px;font-weight:500}
+
+/* BTN */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 12px;border-radius:8px;font-size:12.5px;font-weight:500;cursor:pointer;border:none;transition:all .13s;font-family:'DM Sans',sans-serif;white-space:nowrap}
+.btn-td{background:var(--td);color:#fff}.btn-td:hover{background:var(--tl)}
+.btn-gr{background:var(--gr);color:#fff}.btn-gr:hover{background:#6AA515}
+.btn-or{background:var(--or);color:#fff}.btn-or:hover{background:#d4561a}
+.btn-out{background:#fff;color:var(--tx);border:1px solid var(--bd2)}.btn-out:hover{border-color:var(--tl);color:var(--tl)}
+.btn-ghost{background:none;color:var(--tx2);border:none}.btn-ghost:hover{color:var(--tl)}
+.btn-sm{padding:5px 10px;font-size:11.5px}
+.btn-danger{background:#DC2626;color:#fff}.btn-danger:hover{background:#B91C1C}
+.btn-csv{background:#16A34A;color:#fff}.btn-csv:hover{background:#15803D}
+
+/* MODAL */
+.ov{position:fixed;inset:0;background:rgba(20,40,54,.52);z-index:1000;display:none;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)}
+.ov.open{display:flex}
+.modal{background:#fff;border-radius:20px;width:100%;max-width:680px;max-height:92vh;overflow-y:auto;box-shadow:0 20px 70px rgba(0,0,0,.22);animation:mIn .2s ease}
+@keyframes mIn{from{opacity:0;transform:translateY(10px) scale(.98)}}
+.mh{padding:19px 23px 15px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:2}
+.mt{font-size:15px;font-weight:600;color:var(--td);font-family:'Lora',serif}
+.mc{font-size:18px;cursor:pointer;color:var(--tx3);background:none;border:none;line-height:1;padding:4px;border-radius:6px;transition:background .13s}
+.mc:hover{background:var(--cr2)}
+.mb{padding:19px 23px}
+.mf{padding:13px 23px 19px;display:flex;gap:8px;justify-content:flex-end;border-top:1px solid var(--bd);position:sticky;bottom:0;background:#fff;z-index:2;flex-wrap:wrap}
+
+/* FORM MODAL */
+.fgm{display:flex;flex-direction:column;gap:5px;margin-bottom:13px}
+.fgm2{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+@media(max-width:500px){.fgm2{grid-template-columns:1fr}}
+.flm{font-size:11.5px;font-weight:500;color:var(--tx2)}
+.fim,.fsm,.ftm{padding:8px 11px;border:1.5px solid var(--bd2);border-radius:8px;font-size:13px;color:var(--tx);background:var(--cr);outline:none;transition:border-color .2s,background .2s;font-family:'DM Sans',sans-serif;width:100%}
+.fim:focus,.fsm:focus,.ftm:focus{border-color:var(--tl);background:#fff}
+.ftm{resize:vertical;min-height:70px;line-height:1.5}
+.ssm{font-size:10.5px;font-weight:600;color:var(--tl);text-transform:uppercase;letter-spacing:.07em;padding-top:8px;border-top:1px solid var(--bd);margin-top:5px}
+
+/* DETALLE */
+.deth{display:flex;align-items:flex-start;gap:13px;margin-bottom:16px}
+.detav{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:600;color:#fff;flex-shrink:0;font-family:'Lora',serif}
+.detinfo h2{font-size:17px;font-weight:600;color:var(--td);font-family:'Lora',serif}
+.detinfo p{font-size:12.5px;color:var(--tx2);margin-top:2px}
+.dettags{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
+.dettag{font-size:10.5px;background:var(--cr2);color:var(--tx2);padding:2px 8px;border-radius:12px;font-weight:500}
+.detgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:13px}
+.detf{background:var(--cr);border-radius:8px;padding:8px 11px}
+.detfl{font-size:9.5px;color:var(--tx3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:1px}
+.detfv{font-size:12.5px;color:var(--tx)}
+.detfv a{color:var(--tl)}
+
+/* ACCION ESTADO */
+.eabox{background:var(--cr);border-radius:10px;padding:13px;margin-top:12px}
+.eatit{font-size:11px;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:9px;display:flex;align-items:center;gap:6px}
+.earow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.easel{flex:1;min-width:155px;padding:8px 11px;border:1.5px solid var(--bd2);border-radius:8px;font-size:13px;color:var(--tx);background:#fff;outline:none;font-family:'DM Sans',sans-serif;cursor:pointer}
+.easel:focus{border-color:var(--tl)}
+
+/* MAIL PREVIEW */
+.mprev{border:1px solid var(--bd2);border-radius:10px;overflow:hidden;margin-top:12px}
+.mph{background:var(--cr2);padding:9px 13px}
+.mphr{display:flex;gap:6px;align-items:flex-start;padding:1.5px 0;font-size:12px;color:var(--tx2)}
+.mphl{color:var(--tx3);min-width:48px;font-weight:500;font-size:11px;flex-shrink:0;margin-top:1px}
+.mpb{padding:13px;font-size:12.5px;color:var(--tx);line-height:1.75;white-space:pre-wrap;max-height:200px;overflow-y:auto}
+.mpedit{font-size:11px;color:var(--tl);cursor:pointer;text-decoration:underline;padding:6px 13px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--bd);font-weight:500}
+
+/* NOTAS */
+.nota-item{background:var(--cr);border-radius:8px;padding:9px 11px;margin-bottom:7px;border-left:3px solid var(--bd2)}
+.nota-ts{font-size:10.5px;color:var(--tx3);margin-bottom:3px}
+.nota-txt{font-size:12.5px;color:var(--tx);line-height:1.55}
+.nota-new{display:flex;gap:8px;margin-top:8px}
+.nota-new input{flex:1;padding:8px 11px;border:1.5px solid var(--bd2);border-radius:8px;font-size:13px;color:var(--tx);background:#fff;outline:none;font-family:'DM Sans',sans-serif}
+.nota-new input:focus{border-color:var(--tl)}
+
+/* HISTORIAL */
+.hist-i{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid var(--bd)}
+.hist-i:last-child{border-bottom:none}
+.hist-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.hist-t p{font-size:12.5px;color:var(--tx)}
+.hist-t span{font-size:11px;color:var(--tx3)}
+
+/* INACTIVO */
+.inac-badge{background:#FEF2F2;color:#DC2626;font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:12px;display:inline-flex;align-items:center;gap:3px}
+
+/* VACANTES */
+.vacgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(195px,1fr));gap:11px}
+.vacc{background:#fff;border-radius:var(--r2);border:1px solid var(--bd);padding:14px 16px;box-shadow:var(--sh)}
+.vacc-t{font-size:12.5px;font-weight:600;color:var(--td);margin-bottom:8px}
+.vacbar{background:var(--cr2);border-radius:20px;height:7px;overflow:hidden;margin:6px 0}
+.vacfill{height:100%;border-radius:20px;background:var(--gr);transition:width .4s}
+.vacfill.warn{background:var(--or)}.vacfill.full{background:#DC2626}
+.vacnums{font-size:11px;color:var(--tx2);display:flex;justify-content:space-between}
+.vaci{padding:4px 8px;border:1.5px solid var(--bd2);border-radius:6px;font-size:12px;width:54px;text-align:center;font-family:'DM Sans',sans-serif;color:var(--tx);background:var(--cr);outline:none}
+.vaci:focus{border-color:var(--tl);background:#fff}
+.vacfull-badge{font-size:10px;background:#FEF2F2;color:#DC2626;padding:2px 7px;border-radius:12px;font-weight:600;margin-left:4px}
+
+/* EMAIL TEMPLATES */
+.etcard{background:#fff;border-radius:var(--r2);border:1px solid var(--bd);box-shadow:var(--sh);overflow:hidden;margin-bottom:13px}
+.eth{padding:11px 17px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center}
+.etdot{width:8px;height:8px;border-radius:50%;margin-right:6px;display:inline-block}
+.ett{font-size:13px;font-weight:600;color:var(--td)}
+.ets{font-size:11px;color:var(--tx3)}
+.etb{padding:13px 17px}
+.etvar{display:inline-block;background:var(--tl);color:#fff;font-size:10px;padding:1.5px 6px;border-radius:4px;margin:1.5px;font-weight:500}
+
+/* TARIFAS */
+.tarc{background:#fff;border-radius:var(--r2);border:1px solid var(--bd);box-shadow:var(--sh);overflow:hidden;margin-bottom:13px}
+.tarh{padding:11px 17px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center}
+.tart{font-size:13px;font-weight:600;color:var(--td);font-family:'Lora',serif}
+.tarb{padding:13px 17px}
+.tarrow{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bd);font-size:12.5px}
+.tarrow:last-child{border-bottom:none}
+.tarlbl{color:var(--tx2)}
+.tari{padding:5px 9px;border:1.5px solid var(--bd2);border-radius:7px;font-size:12.5px;color:var(--tx);background:var(--cr);outline:none;text-align:right;width:155px;font-family:'DM Sans',sans-serif}
+.tari:focus{border-color:var(--tl);background:#fff}
+
+/* CAL INFO */
+.calinfo{background:linear-gradient(135deg,var(--td),var(--tl));border-radius:var(--r2);padding:16px 20px;color:#fff;margin-bottom:16px;display:flex;align-items:center;gap:13px}
+.calinfo-ic{font-size:24px}
+.calinfo-t h3{font-size:13.5px;font-weight:600;margin-bottom:2px}
+.calinfo-t p{font-size:11.5px;opacity:.72}
+.calinfo-t a{color:rgba(255,255,255,.9);font-size:11.5px}
+
+/* CONFIG */
+.cfgrow{display:flex;align-items:flex-start;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--bd);gap:18px}
+.cfgrow:last-child{border-bottom:none}
+.cfglbl{font-size:13px;color:var(--tx)}
+.cfgsub{font-size:11px;color:var(--tx3);margin-top:2px}
+.cfgi{padding:7px 11px;border:1.5px solid var(--bd2);border-radius:9px;font-size:12.5px;color:var(--tx);background:var(--cr);outline:none;font-family:'DM Sans',sans-serif;width:265px}
+.cfgi:focus{border-color:var(--tl);background:#fff}
+
+/* TOAST */
+.toast{position:fixed;bottom:22px;right:22px;background:var(--td);color:#fff;padding:11px 17px;border-radius:9px;font-size:13px;font-weight:500;box-shadow:0 6px 24px rgba(0,0,0,.22);z-index:9999;transform:translateY(16px);opacity:0;transition:all .28s;max-width:340px;line-height:1.5}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.ok{background:#16A34A}
+.toast.err{background:#DC2626}
+.toast.info{background:var(--or)}
+
+/* EMPTY */
+.empty{text-align:center;padding:40px 20px;color:var(--tx3)}
+.empty-ic{font-size:32px;margin-bottom:10px}
+
+/* STATUS COLORS */
+.bg-n{background:#EBF7D4;color:#3A6A0A}.bg-ci{background:#FEF0E6;color:#A84210}
+.bg-en{background:#E8F2F8;color:#2C5A74}.bg-po{background:#E4EDF3;color:#2C4A5E}
+.bg-ma{background:#D4E4EE;color:#1E3A4E}.bg-es{background:#FEF5E6;color:#8A5510}
+.bg-de{background:#F0F0EE;color:#555552}
+.ph-n{background:#EBF7D4}.ph-ci{background:#FEF0E6}.ph-en{background:#E8F2F8}
+.ph-po{background:#E4EDF3}.ph-ma{background:#D4E4EE}.ph-es{background:#FEF5E6}.ph-de{background:#F0F0EE}
+
+.pill{background:var(--cr2);color:var(--tl);font-size:10px;padding:2px 7px;border-radius:12px;font-weight:600}
+
+/* PAGE HEADER */
+.ph{margin-bottom:20px}
+.ph h1{font-size:21px;font-weight:600;color:var(--td);font-family:'Lora',serif}
+.ph p{font-size:12.5px;color:var(--tx2);margin-top:3px}
+
+/* DIST BARS */
+.dbar{margin-bottom:11px}
+.dbar-row{display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px}
+/* ENTREVISTAS */
+.entcal{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin-bottom:20px}
+.entcard{background:#fff;border-radius:var(--r2);border:1px solid var(--bd);box-shadow:var(--sh);overflow:hidden;transition:box-shadow .2s}
+.entcard:hover{box-shadow:var(--sh2)}
+.entcard-head{padding:12px 15px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between}
+.entcard-fecha{font-size:12.5px;font-weight:600;color:var(--td)}
+.entcard-hora{font-size:11.5px;color:var(--tx3);background:var(--cr);padding:2px 8px;border-radius:12px;font-weight:500}
+.entcard-body{padding:12px 15px}
+.entcard-alumno{font-size:14px;font-weight:600;color:var(--td);margin-bottom:2px;font-family:'Lora',serif}
+.entcard-padre{font-size:12px;color:var(--tx2);margin-bottom:6px}
+.entcard-curso{font-size:11.5px;background:var(--cr2);color:var(--tl);padding:2px 8px;border-radius:12px;display:inline-block}
+.entcard-foot{padding:10px 15px;border-top:1px solid var(--bd);display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.entcard.pasada{border-left:3px solid var(--or)}
+.entcard.registrada{border-left:3px solid var(--gr)}
+.entcard.pendiente{border-left:3px solid var(--tl)}
+.ent-empty{text-align:center;padding:60px 20px;color:var(--tx3)}
+.ent-empty-ic{font-size:40px;margin-bottom:12px}
+/* Resultado entrevista */
+.ent-resultado{background:var(--cr);border-radius:10px;padding:14px;margin-top:12px}
+.ent-r-title{font-size:11px;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
+.ent-opciones{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px}
+.ent-opcion{padding:10px 8px;border-radius:9px;border:2px solid var(--bd2);cursor:pointer;text-align:center;font-size:12px;font-weight:500;color:var(--tx2);transition:all .15s;background:#fff}
+.ent-opcion:hover{border-color:var(--tl);color:var(--td)}
+.ent-opcion.selected-post{background:#E4EDF3;border-color:var(--cp);color:var(--cp)}
+.ent-opcion.selected-esp{background:#FEF5E6;border-color:var(--cs);color:var(--cs)}
+.ent-opcion.selected-des{background:#F0F0EE;border-color:var(--cd);color:var(--cd)}
+/* Info box */
+.info-box{background:linear-gradient(135deg,#EBF7D4,#D4F0A8);border:1px solid var(--gr);border-radius:10px;padding:12px 15px;font-size:12.5px;color:#3A6A0A;line-height:1.6;margin-bottom:14px}
+.warn-box{background:#FEF5E6;border:1px solid var(--cs);border-radius:10px;padding:12px 15px;font-size:12.5px;color:#8A5510;line-height:1.6;margin-bottom:14px}
+
+.dbar-fill{background:var(--cr2);border-radius:20px;height:7px;overflow:hidden}
+.dbar-inner{height:100%;border-radius:20px;transition:width .4s}
+</style>
+</head>
+<body>
+
+<!-- ══ PORTAL FAMILIAS ══ -->
+<div id="s-portal" class="screen" style="display:block">
+  <nav class="pnav">
+    <div class="pnav-logo" onclick="goPortal()">
+      <div class="lb4"><div class="la"><span>A</span></div><div class="le"><span>e</span></div><div class="lb"><span>b</span></div><div class="ls"><span>s</span></div></div>
+      <div class="pnav-brand"><h2>Austin EBS</h2><p>eco bilingual school</p></div>
+    </div>
+    <div class="pnav-links">
+      <button class="pnl" onclick="navScroll('#sec-niv')">Niveles</button>
+      <button class="pnl" onclick="navScroll('#sec-ped')">Pedagogía</button>
+      <button class="pnl" onclick="navScroll('#sec-proc')">Proceso</button>
+      <a class="pnl" href="https://www.austinebs-ah.edu.ar" target="_blank" style="text-decoration:none">Sitio web ↗</a>
+      <button class="pnl cta" onclick="goPost()">Quiero postularme</button>
+      <button class="pnl staff" onclick="goLogin()">Staff ·</button>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <div class="hero-bg"></div>
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+      <div class="hero-logo"><div class="la"><span>A</span></div><div class="le"><span>e</span></div><div class="lb"><span>b</span></div><div class="ls"><span>s</span></div></div>
+      <h1>Austin Eco Bilingual School</h1>
+      <p>Una comunidad educativa bilingüe, innovadora y comprometida con el desarrollo integral de cada estudiante desde los 2 años.</p>
+      <div class="hero-btns">
+        <button class="hbtn hbtn-p" onclick="goPost()">Quiero postularme →</button>
+        <a class="hbtn hbtn-s" href="https://www.austinebs-ah.edu.ar" target="_blank">Conocer el colegio ↗</a>
+      </div>
+      <div class="hero-chips">
+        <span class="hchip">🌿 Eco Friendly</span>
+        <span class="hchip">🌎 IB World School</span>
+        <span class="hchip">🗣️ Bilingüe Inglés-Español</span>
+        <span class="hchip">🎓 K2 a 6to año</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="psec" id="sec-niv">
+    <div class="slabel">Oferta educativa</div>
+    <h2 class="sh2">Niveles y modalidades</h2>
+    <p class="slead">Acompañamos el crecimiento de cada niño desde los 2 años hasta la finalización del secundario en un entorno bilingüe y ecológico.</p>
+    <div class="nivgrid">
+      <div class="nivc"><div class="nivc-ic">🐣</div><div class="nivc-t">Kindergarten</div><div class="nivc-s">Ambiente lúdico y bilingüe desde los primeros años. Jornada simple y completa disponibles.</div><div class="nivc-r">K2 – K5 (2 a 5 años)</div></div>
+      <div class="nivc"><div class="nivc-ic">📚</div><div class="nivc-t">Elementary School</div><div class="nivc-s">Aprendizaje activo, bilingüe e interdisciplinario. Marco curricular IB adaptado.</div><div class="nivc-r">1ro a 6to año (6 a 12 años)</div></div>
+      <div class="nivc"><div class="nivc-ic">🎓</div><div class="nivc-t">High School</div><div class="nivc-s">Formación académica rigurosa orientada a la universidad. Bachillerato bilingüe.</div><div class="nivc-r">1ro a 6to año (12 a 18 años)</div></div>
+      <div class="nivc"><div class="nivc-ic">⏰</div><div class="nivc-t">Jornadas</div><div class="nivc-s"><strong>Simple:</strong> hasta las 13hs.<br><strong>Completa:</strong> hasta las 17hs con extracurriculares.</div><div class="nivc-r">Ambas disponibles</div></div>
+    </div>
+  </section>
+
+  <div style="background:#fff;padding:1px 0">
+  <section class="psec" id="sec-ped">
+    <div class="slabel">Propuesta pedagógica</div>
+    <h2 class="sh2">Un enfoque que transforma</h2>
+    <p class="slead">Integramos lo mejor de la educación internacional con el contexto local, priorizando el desarrollo humano integral.</p>
+    <div class="pedgrid">
+      <div class="pedi"><div class="pedi-ic">🌎</div><div><h4>Marco IB</h4><p>Currículum internacionalmente reconocido que promueve el pensamiento crítico y la ciudadanía global.</p></div></div>
+      <div class="pedi"><div class="pedi-ic">🗣️</div><div><h4>Bilingüismo real</h4><p>Clases en inglés y español con docentes nativos y bilingües. El idioma se adquiere de forma natural.</p></div></div>
+      <div class="pedi"><div class="pedi-ic">🌿</div><div><h4>Educación ambiental</h4><p>La sustentabilidad atraviesa toda la propuesta curricular. Huerta, reciclaje y consciencia ecológica.</p></div></div>
+      <div class="pedi"><div class="pedi-ic">🤝</div><div><h4>Comunidad y familia</h4><p>La familia es parte activa del proceso. Comunicación fluida y acompañamiento continuo.</p></div></div>
+      <div class="pedi"><div class="pedi-ic">🎨</div><div><h4>Aprendizaje por proyectos</h4><p>Metodología activa que integra disciplinas. Los alumnos son protagonistas de su aprendizaje.</p></div></div>
+      <div class="pedi"><div class="pedi-ic">💡</div><div><h4>Tecnología integrada</h4><p>Herramientas digitales con sentido pedagógico. Pensamiento computacional desde temprana edad.</p></div></div>
+    </div>
+  </section>
+  </div>
+
+  <section class="psec" id="sec-mas">
+    <div class="slabel">Más información</div>
+    <h2 class="sh2">Conocé el colegio en profundidad</h2>
+    <p class="slead">En nuestra web oficial encontrás información completa sobre el proyecto educativo, instalaciones, actividades y noticias. Las tarifas y aranceles se comparten personalmente durante el proceso de admisión.</p>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:22px">
+      <a href="https://www.austinebs-ah.edu.ar" target="_blank" class="hbtn hbtn-p" style="text-decoration:none">🌐 Visitar sitio web oficial ↗</a>
+      <button class="hbtn hbtn-s" style="background:var(--tl);color:#fff;border:none" onclick="goPost()">📋 Iniciar postulación →</button>
+    </div>
+  </section>
+
+  <div style="background:#fff;padding:1px 0">
+  <section class="psec" id="sec-proc">
+    <div class="slabel">¿Cómo es el proceso?</div>
+    <h2 class="sh2">Del interés a la matrícula en 5 pasos</h2>
+    <p class="slead">Un proceso sencillo, acompañado y pensado para las familias.</p>
+    <div class="proceso">
+      <div class="paso"><div class="paso-n" style="background:var(--gr)">1</div><div class="paso-t">Postulación</div><div class="paso-d">Completás el formulario online en 3 minutos.</div></div>
+      <div class="paso"><div class="paso-n" style="background:var(--cc)">2</div><div class="paso-t">Mail de bienvenida</div><div class="paso-d">Recibís info y el link para agendar tu entrevista.</div></div>
+      <div class="paso"><div class="paso-n" style="background:var(--ce)">3</div><div class="paso-t">Entrevista</div><div class="paso-d">Visita al colegio: conocen el proyecto e instalaciones.</div></div>
+      <div class="paso"><div class="paso-n" style="background:var(--cp)">4</div><div class="paso-t">Reserva vacante</div><div class="paso-d">Si querés avanzar, se confirma la vacante con el pago.</div></div>
+      <div class="paso"><div class="paso-n" style="background:var(--cm)">5</div><div class="paso-t">¡Bienvenidos!</div><div class="paso-d">El estudiante queda matriculado en la comunidad Austin.</div></div>
+    </div>
+  </section>
+  </div>
+
+  <div class="ctab">
+    <h2>¿Listos para ser parte de Austin?</h2>
+    <p>El proceso de postulación toma menos de 5 minutos. Completá el formulario y te contactamos a la brevedad.</p>
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+      <button class="hbtn hbtn-p" onclick="goPost()">Iniciar postulación →</button>
+      <a class="hbtn hbtn-s" href="https://www.austinebs-ah.edu.ar" target="_blank" style="text-decoration:none">Ver sitio oficial ↗</a>
+    </div>
+  </div>
+
+  <footer class="pfooter">
+    <p>© 2026 Austin Eco Bilingual School · Todos los derechos reservados</p>
+    <div style="display:flex;gap:16px">
+      <a href="https://www.austinebs-ah.edu.ar" target="_blank">www.austinebs-ah.edu.ar</a>
+      <span style="color:rgba(255,255,255,.3)">|</span>
+      <a href="mailto:admisiones@austinebs-ah.edu.ar">admisiones@austinebs-ah.edu.ar</a>
+    </div>
+  </footer>
+</div>
+
+<!-- ══ FORMULARIO ══ -->
+<div id="s-postulacion" class="screen">
+  <nav class="fnav">
+    <button class="fbk" onclick="goPortal()">← Volver</button>
+    <div class="fnav-t">Postulación · Austin EBS</div>
+    <div style="width:80px"></div>
+  </nav>
+  <div class="fwrap">
+    <div class="fbar"><div class="fs active" id="fb0"></div><div class="fs" id="fb1"></div><div class="fs" id="fb2"></div></div>
+
+    <div class="fstep on" id="fst0">
+      <div class="fstep-h">Datos del estudiante</div>
+      <div class="fstep-s">Completá los datos del niño/a que desea postularse a Austin EBS.</div>
+      <div class="fgrow">
+        <div class="fg"><label class="flabel">Nombre <span class="req">*</span></label><input class="fi" id="pf-n" placeholder="Nombre"></div>
+        <div class="fg"><label class="flabel">Apellido <span class="req">*</span></label><input class="fi" id="pf-ap" placeholder="Apellido"></div>
+      </div>
+      <div class="fgrow">
+        <div class="fg"><label class="flabel">Fecha de nacimiento</label><input class="fi" id="pf-nac" type="date"></div>
+        <div class="fg"><label class="flabel">DNI del estudiante</label><input class="fi" id="pf-dni" placeholder="Número de DNI"></div>
+      </div>
+      <div class="fgrow">
+        <div class="fg"><label class="flabel">Curso al que aplica <span class="req">*</span></label>
+          <select class="fsel" id="pf-curso">
+            <option value="">— Seleccioná —</option>
+            <optgroup label="Kindergarten">
+              <option value="K2 (Puppies)">K2 · Puppies (2 años)</option>
+              <option value="K3 (Koalas/Dolphins)">K3 · Koalas / Dolphins (3 años)</option>
+              <option value="K4 (Foxes/Monkeys)">K4 · Foxes / Monkeys (4 años)</option>
+              <option value="K5 (Bears/Hippos)">K5 · Bears / Hippos (5 años)</option>
+            </optgroup>
+            <optgroup label="Elementary School">
+              <option value="1er año Elementary">1er año Elementary</option>
+              <option value="2do año Elementary">2do año Elementary</option>
+              <option value="3er año Elementary">3er año Elementary</option>
+              <option value="4to año Elementary">4to año Elementary</option>
+              <option value="5to año Elementary">5to año Elementary</option>
+              <option value="6to año Elementary">6to año Elementary</option>
+            </optgroup>
+            <optgroup label="High School">
+              <option value="1er año High School">1er año High School</option>
+              <option value="2do año High School">2do año High School</option>
+              <option value="3er año High School">3er año High School</option>
+              <option value="4to año High School">4to año High School</option>
+              <option value="5to año High School">5to año High School</option>
+              <option value="6to año High School">6to año High School</option>
+            </optgroup>
+          </select>
+        </div>
+        <div class="fg"><label class="flabel">Ciclo lectivo <span class="req">*</span></label>
+          <select class="fsel" id="pf-anio"><option value="2026">2026</option><option value="2027">2027</option><option value="2028">2028</option></select>
+        </div>
+      </div>
+      <div class="fgrow">
+        <div class="fg"><label class="flabel">Jornada deseada</label>
+          <select class="fsel" id="pf-jornada"><option value="Jornada Completa">Jornada Completa</option><option value="Jornada Simple">Jornada Simple (solo Kinder)</option></select>
+        </div>
+        <div class="fg"><label class="flabel">Colegio actual / anterior</label><input class="fi" id="pf-cole" placeholder="Nombre del colegio"></div>
+      </div>
+      <div class="fg">
+        <label class="flabel">¿Tienen otro hijo/a en Austin EBS actualmente?</label>
+        <select class="fsel" id="pf-herm" onchange="toggleHermanoMsg()">
+          <option value="no">No</option>
+          <option value="si">Sí — es hermano/a de un estudiante actual</option>
+        </select>
+        <div class="fhermano" id="fherm-msg">⭐ Los hermanos de estudiantes actuales tienen prioridad de ingreso. El equipo de admisiones tendrá esto en cuenta al evaluar la vacante.</div>
+      </div>
+      <div class="fg"><label class="flabel">¿Cómo conocieron Austin EBS?</label>
+        <select class="fsel" id="pf-como">
+          <option value="">— Seleccioná —</option>
+          <option>Recomendación de otra familia</option><option>Redes sociales</option>
+          <option>Página web del colegio</option><option>Búsqueda en Google</option><option>Evento del colegio</option><option>Otro</option>
+        </select>
+      </div>
+      <div class="fbtns"><button class="sbtn sbtn-n" onclick="fNext(0)">Continuar →</button></div>
+    </div>
+
+    <div class="fstep" id="fst1">
+      <div class="fstep-h">Datos de la familia</div>
+      <div class="fstep-s">Información de contacto del padre, madre o tutor responsable del proceso.</div>
+      <div class="fgrow">
+        <div class="fg"><label class="flabel">Nombre <span class="req">*</span></label><input class="fi" id="pf-pn" placeholder="Nombre"></div>
+        <div class="fg"><label class="flabel">Apellido <span class="req">*</span></label><input class="fi" id="pf-pap" placeholder="Apellido"></div>
+      </div>
+      <div class="fg"><label class="flabel">Relación con el estudiante</label>
+        <select class="fsel" id="pf-rel"><option>Padre / Madre</option><option>Tutor/a legal</option><option>Abuelo/a</option><option>Otro familiar</option></select>
+      </div>
+      <div class="fdiv"></div>
+      <div class="fsec">Contacto</div>
+      <div class="fgrow">
+        <div class="fg"><label class="flabel">Email <span class="req">*</span></label><input class="fi" id="pf-email" type="email" placeholder="email@ejemplo.com"></div>
+        <div class="fg"><label class="flabel">Teléfono / WhatsApp <span class="req">*</span></label><input class="fi" id="pf-tel" placeholder="+54 11 0000-0000"></div>
+      </div>
+      <div class="fg"><label class="flabel">Barrio / Localidad</label><input class="fi" id="pf-dir" placeholder="¿Dónde viven actualmente?"></div>
+      <div class="fdiv"></div>
+      <div class="fg"><label class="flabel">Consultas o información adicional</label>
+        <textarea class="fta" id="pf-obs" placeholder="¿Hay algo que quieran compartir o preguntar?"></textarea>
+      </div>
+      <div class="fbtns">
+        <button class="sbtn sbtn-b" onclick="fBack(1)">← Volver</button>
+        <button class="sbtn sbtn-n" onclick="fNext(1)">Continuar →</button>
+      </div>
+    </div>
+
+    <div class="fstep" id="fst2">
+      <div class="fstep-h">Confirmar postulación</div>
+      <div class="fstep-s">Revisá los datos antes de enviar. Al enviar, recibirás un mail de confirmación con los próximos pasos.</div>
+      <div id="pf-resumen" style="background:#fff;border:1px solid var(--bd);border-radius:12px;padding:16px;margin-bottom:18px;font-size:13px;line-height:1.9"></div>
+      <div style="background:var(--cr);border-radius:10px;padding:13px;font-size:12.5px;color:var(--tx2);line-height:1.65;margin-bottom:18px">
+        ✅ Al enviar esta postulación, el equipo de Admisiones de Austin EBS recibirá una notificación inmediata y te contactará a la brevedad para coordinar la visita al colegio.
+      </div>
+      <div class="fbtns">
+        <button class="sbtn sbtn-b" onclick="fBack(2)">← Volver</button>
+        <button class="sbtn sbtn-ok" onclick="submitPost()">Enviar postulación ✓</button>
+      </div>
+    </div>
+
+    <div class="fstep" id="fst-ok">
+      <div class="fsuccess">
+        <div class="fsuccess-ic">🎉</div>
+        <div class="fsuccess-h">¡Postulación enviada!</div>
+        <p class="fsuccess-p">Gracias por postularte a Austin EBS. En breve recibirás un correo con los próximos pasos del proceso de admisión. ¡Esperamos conocerlos pronto!</p>
+        <div style="margin-top:24px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+          <button class="sbtn sbtn-n" onclick="goPortal()">Volver al inicio</button>
+          <a class="sbtn sbtn-b" href="https://www.austinebs-ah.edu.ar" target="_blank" style="text-decoration:none">Ver el colegio ↗</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ LOGIN ══ -->
+<div id="s-login" class="screen">
+  <div class="lcard">
+    <div class="llogo">
+      <div class="lb4m"><div class="la"><span>A</span></div><div class="le"><span>e</span></div><div class="lb"><span>b</span></div><div class="ls"><span>s</span></div></div>
+      <div class="lbrand"><h1>Austin EBS</h1><p>eco bilingual school</p></div>
+    </div>
+    <div class="lsub">Panel de Admisiones</div>
+    <div class="lerr" id="lerr">Credenciales incorrectas. Intentá nuevamente.</div>
+    <label class="ll">Correo electrónico</label>
+    <input class="li" id="lem" type="email" value="admisiones@austinebs-ah.edu.ar">
+    <label class="ll">Contraseña</label>
+    <input class="li" id="lpw" type="password" value="austin2026" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="lbtn" onclick="doLogin()">Ingresar al panel</button>
+    <p class="lhint">austin2026</p>
+    <p class="lback" onclick="goPortal()">← Volver al portal de familias</p>
+  </div>
+</div>
+
+<!-- ══ PANEL ══ -->
+<div id="s-panel">
+  <aside class="sidebar">
+    <div class="sbh">
+      <div class="sblogo">
+        <div class="lb4"><div class="la"><span>A</span></div><div class="le"><span>e</span></div><div class="lb"><span>b</span></div><div class="ls"><span>s</span></div></div>
+        <div class="sbbrand"><h2>Austin EBS</h2><span>Admisiones</span></div>
+      </div>
+    </div>
+    <nav class="sbnav">
+      <div class="sbsec">Principal</div>
+      <button class="sbi active" id="nav-dashboard" onclick="showV('dashboard')"><span class="sbi-ic">◈</span> Dashboard <span class="sbi-badge" id="badge-n" style="display:none">0</span></button>
+      <button class="sbi" id="nav-pipeline" onclick="showV('pipeline')"><span class="sbi-ic">⬡</span> Pipeline <span class="sbi-badge" id="badge-inac" style="display:none">!</span></button>
+      <button class="sbi" id="nav-entrevistas" onclick="showV('entrevistas')"><span class="sbi-ic">📅</span> Entrevistas <span class="sbi-badge" id="badge-ent" style="display:none">0</span></button>
+      <button class="sbi" id="nav-post" onclick="showV('post')"><span class="sbi-ic">◉</span> Postulantes <span class="sbi-badge green" id="badge-total" style="display:none">0</span></button>
+      <div class="sbsec">Gestión</div>
+      <button class="sbi" id="nav-vac" onclick="showV('vac')"><span class="sbi-ic">▣</span> Vacantes</button>
+      <div class="sbsec">Comunicaciones</div>
+      <button class="sbi" id="nav-emails" onclick="showV('emails')"><span class="sbi-ic">✉</span> Plantillas de mail</button>
+      <button class="sbi" id="nav-tar" onclick="showV('tar')"><span class="sbi-ic">$</span> Tarifas 2026</button>
+      <div class="sbsec">Sistema</div>
+      <button class="sbi" id="nav-cfg" onclick="showV('cfg')"><span class="sbi-ic">⚙</span> Configuración</button>
+    </nav>
+    <div class="sbfoot">
+      <div class="sbuser"><div class="sbav">AD</div><div class="sbuser-i"><span>Admisiones</span><small>Austin EBS</small></div></div>
+      <button class="sbout" onclick="doLogout()">← Cerrar sesión</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="tb-t" id="tb-t">Dashboard</div>
+      <div class="tb-a">
+        <button class="btn btn-csv btn-sm" onclick="exportCSV()" title="Exportar todos los postulantes a CSV">⬇ Exportar CSV</button>
+        <button class="btn btn-td" onclick="openNuevo()">+ Agregar postulante</button>
+      </div>
+    </div>
+    <div class="pg">
+
+      <!-- DASHBOARD -->
+      <div id="view-dashboard" class="view on">
+        <div class="ph"><h1>Dashboard</h1><p id="dash-fecha"></p></div>
+        <div id="notif-cont"></div>
+        <div class="stats" id="stats"></div>
+        <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:14px;margin-bottom:18px">
+          <div class="cbox">
+            <div class="cbox-h"><div class="cbox-t">⚡ Requieren acción</div><button class="btn btn-ghost btn-sm" onclick="showV('pipeline')">Ver pipeline →</button></div>
+            <div id="dash-accion"></div>
+          </div>
+          <div class="cbox">
+            <div class="cbox-h"><div class="cbox-t">📊 Distribución por nivel</div></div>
+            <div id="dash-dist" style="padding:14px 18px"></div>
+          </div>
+        </div>
+        <div class="cbox">
+          <div class="cbox-h"><div class="cbox-t">🕐 Actividad reciente</div><button class="btn btn-ghost btn-sm" onclick="showV('post')">Ver todos →</button></div>
+          <table><thead><tr><th>Estudiante</th><th>Familia</th><th>Curso</th><th>Estado</th><th>Última acción</th><th></th></tr></thead>
+          <tbody id="dash-rec"></tbody></table>
+        </div>
+      </div>
+
+      <!-- PIPELINE -->
+      <div id="view-pipeline" class="view">
+        <div class="ph"><h1>Pipeline de admisiones</h1><p>Hacé clic en cualquier postulante para gestionar · <span style="color:#DC2626;font-weight:500">⚠ borde rojo = inactivo +7 días</span></p></div>
+        <div class="pcols" id="pcols"></div>
+      </div>
+
+      <!-- ENTREVISTAS -->
+      <div id="view-entrevistas" class="view">
+        <div class="ph"><h1>Entrevistas</h1><p>Seguimiento completo del proceso de entrevistas · Programadas, realizadas y pendientes de resultado</p></div>
+        <div class="info-box">
+          📅 <strong>¿Cómo funciona?</strong> Cuando cambiás un postulante a "Citado entrevista", el mail automático incluye el link de Google Calendar para que la familia reserve su horario. Acá registrás la fecha manualmente y el resultado de cada entrevista.
+        </div>
+        <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-out btn-sm" id="ent-f-todas" onclick="filterEnt('todas')" style="background:var(--td);color:#fff">Todas</button>
+            <button class="btn btn-out btn-sm" id="ent-f-proximas" onclick="filterEnt('proximas')">Próximas</button>
+            <button class="btn btn-out btn-sm" id="ent-f-pasadas" onclick="filterEnt('pasadas')">Realizadas sin resultado</button>
+            <button class="btn btn-out btn-sm" id="ent-f-ok" onclick="filterEnt('ok')">Con resultado</button>
+          </div>
+        </div>
+        <div class="entcal" id="ent-grid"></div>
+      </div>
+
+      <!-- POSTULANTES -->
+      <div id="view-post" class="view">
+        <div class="ph"><h1>Postulantes</h1><p id="post-sub">Listado completo</p></div>
+        <div class="cbox">
+          <div class="cbox-h">
+            <div class="cbox-t" id="post-cnt"></div>
+            <div class="filts">
+              <input class="fsrch" id="fq" placeholder="🔍 Buscar..." oninput="filterT()">
+              <select class="fsel2" id="fest" onchange="filterT()">
+                <option value="">Todos los estados</option>
+                <option value="nueva">Nueva consulta</option><option value="citado">Citado entrevista</option>
+                <option value="entrevistado">Entrevistado</option><option value="postulado">Postulado</option>
+                <option value="matriculado">Matriculado</option><option value="lista de espera">Lista de espera</option>
+                <option value="desiste">Desiste</option>
+              </select>
+              <select class="fsel2" id="fniv" onchange="filterT()">
+                <option value="">Todos los niveles</option>
+                <option value="Kindergarten">Kindergarten</option><option value="Elementary">Elementary</option><option value="High School">High School</option>
+              </select>
+              <select class="fsel2" id="fanio" onchange="filterT()">
+                <option value="">Todos los ciclos</option>
+                <option value="2026">2026</option><option value="2027">2027</option><option value="2028">2028</option>
+              </select>
+            </div>
+          </div>
+          <table><thead><tr><th>Estudiante</th><th>Padre/Tutor</th><th>Curso</th><th>Ciclo</th><th>Estado</th><th>Email</th><th>Días</th><th></th></tr></thead>
+          <tbody id="post-tb"></tbody></table>
+        </div>
+      </div>
+
+      <!-- VACANTES -->
+      <div id="view-vac" class="view">
+        <div class="ph"><h1>Vacantes por curso</h1><p>Definí la disponibilidad · Cuando un curso se llena el sistema lo advierte automáticamente</p></div>
+        <div style="background:#fff;border-radius:var(--r2);border:1px solid var(--bd);padding:12px 17px;margin-bottom:16px;font-size:12.5px;color:var(--tx2);line-height:1.6">
+          <strong>¿Cómo funciona?</strong> Al cambiar el estado de un postulante a "Postulado" y el curso está lleno, el sistema sugiere automáticamente "Lista de espera" y lo advierte visualmente.
+        </div>
+        <div class="vacgrid" id="vacgrid"></div>
+        <div style="margin-top:14px"><button class="btn btn-td" onclick="saveVac()">Guardar vacantes</button></div>
+      </div>
+
+      <!-- EMAILS -->
+      <div id="view-emails" class="view">
+        <div class="ph"><h1>Plantillas de mail</h1><p>Editá el contenido de cada correo automático · Usá las variables para personalizar</p></div>
+        <div class="calinfo">
+          <div class="calinfo-ic">📅</div>
+          <div class="calinfo-t"><h3>Link de agenda de entrevistas</h3><p>Se incluye automáticamente en el mail "Citado entrevista"</p><a id="callink" href="#" target="_blank">calendar.app.google/WrfYGGSiRH3smkxL8</a></div>
+        </div>
+        <div id="email-tpls"></div>
+      </div>
+
+      <!-- TARIFAS -->
+      <div id="view-tar" class="view">
+        <div class="ph"><h1>Tarifas 2026</h1><p>Se usan en los mails automáticos al postulante · Solo visibles internamente</p></div>
+        <div id="tar-cont"></div>
+        <div style="background:var(--cr);border-radius:9px;padding:10px 13px;font-size:12px;color:var(--tx3);margin:10px 0 14px;line-height:1.6">
+          Descuentos por hermanos: 2do hijo 10% · 3er hijo 25% · 4to hijo 50% · 5to hijo 50% — solo sobre cuotas, no sobre matrícula ni materiales.
+        </div>
+        <button class="btn btn-td" onclick="saveTar()">Guardar tarifas</button>
+      </div>
+
+      <!-- CONFIG -->
+      <div id="view-cfg" class="view">
+        <div class="ph"><h1>Configuración</h1><p>Parámetros del sistema de admisiones</p></div>
+        <div class="cbox">
+          <div class="cbox-h"><div class="cbox-t">Datos del remitente y links</div></div>
+          <div class="mb">
+            <div class="cfgrow"><div><div class="cfglbl">Nombre del remitente</div><div class="cfgsub">Aparece en el campo "De:" de cada mail</div></div><input class="cfgi" id="cfg-nom" value="Admisiones Austin EBS"></div>
+            <div class="cfgrow"><div><div class="cfglbl">Email de admisiones</div><div class="cfgsub">Dirección desde la que se envían los correos</div></div><input class="cfgi" id="cfg-em" value="admisiones@austinebs-ah.edu.ar"></div>
+            <div class="cfgrow"><div><div class="cfglbl">Link agenda entrevistas</div><div class="cfgsub">Se incluye en el mail de "Citado entrevista"</div></div><input class="cfgi" id="cfg-cal" value="https://calendar.app.google/WrfYGGSiRH3smkxL8"></div>
+            <div class="cfgrow"><div><div class="cfglbl">Link Google Drive (brochure)</div><div class="cfgsub">Para que las familias descarguen información</div></div><input class="cfgi" id="cfg-drv" value="https://drive.google.com/drive/folders/1c0vFf1MWUcSC8-lqBjBCGDQ-hbXxGQDA"></div>
+          </div>
+        </div>
+        <div class="cbox" style="margin-top:14px">
+          <div class="cbox-h"><div class="cbox-t">EmailJS — Envío real de mails</div><span id="ejs-badge" style="font-size:11px;padding:3px 9px;border-radius:12px;font-weight:600;background:#FEF5E6;color:#8A5510">⚡ No configurado</span></div>
+          <div class="mb">
+            <div style="background:var(--cr);border-radius:9px;padding:11px 14px;font-size:12.5px;color:var(--tx2);margin-bottom:14px;line-height:1.65">
+              Sin EmailJS los mails se abren en tu cliente de correo (Gmail). Con EmailJS se envían directamente en un click. Creá cuenta gratis en <a href="https://emailjs.com" target="_blank" style="color:var(--tl)">emailjs.com</a> (200 mails/mes).
+            </div>
+            <div class="cfgrow"><div><div class="cfglbl">Service ID</div><div class="cfgsub">ej: <code style="font-size:11px;background:var(--cr);padding:1px 5px;border-radius:4px">service_abc1234</code></div></div><input class="cfgi" id="cfg-ejsid" placeholder="service_XXXXXXX"></div>
+            <div class="cfgrow"><div><div class="cfglbl">Template ID</div><div class="cfgsub">ej: <code style="font-size:11px;background:var(--cr);padding:1px 5px;border-radius:4px">template_abc1234</code></div></div><input class="cfgi" id="cfg-ejstpl" placeholder="template_XXXXXXX"></div>
+            <div class="cfgrow"><div><div class="cfglbl">Public Key</div><div class="cfgsub">En tu cuenta EmailJS → Account → API Keys</div></div><input class="cfgi" id="cfg-ejskey" placeholder="xxxxxxxxxxxxxxxxxxxx"></div>
+            <div style="display:flex;gap:8px;margin-top:10px">
+              <button class="btn btn-td" onclick="saveCfg()">Guardar configuración</button>
+              <button class="btn btn-out" onclick="testMail()">Enviar mail de prueba</button>
+            </div>
+          </div>
+        </div>
+        <div class="cbox" style="margin-top:14px">
+          <div class="cbox-h"><div class="cbox-t">Peligro — Zona de mantenimiento</div></div>
+          <div class="mb" style="display:flex;gap:10px;flex-wrap:wrap">
+            <button class="btn btn-out" onclick="exportCSV()">⬇ Exportar CSV completo</button>
+            <button class="btn btn-danger" onclick="resetDB()">🗑 Borrar todos los datos</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- MODAL -->
+<div class="ov" id="ov" onclick="closeMBg(event)">
+  <div class="modal" id="modal">
+    <div class="mh"><div class="mt" id="mt"></div><button class="mc" onclick="closeM()">✕</button></div>
+    <div class="mb" id="mb"></div>
+    <div class="mf" id="mf"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+// ═══════════════════════════
+// CONSTANTES Y ESTADO GLOBAL
+// ═══════════════════════════
+let currentStep = 0;
+const SCREENS = ['s-portal','s-postulacion','s-login','s-panel'];
+const ESTADOS = ['nueva','citado','entrevistado','postulado','matriculado','lista de espera','desiste'];
+const EL = {nueva:'Nueva consulta',citado:'Citado entrevista',entrevistado:'Entrevistado',postulado:'Postulado',matriculado:'Matriculado','lista de espera':'Lista de espera',desiste:'Desiste'};
+const ECLS = {nueva:'bg-n',citado:'bg-ci',entrevistado:'bg-en',postulado:'bg-po',matriculado:'bg-ma','lista de espera':'bg-es',desiste:'bg-de'};
+const EPCLS = {nueva:'ph-n',citado:'ph-ci',entrevistado:'ph-en',postulado:'ph-po',matriculado:'ph-ma','lista de espera':'ph-es',desiste:'ph-de'};
+const ECOL = {nueva:'var(--cn)',citado:'var(--cc)',entrevistado:'var(--ce)',postulado:'var(--cp)',matriculado:'var(--cm)','lista de espera':'var(--cs)',desiste:'var(--cd)'};
+const CURSOS = ['K2 (Puppies)','K3 (Koalas/Dolphins)','K4 (Foxes/Monkeys)','K5 (Bears/Hippos)','1er año Elementary','2do año Elementary','3er año Elementary','4to año Elementary','5to año Elementary','6to año Elementary','1er año High School','2do año High School','3er año High School','4to año High School','5to año High School','6to año High School'];
+const NIVEL = c => c.startsWith('K') ? 'Kindergarten' : c.includes('Elementary') ? 'Elementary' : 'High School';
+const DIAS_INACTIVO = 7;
+
+// ═══════════════════════════
+// BASE DE DATOS
+// ═══════════════════════════
+let DB = {
+  nextId:1,
+  postulantes:[],
+  vacantes:{
+    'K2 (Puppies)':{t:15,u:0},'K3 (Koalas/Dolphins)':{t:15,u:0},'K4 (Foxes/Monkeys)':{t:15,u:0},'K5 (Bears/Hippos)':{t:15,u:0},
+    '1er año Elementary':{t:20,u:0},'2do año Elementary':{t:20,u:0},'3er año Elementary':{t:20,u:0},'4to año Elementary':{t:20,u:0},'5to año Elementary':{t:20,u:0},'6to año Elementary':{t:20,u:0},
+    '1er año High School':{t:20,u:0},'2do año High School':{t:20,u:0},'3er año High School':{t:20,u:0},'4to año High School':{t:20,u:0},'5to año High School':{t:20,u:0},'6to año High School':{t:20,u:0}
+  },
+  tarifas:{k2_m:618243.75,k2_s:494595,k2_c:658512,k3_m:746713.75,k3_s:494595,k3_c:597371,k45_m:746713.75,k45_c:597371,el_m:926812.5,el_c:741450,hs13_m:1056251.25,hs13_c:845001,hs46_m:1093611.25,hs46_c:874889},
+  emails:{
+    nueva:{subj:'¡Gracias por postular a Austin EBS!',body:'Hola {{padre}},\n\nSoy parte del staff de Austin Eco Bilingual School, encargada del proceso de admisiones.\n\n¡Nos alegra muchísimo tu postulación para {{alumno}}! Para conocer el proyecto en detalle y las tarifas, podés ver el brochure y los aranceles aquí:\n{{link_drive}}\n\nPara empezar con el proceso, ingresá al siguiente link y reservá un horario disponible de visita con entrevista para conocer el proyecto educativo en profundidad y las instalaciones del colegio:\n{{link_calendario}}\n\nQuedo a disposición por cualquier consulta.\n\nSaludos cordiales,\nAdmisiones – Austin EBS'},
+    citado:{subj:'¡Tu entrevista quedó agendada!',body:'Hola {{padre}},\n\nGracias por agendar su entrevista para conocer el Colegio Austin EBS. Será un gusto recibirlos en la fecha y hora seleccionada.\n\nQuedo a disposición por cualquier consulta. Dejo el link del calendario por cualquier inconveniente o modificación:\n{{link_calendario}}\n\n¡Nos vemos pronto!\nAdmisiones – Austin EBS'},
+    entrevistado:{subj:'¡Gracias por la entrevista!',body:'Hola {{padre}},\n\nFue un gusto recibirlos y conocerlos. Estamos orgullosos de que nos contemplen para la elección escolar de {{alumno}}.\n\nPara seguir acompañándolos en el proceso, les pedimos que completen este breve formulario post entrevista:\nhttps://forms.gle/rsQwi9ps1chN2q8x5\n\nEn caso de querer avanzar, esperamos su confirmación por este medio.\n\nUn afectuoso saludo,\nAdmisiones – Austin EBS'},
+    postulado:{subj:'Siguiente paso en el proceso de admisión',body:'Hola {{padre}},\n\nGracias por la postulación de {{alumno}}.\n\nEstamos muy contentos de acompañarlos en los pasos a seguir para continuar con la reserva de vacante. Podrán encontrar las tarifas en el siguiente enlace:\n{{link_drive}}\n\nEl proceso quedará confirmado una vez que recibamos el comprobante de pago de la reserva de vacante por este medio.\n\nUn afectuoso saludo,\nAdmisiones – Austin EBS'},
+    matriculado:{subj:'¡Bienvenidos a la familia Austin EBS!',body:'Hola {{padre}},\n\nHemos recibido su comprobante de pago y {{alumno}} ya se encuentra matriculado/a. ¡Bienvenidos a la comunidad Austin!\n\nEstamos para lo que necesiten.\n\nAdmisiones – Austin EBS'},
+    'lista de espera':{subj:'Actualización: lista de espera',body:'Hola {{padre}},\n\nPor el momento, la postulación de {{alumno}} se encuentra en lista de espera. Les avisaremos ante cualquier novedad. ¡Muchas gracias!\n\nQuedamos a disposición.\nAdmisiones – Austin EBS'},
+    desiste:{subj:'Proceso de admisión: baja solicitada',body:'Hola {{padre}},\n\nTomamos nota de que no continuarán con la postulación de {{alumno}}. Gracias por habernos considerado.\n\nSi desean retomar más adelante, cuenten con nosotros.\n\nAdmisiones – Austin EBS'},
+    seguimiento_entrevista:{subj:'¿Cómo fue la entrevista? — Austin EBS',body:'Hola {{padre}},\n\nFue un placer recibirlos en la entrevista. Esperamos que {{alumno}} y ustedes hayan quedado tan contentos como nosotros.\n\nSi desean continuar con el proceso de admisión, por favor respondé este mail confirmando tu interés. Con eso podremos avanzar con los pasos de reserva de vacante.\n\nSi por algún motivo decidieron no continuar, también podés avisarnos por este medio — lo entendemos perfectamente y siempre será bienvenida la familia si desean retomar en el futuro.\n\nEsperamos tu respuesta.\n\nUn afectuoso saludo,\nAdmisiones – Austin EBS'}
+  },
+  config:{nombre:'Admisiones Austin EBS',email:'admisiones@austinebs-ah.edu.ar',calendar:'https://calendar.app.google/WrfYGGSiRH3smkxL8',drive:'https://drive.google.com/drive/folders/1c0vFf1MWUcSC8-lqBjBCGDQ-hbXxGQDA',ejsid:'',ejstpl:'',ejskey:''},
+  pendingNotif:[]
+};
+
+// ═══════════════════════════
+// PERSISTENCIA
+// ═══════════════════════════
+function saveDB(){
+  try{ localStorage.setItem('austin_ebs_v2',JSON.stringify({nextId:DB.nextId,postulantes:DB.postulantes,vacantes:DB.vacantes,tarifas:DB.tarifas,emails:DB.emails,config:DB.config})); }
+  catch(e){}
+}
+function loadDB(){
+  try{
+    const s=localStorage.getItem('austin_ebs_v2'); if(!s) return;
+    const d=JSON.parse(s);
+    if(d.nextId) DB.nextId=d.nextId;
+    if(d.postulantes) DB.postulantes=d.postulantes;
+    if(d.vacantes) DB.vacantes={...DB.vacantes,...d.vacantes};
+    if(d.tarifas) DB.tarifas={...DB.tarifas,...d.tarifas};
+    if(d.emails) DB.emails={...DB.emails,...d.emails};
+    if(d.config) DB.config={...DB.config,...d.config};
+  } catch(e){}
+}
+function resetDB(){
+  if(!confirm('¿Borrar TODOS los postulantes y datos? Esta acción no se puede deshacer.')) return;
+  localStorage.removeItem('austin_ebs_v2');
+  DB.postulantes=[]; DB.nextId=1; DB.pendingNotif=[];
+  renderDashboard(); toast('Datos eliminados','info');
+}
+
+// ═══════════════════════════
+// NAVEGACION
+// ═══════════════════════════
+function go(id){
+  SCREENS.forEach(sid=>{
+    const el=document.getElementById(sid); if(!el) return;
+    if(sid===id){ el.style.display=sid==='s-panel'?'flex':'block'; }
+    else { el.style.display='none'; }
+  });
+  window.scrollTo(0,0);
+}
+function goPortal(){ go('s-portal'); }
+function goLogin(){ go('s-login'); }
+function goPost(){ currentStep=0; showFStep(0); go('s-postulacion'); }
+function navScroll(id){ const el=document.querySelector(id); if(el) el.scrollIntoView({behavior:'smooth'}); }
+
+// ═══════════════════════════
+// AUTH
+// ═══════════════════════════
+function doLogin(){
+  const em=document.getElementById('lem').value;
+  const pw=document.getElementById('lpw').value;
+  if(em==='admisiones@austinebs-ah.edu.ar' && pw==='austin2026'){
+    go('s-panel'); renderPanel();
+  } else { document.getElementById('lerr').style.display='block'; }
+}
+function doLogout(){ go('s-login'); }
+
+// ═══════════════════════════
+// PANEL VIEWS
+// ═══════════════════════════
+function showV(v){
+  document.querySelectorAll('.view').forEach(el=>el.classList.remove('on'));
+  document.querySelectorAll('.sbi').forEach(el=>el.classList.remove('active'));
+  const ve=document.getElementById('view-'+v); if(ve) ve.classList.add('on');
+  const nb=document.getElementById('nav-'+v); if(nb) nb.classList.add('active');
+  const titles={dashboard:'Dashboard',pipeline:'Pipeline de admisiones',entrevistas:'Entrevistas',post:'Postulantes',vac:'Vacantes por curso',emails:'Plantillas de mail',tar:'Tarifas 2026',cfg:'Configuración'};
+  document.getElementById('tb-t').textContent=titles[v]||v;
+  if(v==='dashboard') renderDashboard();
+  if(v==='pipeline') renderPipeline();
+  if(v==='entrevistas') renderEntrevistas('todas');
+  if(v==='post') renderTable();
+  if(v==='vac') renderVac();
+  if(v==='emails') renderEmails();
+  if(v==='tar') renderTar();
+  if(v==='cfg') renderCfg();
+}
+function renderPanel(){ renderDashboard(); updateSidebarBadges(); }
+
+// ═══════════════════════════
+// HELPERS
+// ═══════════════════════════
+function badge(e){ return `<span class="badge ${ECLS[e]||''}">${EL[e]||e}</span>`; }
+function fDate(d){ if(!d) return '—'; const p=d.split('-'); return `${p[2]}/${p[1]}/${p[0]}`; }
+function fDateFull(d){ if(!d) return '—'; const dt=new Date(d+'T00:00:00'); return dt.toLocaleDateString('es-AR',{day:'2-digit',month:'short',year:'numeric'}); }
+function today(){ return new Date().toISOString().split('T')[0]; }
+function diasDesde(d){ if(!d) return 0; return Math.floor((new Date()-new Date(d+'T00:00:00'))/(1000*60*60*24)); }
+function esInactivo(p){ if(p.estado==='matriculado'||p.estado==='desiste') return false; return diasDesde(p.ultAccion||p.fecha)>=DIAS_INACTIVO; }
+function toast(msg,type=''){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast show'+(type?' '+type:'');
+  clearTimeout(t._t); t._t=setTimeout(()=>t.className='toast',4500);
+}
+
+// ═══════════════════════════
+// SIDEBAR BADGES
+// ═══════════════════════════
+function updateSidebarBadges(){
+  const ps=DB.postulantes;
+  const nn=ps.filter(p=>p.estado==='nueva').length;
+  const ni=ps.filter(p=>esInactivo(p)).length;
+  const tot=ps.length;
+  const bn=document.getElementById('badge-n'); if(bn){ bn.textContent=nn; bn.style.display=nn>0?'inline':'none'; }
+  const bi=document.getElementById('badge-inac'); if(bi){ bi.textContent=ni; bi.style.display=ni>0?'inline':'none'; }
+  const bt=document.getElementById('badge-total'); if(bt){ bt.textContent=tot; bt.style.display=tot>0?'inline':'none'; }
+}
+
+// ═══════════════════════════
+// DASHBOARD
+// ═══════════════════════════
+function renderDashboard(){
+  updateSidebarBadges();
+  const ps=DB.postulantes;
+  const cnt=e=>ps.filter(p=>p.estado===e).length;
+  const total=ps.length;
+  const mat=cnt('matriculado'), post=cnt('postulado'), nuevas=cnt('nueva'), esp=cnt('lista de espera'), cit=cnt('citado');
+  const inac=ps.filter(p=>esInactivo(p));
+
+  // Fecha
+  document.getElementById('dash-fecha').textContent=new Date().toLocaleDateString('es-AR',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+  // Notificaciones
+  const nc=document.getElementById('notif-cont'); nc.innerHTML='';
+  // Nuevas postulaciones pendientes
+  DB.pendingNotif.forEach(id=>{
+    const p=DB.postulantes.find(x=>x.id===id); if(!p) return;
+    const d=document.createElement('div'); d.className='notif-b';
+    d.innerHTML=`<div class="notif-t"><h4>🔔 Nueva postulación: ${p.alumno}</h4><p>${p.curso} · Ciclo ${p.anio} · ${p.padre} · ${p.email}</p></div>
+    <div class="notif-a"><button class="nbtn nbtn-v" onclick="openDetalle(${id})">Ver y enviar mail</button><button class="nbtn nbtn-d" onclick="dismissN(${id})">Descartar</button></div>`; nc.appendChild(d);
+  });
+  // Inactivos
+  if(inac.length>0){
+    const d=document.createElement('div'); d.className='notif-b warn';
+    d.innerHTML=`<div class="notif-t"><h4>⚠️ ${inac.length} postulante${inac.length>1?'s':''} sin actividad hace +${DIAS_INACTIVO} días</h4><p>${inac.slice(0,3).map(p=>p.alumno).join(', ')}${inac.length>3?` y ${inac.length-3} más`:''}</p></div>
+    <div class="notif-a"><button class="nbtn nbtn-v warn-v" onclick="showV('pipeline')">Ver en pipeline</button></div>`; nc.appendChild(d);
+  }
+
+  // Stats
+  document.getElementById('stats').innerHTML=[
+    {l:'Total',v:total,s:'postulantes activos',style:'border-color:var(--tl)'},
+    {l:'Matriculados',v:mat,s:`${total?Math.round(mat/total*100):0}% conversión`,c:'var(--cm)',style:'border-color:var(--cm)'},
+    {l:'Postulados',v:post,s:'pendientes de pago',c:'var(--cp)',style:'border-color:var(--cp)'},
+    {l:'Nuevas consultas',v:nuevas,s:'sin acción aún',c:'var(--cn)',style:'border-color:var(--cn)'},
+    {l:'Citados',v:cit,s:'entrevista pendiente',c:'var(--cc)',style:'border-color:var(--cc)'},
+    {l:'Lista espera',v:esp,s:'curso lleno',c:'var(--cs)',style:'border-color:var(--cs)'},
+    {l:'⚠ Inactivos',v:inac.length,s:`+${DIAS_INACTIVO} días sin acción`,style:'border-color:#DC2626'},
+  ].map(s=>`<div class="stc" style="${s.style?'--bc:'+s.style:''}; border-left:3px solid ${s.style?.replace('border-color:','')||'var(--bd)'}">
+    <div class="stc-lbl">${s.l}</div>
+    <div class="stc-val">${s.v}</div>
+    <div class="stc-sub">${s.c?`<span class="stc-dot" style="background:${s.c}"></span>`:''}${s.s}</div>
+  </div>`).join('');
+
+  // Requieren acción
+  const accion=ps.filter(p=>['nueva','entrevistado','postulado'].includes(p.estado)).sort((a,b)=>esInactivo(b)-esInactivo(a)).slice(0,8);
+  document.getElementById('dash-accion').innerHTML=accion.length===0
+    ?`<div class="empty"><div class="empty-ic">✓</div><p>Todo al día — sin pendientes</p></div>`
+    :accion.map(p=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 17px;border-bottom:1px solid var(--bd);font-size:12.5px">
+      <div><strong>${p.alumno}</strong>${esInactivo(p)?` <span class="inac-badge">⚠ ${diasDesde(p.ultAccion||p.fecha)}d</span>`:''} <span style="color:var(--tx3);font-size:11px">· ${p.curso}</span></div>
+      <div style="display:flex;align-items:center;gap:7px">${badge(p.estado)}<button class="btn btn-sm btn-td" onclick="openDetalle(${p.id})">Gestionar →</button></div>
+    </div>`).join('');
+
+  // Distribución
+  const nivs=['Kindergarten','Elementary','High School'];
+  const cols=['var(--gr)','var(--or)','var(--tl)'];
+  document.getElementById('dash-dist').innerHTML=nivs.map((n,i)=>{
+    const t=ps.filter(p=>p.nivel===n).length;
+    const pct=total?Math.round(t/total*100):0;
+    return `<div class="dbar"><div class="dbar-row"><span>${n}</span><span style="color:var(--tx3)">${t} · ${pct}%</span></div>
+    <div class="dbar-fill"><div class="dbar-inner" style="width:${pct}%;background:${cols[i]}"></div></div></div>`;
+  }).join('');
+
+  // Recientes
+  const rec=[...ps].sort((a,b)=>(b.ultAccion||b.fecha).localeCompare(a.ultAccion||a.fecha)).slice(0,8);
+  document.getElementById('dash-rec').innerHTML=rec.length===0
+    ?`<tr><td colspan="6"><div class="empty"><div class="empty-ic">📋</div><p>Aún no hay postulantes. Las nuevas postulaciones aparecerán aquí.</p></div></td></tr>`
+    :rec.map(p=>`<tr onclick="openDetalle(${p.id})"${esInactivo(p)?' class="inactivo-row"':''}>
+      <td><strong>${p.alumno}</strong>${p.hermano==='si'?` <span style="font-size:10px;background:#EBF7D4;color:#3A6A0A;padding:1px 5px;border-radius:10px">★hno</span>`:''}</td>
+      <td style="color:var(--tx2)">${p.padre}</td>
+      <td><span class="pill">${p.nivel}</span> ${p.curso}</td>
+      <td>${badge(p.estado)}</td>
+      <td style="color:var(--tx3);font-size:11.5px">${fDate(p.ultAccion||p.fecha)}</td>
+      <td><button class="btn btn-sm btn-td" onclick="event.stopPropagation();openDetalle(${p.id})">Gestionar</button></td>
+    </tr>`).join('');
+}
+
+function dismissN(id){ DB.pendingNotif=DB.pendingNotif.filter(x=>x!==id); renderDashboard(); }
+
+// ═══════════════════════════
+// PIPELINE
+// ═══════════════════════════
+function renderPipeline(){
+  document.getElementById('pcols').innerHTML=ESTADOS.map(e=>{
+    const ps=DB.postulantes.filter(p=>p.estado===e);
+    return `<div class="pcol">
+      <div class="pch ${EPCLS[e]}"><span class="pch-n" style="color:${ECOL[e]}">${EL[e]}</span><span class="pch-c" style="color:${ECOL[e]}">${ps.length}</span></div>
+      <div class="pcb">
+        ${ps.length===0?`<div style="font-size:11px;color:var(--tx3);padding:8px 5px;text-align:center">—</div>`:''}
+        ${ps.map(p=>`<div class="pcard${esInactivo(p)?' inactivo':''}" onclick="openDetalle(${p.id})">
+          <div class="pcard-n">${p.alumno}${p.hermano==='si'?' ★':''}</div>
+          <div class="pcard-c">${p.curso}</div>
+          <div class="pcard-d">${esInactivo(p)?`⚠ ${diasDesde(p.ultAccion||p.fecha)}d inactivo`:fDate(p.ultAccion||p.fecha)}</div>
+        </div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════
+// TABLA POSTULANTES
+// ═══════════════════════════
+function renderTable(list=null){
+  const ps=list||DB.postulantes;
+  document.getElementById('post-cnt').textContent=`${ps.length} postulante${ps.length!==1?'s':''}`;
+  document.getElementById('post-sub').textContent=`${ps.length} resultado${ps.length!==1?'s':''}`;
+  document.getElementById('post-tb').innerHTML=ps.length===0
+    ?`<tr><td colspan="8"><div class="empty"><div class="empty-ic">◎</div><p>Sin resultados</p></div></td></tr>`
+    :ps.map(p=>`<tr onclick="openDetalle(${p.id})"${esInactivo(p)?' class="inactivo-row"':''}>
+      <td><strong>${p.alumno}</strong>${p.hermano==='si'?` <span style="font-size:10px;background:#EBF7D4;color:#3A6A0A;padding:1px 5px;border-radius:10px">★hno</span>`:''}</td>
+      <td style="color:var(--tx2)">${p.padre}</td>
+      <td><small style="color:var(--tx3)">${p.nivel} ·</small> ${p.curso}</td>
+      <td><span class="pill">${p.anio}</span></td>
+      <td>${badge(p.estado)}</td>
+      <td style="color:var(--tx2);font-size:11.5px">${p.email}</td>
+      <td style="font-size:11.5px">${esInactivo(p)?`<span class="inac-badge">⚠ ${diasDesde(p.ultAccion||p.fecha)}d</span>`:`<span style="color:var(--tx3)">${diasDesde(p.ultAccion||p.fecha)}d</span>`}</td>
+      <td onclick="event.stopPropagation()"><button class="btn btn-sm btn-td" onclick="openDetalle(${p.id})">Gestionar</button></td>
+    </tr>`).join('');
+}
+function filterT(){
+  const q=document.getElementById('fq').value.toLowerCase();
+  const est=document.getElementById('fest').value;
+  const niv=document.getElementById('fniv').value;
+  const anio=document.getElementById('fanio').value;
+  renderTable(DB.postulantes.filter(p=>
+    (!q||p.alumno.toLowerCase().includes(q)||p.padre.toLowerCase().includes(q)||p.email.toLowerCase().includes(q)||p.curso.toLowerCase().includes(q))&&
+    (!est||p.estado===est)&&(!niv||p.nivel===niv)&&(!anio||String(p.anio)===anio)
+  ));
+}
+
+// ═══════════════════════════
+// MODAL DETALLE
+// ═══════════════════════════
+function openDetalle(id){
+  const p=DB.postulantes.find(x=>x.id===id); if(!p) return;
+  const init=p.alumno.split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase();
+  const dias=diasDesde(p.ultAccion||p.fecha);
+  document.getElementById('mt').textContent='Gestión del postulante';
+  document.getElementById('mb').innerHTML=`
+    <div class="deth">
+      <div class="detav" style="background:${ECOL[p.estado]}">${init}</div>
+      <div class="detinfo">
+        <h2>${p.alumno}</h2>
+        <p>${p.padre} · <a href="mailto:${p.email}" style="color:var(--tl)">${p.email}</a>${p.tel?` · ${p.tel}`:''}</p>
+        <div class="dettags">
+          ${badge(p.estado)}
+          <span class="dettag">${p.nivel}</span>
+          <span class="dettag">${p.curso}</span>
+          <span class="dettag">${p.jornada||'—'}</span>
+          <span class="dettag">Ciclo ${p.anio}</span>
+          ${p.hermano==='si'?`<span class="dettag" style="background:#EBF7D4;color:#3A6A0A">★ Hermano en Austin</span>`:''}
+          ${esInactivo(p)?`<span class="inac-badge">⚠ ${dias}d inactivo</span>`:''}
+        </div>
+      </div>
+    </div>
+    <div class="detgrid">
+      <div class="detf"><div class="detfl">Email</div><div class="detfv"><a href="mailto:${p.email}">${p.email}</a></div></div>
+      <div class="detf"><div class="detfl">Teléfono</div><div class="detfv">${p.tel||'—'}</div></div>
+      <div class="detf"><div class="detfl">Postulado el</div><div class="detfv">${fDateFull(p.fecha)}</div></div>
+      <div class="detf"><div class="detfl">Vacante en ${p.curso}</div><div class="detfv">${getVacDisp(p.curso)}</div></div>
+      ${p.colegio?`<div class="detf"><div class="detfl">Colegio anterior</div><div class="detfv">${p.colegio}</div></div>`:''}
+      ${p.dir?`<div class="detf"><div class="detfl">Localidad</div><div class="detfv">${p.dir}</div></div>`:''}
+    </div>
+
+    <div class="eabox">
+      <div class="eatit">⚡ Cambiar estado · El mail se envía automáticamente</div>
+      <div class="earow">
+        <select class="easel" id="new-st-${id}" onchange="prevMail(${id})">
+          ${ESTADOS.map(e=>`<option value="${e}" ${p.estado===e?'selected':''}>${EL[e]}</option>`).join('')}
+        </select>
+        <button class="btn btn-or" onclick="changeE(${id})">Actualizar estado y enviar mail</button>
+        <button class="btn btn-out" onclick="sendMailOnly(${id})">✉ Solo enviar mail</button>
+      </div>
+      <div id="mprev-${id}"></div>
+    </div>
+
+    <div style="margin-top:14px;background:var(--cr);border-radius:10px;padding:12px 14px">
+      <div style="font-size:11px;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:9px">📅 Entrevista</div>
+      <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+        <div><label style="font-size:11.5px;color:var(--tx3);display:block;margin-bottom:3px">Fecha</label><input type="date" id="det-entf-${id}" value="${p.entFecha||''}" style="padding:6px 9px;border:1.5px solid var(--bd2);border-radius:7px;font-size:12.5px;font-family:'DM Sans',sans-serif;color:var(--tx);background:#fff;outline:none"></div>
+        <div><label style="font-size:11.5px;color:var(--tx3);display:block;margin-bottom:3px">Hora</label><input type="time" id="det-enth-${id}" value="${p.entHora||'09:00'}" style="padding:6px 9px;border:1.5px solid var(--bd2);border-radius:7px;font-size:12.5px;font-family:'DM Sans',sans-serif;color:var(--tx);background:#fff;outline:none"></div>
+        <button class="btn btn-td btn-sm" onclick="guardarFechaDesdeDetalle(${id})">Guardar fecha</button>
+        ${p.entFecha?`<button class="btn btn-or btn-sm" onclick="closeM();showV('entrevistas')">Ver en Entrevistas →</button>`:''}
+      </div>
+      ${p.entResultado?`<div style="margin-top:8px;font-size:12px;color:var(--gr);font-weight:500">✓ Resultado registrado: ${EL[p.entResultado]||p.entResultado}</div>`:''}
+    </div>
+
+    <div style="margin-top:16px">
+      <div style="font-size:11px;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Notas internas (con fecha automática)</div>
+      <div id="notas-${id}">${renderNotas(p)}</div>
+      <div class="nota-new">
+        <input id="nota-inp-${id}" placeholder="Agregar nota..." onkeydown="if(event.key==='Enter')addNota(${id})">
+        <button class="btn btn-td btn-sm" onclick="addNota(${id})">+ Agregar</button>
+      </div>
+    </div>
+
+    <div style="margin-top:16px">
+      <div style="font-size:11px;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Historial de estados</div>
+      <div>${(p.hist||[]).slice().reverse().map(h=>`
+        <div class="hist-i">
+          <div class="hist-dot" style="background:${ECOL[h.e]||'var(--tx3)'}"></div>
+          <div class="hist-t"><p>${EL[h.e]||h.e}${h.mailOk?' ✉':''}</p><span>${fDate(h.f)}</span></div>
+        </div>`).join('')}</div>
+    </div>`;
+
+  document.getElementById('mf').innerHTML=`
+    <button class="btn btn-out" onclick="closeM()">Cerrar</button>`;
+
+  openM();
+  setTimeout(()=>prevMail(id),50);
+}
+
+function renderNotas(p){
+  const notas=p.notas||[];
+  if(notas.length===0) return `<div style="font-size:12px;color:var(--tx3);padding:6px 0">Sin notas. Agregá la primera nota arriba.</div>`;
+  return notas.slice().reverse().map(n=>`
+    <div class="nota-item">
+      <div class="nota-ts">${n.fecha} ${n.hora}</div>
+      <div class="nota-txt">${n.txt}</div>
+    </div>`).join('');
+}
+
+function addNota(id){
+  const p=DB.postulantes.find(x=>x.id===id); if(!p) return;
+  const inp=document.getElementById('nota-inp-'+id); if(!inp||!inp.value.trim()) return;
+  const now=new Date();
+  p.notas=p.notas||[];
+  p.notas.push({
+    txt:inp.value.trim(),
+    fecha:now.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}),
+    hora:now.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})
+  });
+  inp.value='';
+  document.getElementById('notas-'+id).innerHTML=renderNotas(p);
+  saveDB(); toast('Nota guardada','ok');
+}
+
+function getVacDisp(curso){
+  const v=DB.vacantes[curso]; if(!v) return '—';
+  const lib=v.t-v.u;
+  if(lib<=0) return `<span style="color:#DC2626;font-weight:600">Curso lleno</span>`;
+  if(lib<=3) return `<span style="color:var(--or);font-weight:600">${lib} lugar${lib!==1?'es':''} (últimos)</span>`;
+  return `<span style="color:var(--gr);font-weight:600">${lib} lugar${lib!==1?'es':''}</span>`;
+}
+
+function prevMail(id){
+  const p=DB.postulantes.find(x=>x.id===id); if(!p) return;
+  const sel=document.getElementById('new-st-'+id); if(!sel) return;
+  const est=sel.value;
+  const tmpl=DB.emails[est];
+  const pe=document.getElementById('mprev-'+id); if(!pe) return;
+  if(!tmpl){ pe.innerHTML=''; return; }
+  const body=fillV(tmpl.body,p);
+  pe.innerHTML=`<div class="mprev">
+    <div class="mph">
+      <div class="mphr"><span class="mphl">Para:</span> ${p.email}</div>
+      <div class="mphr"><span class="mphl">Asunto:</span> ${tmpl.subj}</div>
+      <div class="mphr"><span class="mphl">De:</span> ${DB.config.nombre} &lt;${DB.config.email}&gt;</div>
+    </div>
+    <div class="mpb">${body}</div>
+    <div class="mpedit"><span onclick="showV('emails');closeM()" style="cursor:pointer">✏ Editar esta plantilla →</span><span style="color:var(--tx3);font-size:11px">El contenido se guarda en Plantillas de mail</span></div>
+  </div>`;
+}
+
+function fillV(text,p){
+  return text
+    .replace(/{{alumno}}/g,p.alumno).replace(/{{padre}}/g,p.padre).replace(/{{curso}}/g,p.curso)
+    .replace(/{{link_calendario}}/g,DB.config.calendar).replace(/{{link_drive}}/g,DB.config.drive)
+    .replace(/{{link_tarifas}}/g,DB.config.drive);
+}
+
+function changeE(id){
+  const p=DB.postulantes.find(x=>x.id===id); if(!p) return;
+  const sel=document.getElementById('new-st-'+id); if(!sel) return;
+  const newEst=sel.value;
+  if(p.estado===newEst){ toast('El estado ya es '+EL[newEst],''); return; }
+  if(newEst==='postulado'){
+    const v=DB.vacantes[p.curso];
+    if(v&&v.u>=v.t){ toast('⚠ Curso lleno — considerá "Lista de espera"','info'); }
+  }
+  p.estado=newEst;
+  p.ultAccion=today();
+  p.hist=p.hist||[];
+  p.hist.push({e:newEst,f:today(),mailOk:false});
+  saveDB();
+  enviarMailAdmin(p,newEst,(ok,mode)=>{
+    if(ok){ p.hist[p.hist.length-1].mailOk=true; saveDB(); }
+    if(ok&&mode==='mailto') toast(`Estado → ${EL[newEst]} · Abriendo correo...`,'info');
+    else if(ok) toast(`✓ Estado → ${EL[newEst]} · Mail enviado a ${p.email}`,'ok');
+    else toast(`Estado actualizado. Configurá EmailJS para envío automático.`,'info');
+  });
+  closeM(); renderDashboard();
+  const pv=document.getElementById('view-pipeline'); if(pv&&pv.classList.contains('on')) renderPipeline();
+  const tv=document.getElementById('view-post'); if(tv&&tv.classList.contains('on')) filterT();
+  dismissN(id);
+}
+
+function sendMailOnly(id){
+  const p=DB.postulantes.find(x=>x.id===id); if(!p) return;
+  const sel=document.getElementById('new-st-'+id); if(!sel) return;
+  enviarMailAdmin(p,sel.value,(ok,mode)=>{
+    if(ok&&mode==='mailto') toast('Abriendo cliente de correo...','info');
+    else if(ok) toast(`✉ Mail enviado a ${p.email}`,'ok');
+    else toast('Configurá EmailJS en Configuración para envío automático.','info');
+  });
+}
+
+// ═══════════════════════════
+// NUEVO POSTULANTE MANUAL
+// ═══════════════════════════
+function openNuevo(){
+  const opts=CURSOS.map(c=>`<option value="${c}">${c}</option>`).join('');
+  document.getElementById('mt').textContent='Agregar postulante manualmente';
+  document.getElementById('mb').innerHTML=`
+    <div style="background:var(--cr);border-radius:9px;padding:10px 13px;font-size:12px;color:var(--tx2);margin-bottom:14px;line-height:1.6">
+      Para postulantes que lleguen por teléfono, WhatsApp u otros canales fuera del formulario web.
+    </div>
+    <div class="fgm2">
+      <div class="fgm"><label class="flm">Nombre del estudiante *</label><input class="fim" id="nm-al" placeholder="Nombre y apellido completo"></div>
+      <div class="fgm"><label class="flm">Curso *</label><select class="fsm" id="nm-cu">${opts}</select></div>
+    </div>
+    <div class="fgm2">
+      <div class="fgm"><label class="flm">Ciclo lectivo</label><select class="fsm" id="nm-an"><option value="2026">2026</option><option value="2027">2027</option><option value="2028">2028</option></select></div>
+      <div class="fgm"><label class="flm">Jornada</label><select class="fsm" id="nm-jo"><option>Jornada Completa</option><option>Jornada Simple</option></select></div>
+    </div>
+    <div class="fgm"><label class="flm">Colegio anterior</label><input class="fim" id="nm-cole" placeholder="¿De qué colegio viene?"></div>
+    <div class="ssm" style="margin:12px 0 10px">Familia</div>
+    <div class="fgm2">
+      <div class="fgm"><label class="flm">Padre/Madre/Tutor *</label><input class="fim" id="nm-pa" placeholder="Nombre y apellido"></div>
+      <div class="fgm"><label class="flm">Email *</label><input class="fim" id="nm-em" type="email" placeholder="email@ejemplo.com"></div>
+    </div>
+    <div class="fgm2">
+      <div class="fgm"><label class="flm">Teléfono</label><input class="fim" id="nm-tel" placeholder="+54 11 0000-0000"></div>
+      <div class="fgm"><label class="flm">¿Hermano en Austin?</label><select class="fsm" id="nm-he"><option value="no">No</option><option value="si">Sí ★ (tiene prioridad)</option></select></div>
+    </div>
+    <div class="fgm"><label class="flm">Nota inicial</label><textarea class="ftm" id="nm-obs" style="min-height:55px" placeholder="Cómo llegaron, quién los recomendó, etc."></textarea></div>`;
+  document.getElementById('mf').innerHTML=`
+    <button class="btn btn-out" onclick="closeM()">Cancelar</button>
+    <button class="btn btn-td" onclick="saveNuevo()">Guardar y enviar mail de bienvenida</button>`;
+  openM();
+}
+
+function saveNuevo(){
+  const alumno=(document.getElementById('nm-al').value||'').trim();
+  const padre=(document.getElementById('nm-pa').value||'').trim();
+  const email=(document.getElementById('nm-em').value||'').trim();
+  const curso=document.getElementById('nm-cu').value;
+  // Validar email duplicado
+  if(DB.postulantes.find(p=>p.email.toLowerCase()===email.toLowerCase()&&p.estado!=='desiste')){
+    toast('⚠ Este email ya tiene una postulación activa','err'); return;
+  }
+  if(!alumno||!padre||!email){ toast('Completá los campos obligatorios','err'); return; }
+  const obsVal=(document.getElementById('nm-obs').value||'').trim();
+  const p={
+    id:DB.nextId++,alumno,padre,email,
+    tel:document.getElementById('nm-tel').value,
+    curso,nivel:NIVEL(curso),
+    jornada:document.getElementById('nm-jo').value,
+    anio:parseInt(document.getElementById('nm-an').value),
+    colegio:document.getElementById('nm-cole').value,
+    hermano:document.getElementById('nm-he').value,
+    estado:'nueva',fecha:today(),ultAccion:today(),
+    notas:obsVal?[{txt:obsVal,fecha:new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}),hora:new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})}]:[],
+    hist:[{e:'nueva',f:today(),mailOk:false}]
+  };
+  DB.postulantes.unshift(p);
+  DB.pendingNotif.push(p.id);
+  saveDB();
+  enviarMailAdmin(p,'nueva',(ok,mode)=>{
+    if(ok){ p.hist[0].mailOk=true; saveDB(); }
+    if(ok&&mode==='mailto') toast(`✓ ${alumno} agregado · Abriendo correo...`,'info');
+    else if(ok) toast(`✓ ${alumno} agregado · Mail de bienvenida enviado`,'ok');
+    else toast(`${alumno} agregado · Configurá EmailJS para envío automático`,'info');
+  });
+  closeM(); renderDashboard();
+}
+
+// ═══════════════════════════
+// ENVÍO DE MAIL
+// ═══════════════════════════
+function enviarMail(p,estado,cb){
+  const tmpl=DB.emails[estado]; if(!tmpl){ if(cb) cb(false); return; }
+  const body=fillV(tmpl.body,p);
+  const subj=tmpl.subj;
+  const cfg=DB.config;
+  if(cfg.ejsid&&cfg.ejstpl&&cfg.ejskey){
+    if(typeof emailjs==='undefined'){ setTimeout(()=>enviarMail(p,estado,cb),1500); return; }
+    emailjs.send(cfg.ejsid,cfg.ejstpl,{
+      to_email:p.email,to_name:p.padre,from_name:cfg.nombre,
+      reply_to:cfg.email,subject:subj,message:body
+    },cfg.ejskey)
+    .then(()=>{ if(cb) cb(true,'ejs'); })
+    .catch(err=>{ console.error('EmailJS:',err); if(cb) cb(false); });
+  } else {
+    // Solo abrir mailto si es acción MANUAL del admin (no desde el formulario de familia)
+    if(cb) cb(false,'no-ejs');
+  }
+}
+
+// Versión para uso manual del admin (abre mailto en el navegador)
+function enviarMailAdmin(p,estado,cb){
+  const tmpl=DB.emails[estado]; if(!tmpl){ if(cb) cb(false); return; }
+  const body=fillV(tmpl.body,p);
+  const subj=tmpl.subj;
+  const cfg=DB.config;
+  if(cfg.ejsid&&cfg.ejstpl&&cfg.ejskey){
+    enviarMail(p,estado,cb);
+  } else {
+    const mailto=`mailto:${encodeURIComponent(p.email)}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`;
+    window.open(mailto,'_blank');
+    if(cb) cb(true,'mailto');
+  }
+}
+
+// ═══════════════════════════
+// VACANTES
+// ═══════════════════════════
+function renderVac(){
+  document.getElementById('vacgrid').innerHTML=CURSOS.map(c=>{
+    const v=DB.vacantes[c]||{t:20,u:0};
+    const pct=Math.min(100,Math.round(v.u/v.t*100));
+    const fc=pct>=100?'full':pct>=80?'warn':'';
+    const key=c.replace(/[\s()\/]/g,'_');
+    const libres=Math.max(0,v.t-v.u);
+    return `<div class="vacc">
+      <div class="vacc-t">${c}${pct>=100?`<span class="vacfull-badge">LLENO</span>`:''}</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <span style="font-size:11px;color:var(--tx3)">Total vacantes:</span>
+        <input class="vaci" type="number" id="vt-${key}" value="${v.t}" min="0" max="60">
+      </div>
+      <div class="vacbar"><div class="vacfill ${fc}" style="width:${pct}%"></div></div>
+      <div class="vacnums"><span>${v.u} inscriptos</span><span>${libres} libre${libres!==1?'s':''}</span></div>
+    </div>`;
+  }).join('');
+}
+function saveVac(){
+  CURSOS.forEach(c=>{ const key=c.replace(/[\s()\/]/g,'_'); const el=document.getElementById('vt-'+key); if(el){ DB.vacantes[c]=DB.vacantes[c]||{t:20,u:0}; DB.vacantes[c].t=parseInt(el.value)||20; } });
+  saveDB(); toast('Vacantes actualizadas','ok');
+}
+
+// ═══════════════════════════
+// EMAIL TEMPLATES
+// ═══════════════════════════
+function renderEmails(){
+  const cal=document.getElementById('callink');
+  if(cal){ cal.textContent=DB.config.calendar; cal.href=DB.config.calendar; }
+  const allTpls=[...ESTADOS,'seguimiento_entrevista'];
+  const labels={...EL,seguimiento_entrevista:'Seguimiento post-entrevista (envío manual)'};
+  document.getElementById('email-tpls').innerHTML=allTpls.map(e=>`
+    <div class="etcard">
+      <div class="eth">
+        <div><div class="ett"><span class="etdot" style="background:${ECOL[e]||'var(--or)'}"></span>Mail: <strong>${labels[e]||e}</strong></div>
+        <div class="ets">${e==='seguimiento_entrevista'?'Se envía manualmente desde la vista Entrevistas':'Se envía automáticamente al cambiar el estado del postulante'}</div></div>
+        <button class="btn btn-td btn-sm" onclick="saveEmail('${e}')">Guardar</button>
+      </div>
+      <div class="etb">
+        <div class="fgm" style="margin-bottom:11px"><label class="flm">Asunto</label><input class="fim" id="esubj-${e}" value="${(DB.emails[e]?.subj||'').replace(/"/g,'&quot;')}"></div>
+        <div class="fgm"><label class="flm">Cuerpo del mensaje</label><textarea class="ftm" id="ebody-${e}" style="min-height:130px">${DB.emails[e]?.body||''}</textarea></div>
+        <div style="margin-top:7px;font-size:11px;color:var(--tx3)">Variables:
+          <span class="etvar">{{alumno}}</span><span class="etvar">{{padre}}</span><span class="etvar">{{curso}}</span>
+          <span class="etvar">{{link_calendario}}</span><span class="etvar">{{link_drive}}</span>
+        </div>
+      </div>
+    </div>`).join('');
+}
+function saveEmail(e){ DB.emails[e]={subj:document.getElementById('esubj-'+e).value,body:document.getElementById('ebody-'+e).value}; saveDB(); toast(`Plantilla "${EL[e]}" guardada`,'ok'); }
+
+// ═══════════════════════════
+// TARIFAS
+// ═══════════════════════════
+function renderTar(){
+  const t=DB.tarifas;
+  document.getElementById('tar-cont').innerHTML=`
+    <div class="tarc"><div class="tarh"><div class="tart">Kindergarten</div></div><div class="tarb">
+      <div class="tarrow"><span class="tarlbl">K2 (Puppies) – Matrícula</span><input class="tari" id="t-k2m" value="${t.k2_m}"></div>
+      <div class="tarrow"><span class="tarlbl">K2 – Jornada Simple</span><input class="tari" id="t-k2s" value="${t.k2_s}"></div>
+      <div class="tarrow"><span class="tarlbl">K2 – Jornada Completa</span><input class="tari" id="t-k2c" value="${t.k2_c}"></div>
+      <div class="tarrow"><span class="tarlbl">K3 – Matrícula</span><input class="tari" id="t-k3m" value="${t.k3_m}"></div>
+      <div class="tarrow"><span class="tarlbl">K3 – Jornada Simple</span><input class="tari" id="t-k3s" value="${t.k3_s}"></div>
+      <div class="tarrow"><span class="tarlbl">K3 – Jornada Completa</span><input class="tari" id="t-k3c" value="${t.k3_c}"></div>
+      <div class="tarrow"><span class="tarlbl">K4 y K5 – Matrícula</span><input class="tari" id="t-k45m" value="${t.k45_m}"></div>
+      <div class="tarrow"><span class="tarlbl">K4 y K5 – Jornada Completa</span><input class="tari" id="t-k45c" value="${t.k45_c}"></div>
+    </div></div>
+    <div class="tarc"><div class="tarh"><div class="tart">Elementary School (1ro – 6to año)</div></div><div class="tarb">
+      <div class="tarrow"><span class="tarlbl">Matrícula</span><input class="tari" id="t-elm" value="${t.el_m}"></div>
+      <div class="tarrow"><span class="tarlbl">Jornada Completa</span><input class="tari" id="t-elc" value="${t.el_c}"></div>
+    </div></div>
+    <div class="tarc"><div class="tarh"><div class="tart">High School 1ro – 3ro</div></div><div class="tarb">
+      <div class="tarrow"><span class="tarlbl">Matrícula</span><input class="tari" id="t-h13m" value="${t.hs13_m}"></div>
+      <div class="tarrow"><span class="tarlbl">Jornada Completa</span><input class="tari" id="t-h13c" value="${t.hs13_c}"></div>
+    </div></div>
+    <div class="tarc"><div class="tarh"><div class="tart">High School 4to – 6to</div></div><div class="tarb">
+      <div class="tarrow"><span class="tarlbl">Matrícula</span><input class="tari" id="t-h46m" value="${t.hs46_m}"></div>
+      <div class="tarrow"><span class="tarlbl">Jornada Completa</span><input class="tari" id="t-h46c" value="${t.hs46_c}"></div>
+    </div></div>`;
+}
+function saveTar(){
+  const g=id=>{const el=document.getElementById(id);return el?parseFloat(el.value)||0:0;};
+  DB.tarifas={k2_m:g('t-k2m'),k2_s:g('t-k2s'),k2_c:g('t-k2c'),k3_m:g('t-k3m'),k3_s:g('t-k3s'),k3_c:g('t-k3c'),k45_m:g('t-k45m'),k45_c:g('t-k45c'),el_m:g('t-elm'),el_c:g('t-elc'),hs13_m:g('t-h13m'),hs13_c:g('t-h13c'),hs46_m:g('t-h46m'),hs46_c:g('t-h46c')};
+  saveDB(); toast('Tarifas actualizadas','ok');
+}
+
+// ═══════════════════════════
+// CONFIG
+// ═══════════════════════════
+function renderCfg(){
+  document.getElementById('cfg-nom').value=DB.config.nombre;
+  document.getElementById('cfg-em').value=DB.config.email;
+  document.getElementById('cfg-cal').value=DB.config.calendar;
+  document.getElementById('cfg-drv').value=DB.config.drive;
+  document.getElementById('cfg-ejsid').value=DB.config.ejsid||'';
+  document.getElementById('cfg-ejstpl').value=DB.config.ejstpl||'';
+  document.getElementById('cfg-ejskey').value=DB.config.ejskey||'';
+  setTimeout(updateEjsBadge,50);
+}
+function saveCfg(){
+  DB.config.nombre=document.getElementById('cfg-nom').value;
+  DB.config.email=document.getElementById('cfg-em').value;
+  DB.config.calendar=document.getElementById('cfg-cal').value;
+  DB.config.drive=document.getElementById('cfg-drv').value;
+  DB.config.ejsid=document.getElementById('cfg-ejsid').value.trim();
+  DB.config.ejstpl=document.getElementById('cfg-ejstpl').value.trim();
+  DB.config.ejskey=document.getElementById('cfg-ejskey').value.trim();
+  if(DB.config.ejskey&&typeof emailjs!=='undefined'){ try{emailjs.init(DB.config.ejskey);}catch(e){} }
+  updateEjsBadge(); saveDB(); toast('Configuración guardada','ok');
+}
+function updateEjsBadge(){
+  const b=document.getElementById('ejs-badge'); if(!b) return;
+  const ok=DB.config.ejsid&&DB.config.ejstpl&&DB.config.ejskey;
+  b.style.cssText=ok?'font-size:11px;padding:3px 9px;border-radius:12px;font-weight:600;background:#EBF7D4;color:#3A6A0A':'font-size:11px;padding:3px 9px;border-radius:12px;font-weight:600;background:#FEF5E6;color:#8A5510';
+  b.textContent=ok?'✓ Activo — mails reales':'⚡ No configurado (usa mailto)';
+}
+function testMail(){
+  const cfg=DB.config;
+  if(!cfg.ejsid||!cfg.ejstpl||!cfg.ejskey){ toast('Primero guardá los datos de EmailJS','err'); return; }
+  if(typeof emailjs==='undefined'){ toast('EmailJS cargando, esperá un momento',''); return; }
+  toast('Enviando mail de prueba...','');
+  emailjs.send(cfg.ejsid,cfg.ejstpl,{to_email:cfg.email,to_name:cfg.nombre,from_name:cfg.nombre,reply_to:cfg.email,subject:'✓ Test – Sistema Austin EBS',message:'Este es un mail de prueba del Sistema de Admisiones Austin EBS.\n\nSi lo recibís, el sistema está correctamente configurado y los mails se enviarán en forma real.\n\nAdmisiones – Austin EBS'},cfg.ejskey)
+  .then(()=>toast('✓ Mail de prueba enviado a '+cfg.email,'ok'))
+  .catch(e=>toast('Error: '+(e.text||e)+' — revisá los datos de EmailJS','err'));
+}
+
+// ═══════════════════════════
+// EXPORT CSV
+// ═══════════════════════════
+function exportCSV(){
+  if(DB.postulantes.length===0){ toast('No hay postulantes para exportar',''); return; }
+  const cols=['ID','Alumno','Padre/Tutor','Email','Teléfono','Curso','Nivel','Jornada','Ciclo','Estado','Colegio anterior','Hermano en Austin','Fecha postulación','Última acción','Días inactivo','Notas'];
+  const rows=DB.postulantes.map(p=>[
+    p.id,p.alumno,p.padre,p.email,p.tel||'',p.curso,p.nivel,p.jornada||'',p.anio,EL[p.estado]||p.estado,
+    p.colegio||'',p.hermano==='si'?'Sí':'No',p.fecha,p.ultAccion||p.fecha,
+    diasDesde(p.ultAccion||p.fecha),
+    (p.notas||[]).map(n=>`[${n.fecha} ${n.hora}] ${n.txt}`).join(' | ')
+  ].map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(','));
+  const csv='\uFEFF'+[cols.map(c=>`"${c}"`).join(','),...rows].join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download=`Austin_EBS_Admisiones_${today()}.csv`;
+  a.click();
+  toast(`CSV exportado — ${DB.postulantes.length} postulantes`,'ok');
+}
+
+// ═══════════════════════════
+// FORMULARIO PORTAL
+// ═══════════════════════════
+function showFStep(n){
+  document.querySelectorAll('.fstep').forEach((s,i)=>s.classList.toggle('on',i===n));
+  ['fb0','fb1','fb2'].forEach((id,i)=>{
+    const el=document.getElementById(id); if(!el) return;
+    el.classList.toggle('done',i<n); el.classList.toggle('active',i===n);
+  });
+  currentStep=n;
+}
+function fNext(from){
+  if(from===0){
+    const n=document.getElementById('pf-n'), ap=document.getElementById('pf-ap'), cu=document.getElementById('pf-curso');
+    let ok=true;
+    [n,ap].forEach(el=>{ if(!el.value.trim()){ el.classList.add('err'); ok=false; } else el.classList.remove('err'); });
+    if(!cu.value){ cu.classList.add('err'); ok=false; } else cu.classList.remove('err');
+    if(!ok){ toast('Completá los campos obligatorios','err'); return; }
+  }
+  if(from===1){
+    const pn=document.getElementById('pf-pn'), pap=document.getElementById('pf-pap');
+    const em=document.getElementById('pf-email'), tel=document.getElementById('pf-tel');
+    let ok=true;
+    [pn,pap,em,tel].forEach(el=>{ if(!el.value.trim()){ el.classList.add('err'); ok=false; } else el.classList.remove('err'); });
+    if(!ok){ toast('Completá los campos obligatorios','err'); return; }
+    buildResumen();
+  }
+  showFStep(from+1);
+}
+function fBack(from){ showFStep(from-1); }
+function toggleHermanoMsg(){ const v=document.getElementById('pf-herm').value; document.getElementById('fherm-msg').classList.toggle('on',v==='si'); }
+function buildResumen(){
+  const alumno=`${document.getElementById('pf-n').value} ${document.getElementById('pf-ap').value}`.trim();
+  const padre=`${document.getElementById('pf-pn').value} ${document.getElementById('pf-pap').value}`.trim();
+  document.getElementById('pf-resumen').innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 18px">
+      <div><span style="color:var(--tx3);font-size:10.5px;text-transform:uppercase;letter-spacing:.07em">Estudiante</span><br><strong>${alumno}</strong></div>
+      <div><span style="color:var(--tx3);font-size:10.5px;text-transform:uppercase;letter-spacing:.07em">Curso</span><br><strong>${document.getElementById('pf-curso').value}</strong></div>
+      <div><span style="color:var(--tx3);font-size:10.5px;text-transform:uppercase;letter-spacing:.07em">Jornada</span><br>${document.getElementById('pf-jornada').value}</div>
+      <div><span style="color:var(--tx3);font-size:10.5px;text-transform:uppercase;letter-spacing:.07em">Ciclo lectivo</span><br>${document.getElementById('pf-anio').value}</div>
+      <div><span style="color:var(--tx3);font-size:10.5px;text-transform:uppercase;letter-spacing:.07em">Padre/Tutor</span><br>${padre}</div>
+      <div><span style="color:var(--tx3);font-size:10.5px;text-transform:uppercase;letter-spacing:.07em">Email</span><br>${document.getElementById('pf-email').value}</div>
+      <div><span style="color:var(--tx3);font-size:10.5px;text-transform:uppercase;letter-spacing:.07em">Teléfono</span><br>${document.getElementById('pf-tel').value}</div>
+      ${document.getElementById('pf-herm').value==='si'?`<div><span style="color:var(--tx3);font-size:10.5px;text-transform:uppercase;letter-spacing:.07em">Hermano en Austin</span><br><span style="color:var(--gr);font-weight:600">★ Sí — prioridad de ingreso</span></div>`:''}
+    </div>`;
+}
+function submitPost(){
+  const alumno=`${document.getElementById('pf-n').value} ${document.getElementById('pf-ap').value}`.trim();
+  const padre=`${document.getElementById('pf-pn').value} ${document.getElementById('pf-pap').value}`.trim();
+  const email=document.getElementById('pf-email').value.trim();
+  const curso=document.getElementById('pf-curso').value;
+  // Verificar duplicado
+  if(DB.postulantes.find(p=>p.email.toLowerCase()===email.toLowerCase()&&p.estado!=='desiste')){
+    toast('Este email ya tiene una postulación activa en el sistema','err'); return;
+  }
+  const obs=(document.getElementById('pf-obs').value||'').trim();
+  const p={
+    id:DB.nextId++,alumno,padre,email,
+    tel:document.getElementById('pf-tel').value,
+    curso,nivel:NIVEL(curso),
+    jornada:document.getElementById('pf-jornada').value,
+    anio:parseInt(document.getElementById('pf-anio').value),
+    colegio:document.getElementById('pf-cole').value,
+    hermano:document.getElementById('pf-herm').value,
+    estado:'nueva',fecha:today(),ultAccion:today(),
+    notas:obs?[{txt:obs,fecha:new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}),hora:new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})}]:[],
+    hist:[{e:'nueva',f:today(),mailOk:false}]
+  };
+  DB.postulantes.unshift(p);
+  DB.pendingNotif.push(p.id);
+  saveDB();
+  enviarMail(p,'nueva',(ok)=>{ if(ok){ p.hist[0].mailOk=true; saveDB(); } });
+  // Mostrar éxito
+  document.querySelectorAll('.fstep').forEach(s=>s.classList.remove('on'));
+  document.getElementById('fst-ok').classList.add('on');
+}
+
+// ═══════════════════════════
+// ENTREVISTAS
+// ═══════════════════════════
+let entFiltro = 'todas';
+
+function updateSidebarBadges(){
+  const ps=DB.postulantes;
+  const nn=ps.filter(p=>p.estado==='nueva').length;
+  const ni=ps.filter(p=>esInactivo(p)).length;
+  const tot=ps.length;
+  // Entrevistas pendientes de resultado (pasadas sin resultado)
+  const entPend=ps.filter(p=>p.entFecha&&new Date(p.entFecha+'T00:00:00')<new Date()&&!p.entResultado).length;
+  const bn=document.getElementById('badge-n'); if(bn){ bn.textContent=nn; bn.style.display=nn>0?'inline':'none'; }
+  const bi=document.getElementById('badge-inac'); if(bi){ bi.textContent=ni; bi.style.display=ni>0?'inline':'none'; }
+  const bt=document.getElementById('badge-total'); if(bt){ bt.textContent=tot; bt.style.display=tot>0?'inline':'none'; }
+  const be=document.getElementById('badge-ent'); if(be){ be.textContent=entPend; be.style.display=entPend>0?'inline':'none'; }
+}
+
+function renderEntrevistas(filtro){
+  entFiltro=filtro||'todas';
+  // Resaltar botón activo
+  ['todas','proximas','pasadas','ok'].forEach(f=>{
+    const b=document.getElementById('ent-f-'+f);
+    if(b){ b.style.background=f===entFiltro?'var(--td)':''; b.style.color=f===entFiltro?'#fff':''; }
+  });
+  const hoy=today();
+  let ps=DB.postulantes.filter(p=>p.entFecha||p.estado==='citado');
+  if(filtro==='proximas') ps=ps.filter(p=>p.entFecha&&p.entFecha>=hoy&&!p.entResultado);
+  if(filtro==='pasadas') ps=ps.filter(p=>p.entFecha&&p.entFecha<hoy&&!p.entResultado);
+  if(filtro==='ok') ps=ps.filter(p=>p.entResultado);
+  ps=ps.sort((a,b)=>(a.entFecha||'9999').localeCompare(b.entFecha||'9999'));
+  const grid=document.getElementById('ent-grid'); if(!grid) return;
+  if(ps.length===0){
+    grid.innerHTML=`<div class="ent-empty" style="grid-column:1/-1"><div class="ent-empty-ic">📅</div><p>${filtro==='todas'?'Aún no hay entrevistas programadas. Cuando cambies un postulante a "Citado entrevista" y registres la fecha, aparecerán aquí.':'Sin resultados para este filtro.'}</p></div>`;
+    return;
+  }
+  grid.innerHTML=ps.map(p=>{
+    const esPasada=p.entFecha&&p.entFecha<hoy;
+    const tieneRes=p.entResultado;
+    let cardClass=tieneRes?'registrada':esPasada?'pasada':'pendiente';
+    const urgente=esPasada&&!tieneRes;
+    return `<div class="entcard ${cardClass}">
+      <div class="entcard-head">
+        <div class="entcard-fecha">${p.entFecha?fDateFull(p.entFecha):'Sin fecha asignada'}</div>
+        <div style="display:flex;align-items:center;gap:6px">
+          ${p.entHora?`<span class="entcard-hora">🕐 ${p.entHora}</span>`:''}
+          ${urgente?`<span style="background:#FEF2F2;color:#DC2626;font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px">⚠ Sin resultado</span>`:''}
+          ${tieneRes?`<span style="background:#EBF7D4;color:#3A6A0A;font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px">✓ ${EL[p.entResultado]||p.entResultado}</span>`:''}
+        </div>
+      </div>
+      <div class="entcard-body">
+        <div class="entcard-alumno">${p.alumno}${p.hermano==='si'?' ★':''}</div>
+        <div class="entcard-padre">${p.padre} · <a href="mailto:${p.email}" style="color:var(--tl)">${p.email}</a>${p.tel?` · ${p.tel}`:''}</div>
+        <span class="entcard-curso">${p.curso} · Ciclo ${p.anio}</span>
+      </div>
+      <div class="entcard-foot">
+        <button class="btn btn-td btn-sm" onclick="openDetalleEntrevista(${p.id})">
+          ${tieneRes?'Ver detalle':'Registrar resultado →'}
+        </button>
+        ${!p.entFecha?`<button class="btn btn-out btn-sm" onclick="asignarFecha(${p.id})">+ Asignar fecha</button>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function filterEnt(f){ renderEntrevistas(f); }
+
+function asignarFecha(id){
+  const p=DB.postulantes.find(x=>x.id===id); if(!p) return;
+  document.getElementById('mt').textContent='Asignar fecha de entrevista';
+  document.getElementById('mb').innerHTML=`
+    <div style="margin-bottom:14px">
+      <p style="font-size:13px;color:var(--tx2);line-height:1.6">Registrá la fecha y hora de la entrevista de <strong>${p.alumno}</strong>. La familia ya tiene el link de Google Calendar para reservar su horario.<br>Completá esto cuando confirmés la cita.</p>
+    </div>
+    <div class="fgm2">
+      <div class="fgm"><label class="flm">Fecha de la entrevista *</label><input class="fim" id="ent-fecha" type="date" value="${p.entFecha||today()}"></div>
+      <div class="fgm"><label class="flm">Hora</label><input class="fim" id="ent-hora" type="time" value="${p.entHora||'09:00'}"></div>
+    </div>
+    <div class="fgm"><label class="flm">Notas previas a la entrevista</label><textarea class="ftm" id="ent-nota" style="min-height:60px" placeholder="Ej: Viene el papá solo. Vive en San Sebastián. Tienen hija en 3ro."></textarea></div>`;
+  document.getElementById('mf').innerHTML=`
+    <button class="btn btn-out" onclick="closeM()">Cancelar</button>
+    <button class="btn btn-td" onclick="guardarFechaEnt(${id})">Guardar fecha</button>`;
+  openM();
+}
+
+function guardarFechaEnt(id){
+  const p=DB.postulantes.find(x=>x.id===id); if(!p) return;
+  const fecha=document.getElementById('ent-fecha').value;
+  const hora=document.getElementById('ent-hora').value;
+  const nota=document.getElementById('ent-nota').value.trim();
+  if(!fecha){ toast('Ingresá la fecha','err'); return; }
+  p.entFecha=fecha; p.entHora=hora;
+  if(nota){ p.notas=p.notas||[]; p.notas.push({txt:'[Pre-entrevista] '+nota,fecha:new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}),hora:new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})}); }
+  saveDB(); closeM();
+  renderEntrevistas(entFiltro); updateSidebarBadges();
+  toast(`Entrevista de ${p.alumno} agendada para el ${fDateFull(fecha)}`,'ok');
+}
+
+function openDetalleEntrevista(id){
+  const p=DB.postulantes.find(x=>x.id===id); if(!p) return;
+  const esPasada=p.entFecha&&p.entFecha<today();
+  const vacDisp=getVacDisp(p.curso);
+  const v=DB.vacantes[p.curso]; const hayVac=v&&v.u<v.t;
+  document.getElementById('mt').textContent='Resultado de entrevista — '+p.alumno;
+  document.getElementById('mb').innerHTML=`
+    <div class="deth" style="margin-bottom:14px">
+      <div class="detav" style="background:${ECOL[p.estado]}">${p.alumno.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase()}</div>
+      <div class="detinfo">
+        <h2>${p.alumno}</h2>
+        <p>${p.padre} · <a href="mailto:${p.email}" style="color:var(--tl)">${p.email}</a></p>
+        <div class="dettags">${badge(p.estado)}<span class="dettag">${p.curso}</span><span class="dettag">Ciclo ${p.anio}</span>${p.hermano==='si'?`<span class="dettag" style="background:#EBF7D4;color:#3A6A0A">★ Hermano</span>`:''}</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:14px">
+      <div class="detf"><div class="detfl">Fecha entrevista</div><div class="detfv">${p.entFecha?fDateFull(p.entFecha):'—'}</div></div>
+      <div class="detf"><div class="detfl">Hora</div><div class="detfv">${p.entHora||'—'}</div></div>
+      <div class="detf"><div class="detfl">Vacante en ${p.curso}</div><div class="detfv">${vacDisp}</div></div>
+      <div class="detf"><div class="detfl">Resultado registrado</div><div class="detfv">${p.entResultado?EL[p.entResultado]||p.entResultado:'Pendiente'}</div></div>
+    </div>
+
+    ${esPasada&&!p.entResultado?`
+    <div class="ent-resultado">
+      <div class="ent-r-title">Registrar resultado de la entrevista</div>
+      ${hayVac?`<div class="info-box" style="margin-bottom:10px">✅ Hay vacante disponible en ${p.curso}. Si elegís "Quiere avanzar", el sistema pasará automáticamente a <strong>Postulado</strong> y enviará el mail de reserva de vacante.</div>`:`<div class="warn-box" style="margin-bottom:10px">⚠️ El curso ${p.curso} está lleno. Si la familia quiere avanzar, pasará a <strong>Lista de espera</strong> automáticamente.</div>`}
+      <div class="ent-opciones">
+        <div class="ent-opcion" id="rop-post" onclick="selectRes('post')">✅<br>Quiere avanzar</div>
+        <div class="ent-opcion" id="rop-esp" onclick="selectRes('esp')">⏳<br>Lista de espera</div>
+        <div class="ent-opcion" id="rop-des" onclick="selectRes('des')">✗<br>Desiste</div>
+      </div>
+      <div class="fgm"><label class="flm">Observaciones de la entrevista</label><textarea class="ftm" id="ent-obs-res" style="min-height:70px" placeholder="Anotá impresiones, comentarios de la familia, situación particular..."></textarea></div>
+      <div style="margin-top:10px;font-size:12px;color:var(--tx3)">
+        💡 Al confirmar: el sistema actualiza el estado, registra la nota, y ofrece enviar el mail automático correspondiente.
+      </div>
+    </div>`:`
+    <div class="ent-resultado">
+      <div class="ent-r-title">Editar fecha / Agregar nota</div>
+      <div class="fgm2">
+        <div class="fgm"><label class="flm">Fecha entrevista</label><input class="fim" id="ent-fecha2" type="date" value="${p.entFecha||today()}"></div>
+        <div class="fgm"><label class="flm">Hora</label><input class="fim" id="ent-hora2" type="time" value="${p.entHora||'09:00'}"></div>
+      </div>
+    </div>`}
+
+    ${(p.notas||[]).length>0?`<div style="margin-top:14px"><div style="font-size:11px;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Notas</div>${renderNotas(p)}</div>`:''}`;
+
+  document.getElementById('mf').innerHTML=esPasada&&!p.entResultado?`
+    <button class="btn btn-out" onclick="closeM()">Cancelar</button>
+    <button class="btn btn-or" onclick="confirmarResultado(${id})">Confirmar resultado y enviar mail</button>`:
+    `<button class="btn btn-out" onclick="closeM()">Cerrar</button>
+    <button class="btn btn-td" onclick="guardarFechaEnt2(${id})">Guardar cambios</button>
+    <button class="btn btn-td" onclick="openDetalle(${id})">Gestionar estado →</button>`;
+  openM();
+}
+
+let resultadoSel = null;
+function selectRes(r){
+  resultadoSel=r;
+  ['post','esp','des'].forEach(o=>{
+    const el=document.getElementById('rop-'+o);
+    if(el){ el.className='ent-opcion'+(r===o?' selected-'+o:''); }
+  });
+}
+
+function confirmarResultado(id){
+  if(!resultadoSel){ toast('Seleccioná un resultado primero','err'); return; }
+  const p=DB.postulantes.find(x=>x.id===id); if(!p) return;
+  const obs=(document.getElementById('ent-obs-res')?.value||'').trim();
+  const v=DB.vacantes[p.curso]; const hayVac=v&&v.u<v.t;
+  // Determinar estado final
+  let nuevoEstado;
+  if(resultadoSel==='post'){ nuevoEstado=hayVac?'postulado':'lista de espera'; }
+  else if(resultadoSel==='esp'){ nuevoEstado='lista de espera'; }
+  else { nuevoEstado='desiste'; }
+  p.entResultado=nuevoEstado;
+  p.estado=nuevoEstado;
+  p.ultAccion=today();
+  p.hist=p.hist||[];
+  p.hist.push({e:nuevoEstado,f:today(),mailOk:false});
+  if(obs){ p.notas=p.notas||[]; p.notas.push({txt:`[Post-entrevista] ${obs}`,fecha:new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}),hora:new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})}); }
+  saveDB(); resultadoSel=null;
+  closeM();
+  // Enviar mail automático
+  enviarMailAdmin(p,nuevoEstado,(ok,mode)=>{
+    if(ok){ p.hist[p.hist.length-1].mailOk=true; saveDB(); }
+    const estadoLabel=EL[nuevoEstado];
+    if(ok&&mode==='mailto') toast(`Resultado registrado → ${estadoLabel} · Abriendo correo...`,'info');
+    else if(ok) toast(`✓ Resultado registrado → ${estadoLabel} · Mail enviado a ${p.email}`,'ok');
+    else toast(`Resultado registrado → ${estadoLabel}. Configurá EmailJS para envío automático.`,'info');
+  });
+  renderEntrevistas(entFiltro); renderDashboard(); updateSidebarBadges();
+}
+
+function guardarFechaEnt2(id){
+  const p=DB.postulantes.find(x=>x.id===id); if(!p) return;
+  const f=document.getElementById('ent-fecha2')?.value;
+  const h=document.getElementById('ent-hora2')?.value;
+  if(f) p.entFecha=f; if(h) p.entHora=h;
+  saveDB(); closeM(); renderEntrevistas(entFiltro);
+  toast('Fecha actualizada','ok');
+}
+
+function guardarFechaDesdeDetalle(id){
+  const p=DB.postulantes.find(x=>x.id===id); if(!p) return;
+  const f=document.getElementById('det-entf-'+id)?.value;
+  const h=document.getElementById('det-enth-'+id)?.value;
+  if(f) p.entFecha=f; if(h) p.entHora=h;
+  saveDB(); toast('Fecha de entrevista guardada · Aparece en vista Entrevistas','ok');
+  updateSidebarBadges();
+}
+
+function openM(){ document.getElementById('ov').classList.add('open'); }
+function closeM(){ document.getElementById('ov').classList.remove('open'); }
+function closeMBg(e){ if(e.target===document.getElementById('ov')) closeM(); }
+
+// ═══════════════════════════
+// INIT
+// ═══════════════════════════
+loadDB();
+
+// EmailJS
+const _ejs=document.createElement('script');
+_ejs.src='https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js';
+_ejs.onload=()=>{ if(DB.config.ejskey){ try{emailjs.init(DB.config.ejskey);}catch(e){} } };
+document.head.appendChild(_ejs);
+</script>
+</body>
+</html>
