@@ -950,17 +950,17 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
           </div>
         </div>
         <div class="cbox" style="margin-top:14px">
-          <div class="cbox-h"><div class="cbox-t">EmailJS — Envío real de mails</div><span id="ejs-badge" style="font-size:11px;padding:3px 9px;border-radius:12px;font-weight:600;background:#FEF5E6;color:#8A5510">⚡ No configurado</span></div>
+          <div class="cbox-h">
+            <div class="cbox-t">Estado del sistema de mails</div>
+            <span id="ejs-badge" style="font-size:11px;padding:3px 9px;border-radius:12px;font-weight:600;background:#FEF5E6;color:#8A5510">⚡ Apps Script no configurado</span>
+          </div>
           <div class="mb">
             <div style="background:var(--cr);border-radius:9px;padding:11px 14px;font-size:12.5px;color:var(--tx2);margin-bottom:14px;line-height:1.65">
-              Sin EmailJS los mails se abren en tu cliente de correo (Gmail). Con EmailJS se envían directamente en un click. Creá cuenta gratis en <a href="https://emailjs.com" target="_blank" style="color:var(--tl)">emailjs.com</a> (200 mails/mes).
+              Los mails se envían automáticamente desde Gmail a través del Apps Script de Google Sheets. Configurá la URL del Apps Script en el campo verde de arriba para activar el envío real. Sin esa URL, al cambiar estados se abrirá tu cliente de correo como fallback.
             </div>
-            <div class="cfgrow"><div><div class="cfglbl">Service ID</div><div class="cfgsub">ej: <code style="font-size:11px;background:var(--cr);padding:1px 5px;border-radius:4px">service_abc1234</code></div></div><input class="cfgi" id="cfg-ejsid" placeholder="service_XXXXXXX"></div>
-            <div class="cfgrow"><div><div class="cfglbl">Template ID</div><div class="cfgsub">ej: <code style="font-size:11px;background:var(--cr);padding:1px 5px;border-radius:4px">template_abc1234</code></div></div><input class="cfgi" id="cfg-ejstpl" placeholder="template_XXXXXXX"></div>
-            <div class="cfgrow"><div><div class="cfglbl">Public Key</div><div class="cfgsub">En tu cuenta EmailJS → Account → API Keys</div></div><input class="cfgi" id="cfg-ejskey" placeholder="xxxxxxxxxxxxxxxxxxxx"></div>
-            <div style="display:flex;gap:8px;margin-top:10px">
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
               <button class="btn btn-td" onclick="saveCfg()">Guardar configuración</button>
-              <button class="btn btn-out" onclick="testMail()">Enviar mail de prueba</button>
+              <button class="btn btn-out" onclick="testMailAppsScript()">Enviar mail de prueba</button>
             </div>
           </div>
         </div>
@@ -1026,7 +1026,7 @@ let DB = {
     seguimiento_entrevista:{subj:'¿Cómo fue la entrevista? — Austin EBS',body:'Hola {{padre}},\n\nFue un placer recibirlos en la entrevista. Esperamos que {{alumno}} y ustedes hayan quedado tan contentos como nosotros.\n\nSi desean continuar con el proceso de admisión, por favor respondé este mail confirmando tu interés. Con eso podremos avanzar con los pasos de reserva de vacante.\n\nSi por algún motivo decidieron no continuar, también podés avisarnos por este medio — lo entendemos perfectamente y siempre será bienvenida la familia si desean retomar en el futuro.\n\nEsperamos tu respuesta.\n\nUn afectuoso saludo,\nAdmisiones – Austin EBS'},
     no_asistio:{subj:'¡Que lástima! Podemos reprogramar tu entrevista — Austin EBS',body:'Hola {{padre}},\n\nLamentamos que no hayas podido llegar a la entrevista que tenías agendada. ¡Nos hubiera encantado conocerlos!\n\nSi querés reprogramarla, respondé este mail y coordinamos un nuevo horario con gusto. También podés volver a completar el formulario de postulación para elegir una nueva fecha.\n\nEsperamos poder conocerlos pronto.\n\nUn afectuoso saludo,\nAdmisiones – Austin EBS'}
   },
-  config:{nombre:'Admisiones Austin EBS',email:'admisiones@austinebs-ah.edu.ar',calendar:'https://calendar.app.google/WrfYGGSiRH3smkxL8',drive:'https://drive.google.com/drive/folders/1c0vFf1MWUcSC8-lqBjBCGDQ-hbXxGQDA',ejsid:'',ejstpl:'',ejskey:''},
+  config:{nombre:'Admisiones Austin EBS',email:'admisiones@austinebs-ah.edu.ar',calendar:'https://calendar.app.google/WrfYGGSiRH3smkxL8',drive:'https://drive.google.com/drive/folders/1c0vFf1MWUcSC8-lqBjBCGDQ-hbXxGQDA',appsScriptUrl:''},
   pendingNotif:[]
 };
 
@@ -1427,7 +1427,7 @@ function changeE(id){
     if(ok){ p.hist[p.hist.length-1].mailOk=true; saveDB(); }
     if(ok&&mode==='mailto') toast(`Estado → ${EL[newEst]} · Abriendo correo...`,'info');
     else if(ok) toast(`✓ Estado → ${EL[newEst]} · Mail enviado a ${p.email}`,'ok');
-    else toast(`Estado actualizado. Configurá EmailJS para envío automático.`,'info');
+    else toast(`Estado actualizado. Configurá el Apps Script para envío automático.`,'info');
   });
   closeM(); renderDashboard();
   const pv=document.getElementById('view-pipeline'); if(pv&&pv.classList.contains('on')) renderPipeline();
@@ -1441,7 +1441,7 @@ function sendMailOnly(id){
   enviarMailAdmin(p,sel.value,(ok,mode)=>{
     if(ok&&mode==='mailto') toast('Abriendo cliente de correo...','info');
     else if(ok) toast(`✉ Mail enviado a ${p.email}`,'ok');
-    else toast('Configurá EmailJS en Configuración para envío automático.','info');
+    else toast('Configurá el Apps Script en Configuración para envío automático.','info');
   });
 }
 
@@ -1510,7 +1510,7 @@ function saveNuevo(){
     if(ok){ p.hist[0].mailOk=true; saveDB(); }
     if(ok&&mode==='mailto') toast(`✓ ${alumno} agregado · Abriendo correo...`,'info');
     else if(ok) toast(`✓ ${alumno} agregado · Mail de bienvenida enviado`,'ok');
-    else toast(`${alumno} agregado · Configurá EmailJS para envío automático`,'info');
+    else toast(`${alumno} agregado · Configurá el Apps Script para envío automático`,'info');
   });
   closeM(); renderDashboard();
 }
@@ -1519,38 +1519,38 @@ function saveNuevo(){
 // ENVÍO DE MAIL
 // ═══════════════════════════
 function enviarMail(p,estado,cb){
+  // Desde formulario de familias — solo envía si hay Apps Script, nunca abre mailto
   const tmpl=DB.emails[estado]; if(!tmpl){ if(cb) cb(false); return; }
-  const body=fillV(tmpl.body,p);
-  const subj=tmpl.subj;
-  const cfg=DB.config;
-  if(cfg.ejsid&&cfg.ejstpl&&cfg.ejskey){
-    if(typeof emailjs==='undefined'){ setTimeout(()=>enviarMail(p,estado,cb),1500); return; }
-    emailjs.send(cfg.ejsid,cfg.ejstpl,{
-      to_email:p.email,to_name:p.padre,from_name:cfg.nombre,
-      reply_to:cfg.email,subject:subj,message:body
-    },cfg.ejskey)
-    .then(()=>{ if(cb) cb(true,'ejs'); })
-    .catch(err=>{ console.error('EmailJS:',err); if(cb) cb(false); });
+  if(DB.config.appsScriptUrl){
+    apiCall('sendMail',{to:p.email,subject:tmpl.subj,body:fillV(tmpl.body,p)})
+      .then(res=>{ if(cb) cb(res&&res.ok,'apps'); })
+      .catch(()=>{ if(cb) cb(false); });
   } else {
-    // Solo abrir mailto si es acción MANUAL del admin (no desde el formulario de familia)
-    if(cb) cb(false,'no-ejs');
+    if(cb) cb(false,'no-config');
   }
 }
 
-// Versión para uso manual del admin (abre mailto en el navegador)
 function enviarMailAdmin(p,estado,cb){
+  // Desde panel admin — Apps Script o fallback mailto
   const tmpl=DB.emails[estado]; if(!tmpl){ if(cb) cb(false); return; }
   const body=fillV(tmpl.body,p);
   const subj=tmpl.subj;
-  const cfg=DB.config;
-  if(cfg.ejsid&&cfg.ejstpl&&cfg.ejskey){
-    enviarMail(p,estado,cb);
+  if(DB.config.appsScriptUrl){
+    apiCall('sendMail',{to:p.email,subject:subj,body:body})
+      .then(res=>{
+        if(res&&res.ok){ if(cb) cb(true,'apps'); }
+        else { abrirMailto_(p.email,subj,body); if(cb) cb(true,'mailto'); }
+      })
+      .catch(()=>{ abrirMailto_(p.email,subj,body); if(cb) cb(true,'mailto'); });
   } else {
-    const mailto=`mailto:${encodeURIComponent(p.email)}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`;
-    window.open(mailto,'_blank');
-    if(cb) cb(true,'mailto');
+    abrirMailto_(p.email,subj,body); if(cb) cb(true,'mailto');
   }
 }
+
+function abrirMailto_(email,subj,body){
+  window.open('mailto:'+encodeURIComponent(email)+'?subject='+encodeURIComponent(subj)+'&body='+encodeURIComponent(body),'_blank');
+}
+
 
 // ═══════════════════════════
 // VACANTES
@@ -1649,9 +1649,7 @@ function renderCfg(){
   document.getElementById('cfg-cal').value=DB.config.calendar||'';
   document.getElementById('cfg-drv').value=DB.config.drive||'';
   document.getElementById('cfg-apps').value=DB.config.appsScriptUrl||'';
-  document.getElementById('cfg-ejsid').value=DB.config.ejsid||'';
-  document.getElementById('cfg-ejstpl').value=DB.config.ejstpl||'';
-  document.getElementById('cfg-ejskey').value=DB.config.ejskey||'';
+
   setTimeout(updateEjsBadge,50);
 }
 function saveCfg(){
@@ -1660,26 +1658,29 @@ function saveCfg(){
   DB.config.calendar=document.getElementById('cfg-cal').value;
   DB.config.drive=document.getElementById('cfg-drv').value;
   DB.config.appsScriptUrl=(document.getElementById('cfg-apps').value||'').trim();
-  DB.config.ejsid=document.getElementById('cfg-ejsid').value.trim();
-  DB.config.ejstpl=document.getElementById('cfg-ejstpl').value.trim();
-  DB.config.ejskey=document.getElementById('cfg-ejskey').value.trim();
-  if(DB.config.ejskey&&typeof emailjs!=='undefined'){ try{emailjs.init(DB.config.ejskey);}catch(e){} }
+
   updateEjsBadge(); saveDB(); toast('Configuración guardada','ok');
 }
 function updateEjsBadge(){
   const b=document.getElementById('ejs-badge'); if(!b) return;
-  const ok=DB.config.ejsid&&DB.config.ejstpl&&DB.config.ejskey;
-  b.style.cssText=ok?'font-size:11px;padding:3px 9px;border-radius:12px;font-weight:600;background:#EBF7D4;color:#3A6A0A':'font-size:11px;padding:3px 9px;border-radius:12px;font-weight:600;background:#FEF5E6;color:#8A5510';
-  b.textContent=ok?'✓ Activo — mails reales':'⚡ No configurado (usa mailto)';
+  const ok=!!(DB.config.appsScriptUrl&&DB.config.appsScriptUrl.includes('script.google.com'));
+  b.style.cssText=ok
+    ?'font-size:11px;padding:3px 9px;border-radius:12px;font-weight:600;background:#EBF7D4;color:#3A6A0A'
+    :'font-size:11px;padding:3px 9px;border-radius:12px;font-weight:600;background:#FEF5E6;color:#8A5510';
+  b.textContent=ok?'✓ Apps Script conectado — mails reales':'⚡ Apps Script no configurado (usa mailto)';
 }
-function testMail(){
+async function testMailAppsScript(){
   const cfg=DB.config;
-  if(!cfg.ejsid||!cfg.ejstpl||!cfg.ejskey){ toast('Primero guardá los datos de EmailJS','err'); return; }
-  if(typeof emailjs==='undefined'){ toast('EmailJS cargando, esperá un momento',''); return; }
+  if(!cfg.appsScriptUrl){ toast('Primero guardá la URL del Apps Script en el campo verde','err'); return; }
   toast('Enviando mail de prueba...','');
-  emailjs.send(cfg.ejsid,cfg.ejstpl,{to_email:cfg.email,to_name:cfg.nombre,from_name:cfg.nombre,reply_to:cfg.email,subject:'✓ Test – Sistema Austin EBS',message:'Este es un mail de prueba del Sistema de Admisiones Austin EBS.\n\nSi lo recibís, el sistema está correctamente configurado y los mails se enviarán en forma real.\n\nAdmisiones – Austin EBS'},cfg.ejskey)
-  .then(()=>toast('✓ Mail de prueba enviado a '+cfg.email,'ok'))
-  .catch(e=>toast('Error: '+(e.text||e)+' — revisá los datos de EmailJS','err'));
+  try{
+    const res=await apiCall('sendMail',{
+      to:cfg.email, subject:'✓ Test — Sistema Austin EBS',
+      body:'Este es un mail de prueba del Sistema de Admisiones Austin EBS.\n\nSi lo recibís, el sistema está correctamente configurado y los mails se enviarán automáticamente desde Gmail.\n\nAdmisiones – Austin EBS'
+    });
+    if(res.ok) toast('✓ Mail de prueba enviado a '+cfg.email,'ok');
+    else toast('Error: '+(res.error||'respuesta inválida')+' — revisá la URL del Apps Script','err');
+  } catch(e){ toast('Error de conexión: '+e.message,'err'); }
 }
 
 // ═══════════════════════════
@@ -1805,7 +1806,7 @@ function submitPost(){
       // Fallback: guardar localmente igual
     });
   } else {
-    // Sin Apps Script: enviar mail via enviarMail si hay EmailJS
+    // Sin Apps Script: mail via Apps Script no disponible
     enviarMail(p,'citado',(ok)=>{ if(ok){ p.hist[p.hist.length-1].mailOk=true; saveDB(); } });
   }
 
@@ -2230,11 +2231,7 @@ loadDB();
 // Inicializar bloqueos en cache local
 calBloqueos = DB.bloqueos||[];
 
-// EmailJS (opcional, fallback)
-const _ejs=document.createElement('script');
-_ejs.src='https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js';
-_ejs.onload=()=>{ if(DB.config&&DB.config.ejskey){ try{emailjs.init(DB.config.ejskey);}catch(e){} } };
-document.head.appendChild(_ejs);
+
 </script>
 </body>
 </html>
