@@ -1784,6 +1784,13 @@ function submitPost(){
   DB.pendingNotif.push(p.id);
   saveDB();
 
+  // 1. Bloquear slot INMEDIATAMENTE en localStorage (evita doble reserva)
+  if(calSlotSeleccionado){
+    const nuevoTurno = {Fecha: calSlotSeleccionado.fecha, Hora: calSlotSeleccionado.hora, Estado:'reservado'};
+    calTurnosReservados.push(nuevoTurno);
+    try{ localStorage.setItem('austin_turnos', JSON.stringify(calTurnosReservados)); } catch(e){}
+  }
+
   // Deshabilitar botón para evitar doble envío
   const btn=document.getElementById('btn-submit-final');
   if(btn){ btn.disabled=true; btn.textContent='Enviando...'; }
@@ -1861,16 +1868,25 @@ function initCalFormulario(){
 
 async function cargarTurnosYRenderizar(){
   const loading = document.getElementById('cal-loading');
-  const errEl = document.getElementById('cal-error');
   if(loading) loading.style.display='block';
-  if(errEl) errEl.style.display='none';
-  // Cargar turnos del Apps Script
+  // Siempre cargar del localStorage primero (fallback instantáneo)
+  try{
+    const local = JSON.parse(localStorage.getItem('austin_turnos')||'[]');
+    calTurnosReservados = local;
+  } catch(e){ calTurnosReservados = []; }
+  // Intentar sincronizar con Apps Script
   if(DB.config.appsScriptUrl){
     try{
       const res = await apiCall('getTurnos',{});
-      if(res.ok) calTurnosReservados = (res.turnos||[]).filter(t=>t.Estado==='reservado'||t.Estado==='recordatorio_enviado');
+      if(res && res.ok && res.turnos){
+        calTurnosReservados = res.turnos.filter(function(t){
+          return t.Estado==='reservado'||t.Estado==='recordatorio_enviado';
+        });
+        // Actualizar cache local
+        localStorage.setItem('austin_turnos', JSON.stringify(calTurnosReservados));
+      }
       const rb = await apiCall('getBloqueos',{});
-      if(rb.ok) calBloqueos = rb.bloqueos||[];
+      if(rb && rb.ok) calBloqueos = rb.bloqueos||[];
     } catch(e){ /* usar cache local */ }
   }
   if(loading) loading.style.display='none';
@@ -2042,9 +2058,121 @@ function renderEntAdminLista(filtro){
 
 function filterEntAdmin(f){ renderEntAdminLista(f); }
 
+// ── DETALLE DE ENTREVISTA (modal) ──────────────────────────────
+function openDetalleEntrevista(id){
+  const p = DB.postulantes.find(x=>x.id===id); if(!p) return;
+  const hoy = today();
+  const esPasada = p.entFecha && p.entFecha < hoy;
+  const tieneRes = !!p.entResultado;
+  const v = DB.vacantes[p.curso]; const hayVac = v && v.u < v.t;
+  const init = p.alumno.split(' ').slice(0,2).map(function(w){return w[0]||'';}).join('').toUpperCase();
+
+  document.getElementById('mt').textContent = 'Entrevista — ' + p.alumno;
+  document.getElementById('mb').innerHTML =
+    '<div class="deth" style="margin-bottom:14px">' +
+      '<div class="detav" style="background:'+ECOL[p.estado]+'">'+init+'</div>' +
+      '<div class="detinfo">' +
+        '<h2>'+p.alumno+(p.hermano==='si'?' ★':'')+'</h2>' +
+        '<p>'+p.padre+' · <a href="mailto:'+p.email+'" style="color:var(--tl)">'+p.email+'</a>'+(p.tel?' · '+p.tel:'')+'</p>' +
+        '<div class="dettags">'+badge(p.estado)+'<span class="dettag">'+p.curso+'</span><span class="dettag">Ciclo '+p.anio+'</span>'+(p.hermano==='si'?'<span class="dettag" style="background:#EBF7D4;color:#3A6A0A">★ Hermano</span>':'')+'</div>' +
+      '</div>' +
+    '</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:14px">' +
+      '<div class="detf"><div class="detfl">Fecha</div><div class="detfv">'+(p.entFecha?formatFechaLinda(p.entFecha):'—')+'</div></div>' +
+      '<div class="detf"><div class="detfl">Hora</div><div class="detfv">'+(p.entHora||'—')+'</div></div>' +
+      '<div class="detf"><div class="detfl">Vacante</div><div class="detfv">'+getVacDisp(p.curso)+'</div></div>' +
+      '<div class="detf"><div class="detfl">Resultado</div><div class="detfv">'+(p.entResultado?EL[p.entResultado]||p.entResultado:'Pendiente')+'</div></div>' +
+    '</div>' +
+
+    // Editar fecha
+    '<div style="background:var(--cr);border-radius:10px;padding:12px 14px;margin-bottom:12px">' +
+      '<div style="font-size:11px;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Fecha y hora</div>' +
+      '<div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">' +
+        '<div><label style="font-size:11.5px;color:var(--tx3);display:block;margin-bottom:3px">Fecha</label><input type="date" id="det-entf-'+id+'" value="'+(p.entFecha||'')+'" style="padding:6px 9px;border:1.5px solid var(--bd2);border-radius:7px;font-size:12.5px;font-family:\'DM Sans\',sans-serif;color:var(--tx);background:#fff;outline:none"></div>' +
+        '<div><label style="font-size:11.5px;color:var(--tx3);display:block;margin-bottom:3px">Hora</label><input type="time" id="det-enth-'+id+'" value="'+(p.entHora||'09:00')+'" style="padding:6px 9px;border:1.5px solid var(--bd2);border-radius:7px;font-size:12.5px;font-family:\'DM Sans\',sans-serif;color:var(--tx);background:#fff;outline:none"></div>' +
+        '<button class="btn btn-td btn-sm" onclick="guardarFechaDesdeDetalle('+id+')">Guardar fecha</button>' +
+      '</div>' +
+    '</div>' +
+
+    // Registrar resultado si pasó y no tiene resultado
+    (esPasada && !tieneRes ?
+      '<div class="ent-resultado">' +
+        '<div class="ent-r-title">Registrar resultado de la entrevista</div>' +
+        (hayVac
+          ? '<div class="info-box" style="margin-bottom:10px">✅ Hay vacante en '+p.curso+'. "Quiere avanzar" → pasa a <strong>Postulado</strong> automáticamente.</div>'
+          : '<div class="warn-box" style="margin-bottom:10px">⚠️ '+p.curso+' está lleno. "Quiere avanzar" → <strong>Lista de espera</strong>.</div>'
+        ) +
+        '<div class="ent-opciones">' +
+          '<div class="ent-opcion" id="rop-post" onclick="selectRes(\'post\')">✅<br>Quiere avanzar</div>' +
+          '<div class="ent-opcion" id="rop-esp" onclick="selectRes(\'esp\')">⏳<br>Lista de espera</div>' +
+          '<div class="ent-opcion" id="rop-des" onclick="selectRes(\'des\')">✗<br>Desiste</div>' +
+        '</div>' +
+        '<div class="fgm"><label class="flm">Observaciones</label><textarea class="ftm" id="ent-obs-res" style="min-height:70px" placeholder="Impresiones, comentarios..."></textarea></div>' +
+      '</div>'
+    : tieneRes ? '<div style="background:#EBF7D4;border-radius:9px;padding:10px 13px;font-size:12.5px;color:#3A6A0A;margin-bottom:12px">✓ Resultado registrado: <strong>'+(EL[p.entResultado]||p.entResultado)+'</strong></div>' : '') +
+
+    // Notas
+    ((p.notas||[]).length > 0
+      ? '<div style="margin-top:10px"><div style="font-size:11px;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Notas</div>'+renderNotas(p)+'</div>'
+      : '');
+
+  document.getElementById('mf').innerHTML = (esPasada && !tieneRes)
+    ? '<button class="btn btn-out" onclick="closeM()">Cerrar</button>' +
+      '<button class="btn btn-danger btn-sm" onclick="marcarNoAsistio('+id+');closeM()">No asistió</button>' +
+      '<button class="btn btn-or" onclick="confirmarResultado('+id+')">Confirmar resultado y enviar mail</button>'
+    : '<button class="btn btn-out" onclick="closeM()">Cerrar</button>' +
+      '<button class="btn btn-td" onclick="openDetalle('+id+');closeM()">Gestionar estado →</button>';
+
+  openM();
+}
+
+let resultadoSel = null;
+function selectRes(r){
+  resultadoSel = r;
+  ['post','esp','des'].forEach(function(o){
+    const el = document.getElementById('rop-'+o);
+    if(el) el.className = 'ent-opcion' + (r===o ? ' selected-'+o : '');
+  });
+}
+
+function confirmarResultado(id){
+  if(!resultadoSel){ toast('Seleccioná un resultado primero','err'); return; }
+  const p = DB.postulantes.find(x=>x.id===id); if(!p) return;
+  const obs = (document.getElementById('ent-obs-res') ? document.getElementById('ent-obs-res').value : '').trim();
+  const v = DB.vacantes[p.curso]; const hayVac = v && v.u < v.t;
+  let nuevoEstado;
+  if(resultadoSel==='post') nuevoEstado = hayVac ? 'postulado' : 'lista de espera';
+  else if(resultadoSel==='esp') nuevoEstado = 'lista de espera';
+  else nuevoEstado = 'desiste';
+  p.entResultado = nuevoEstado;
+  p.estado = nuevoEstado;
+  p.ultAccion = today();
+  p.hist = p.hist||[];
+  p.hist.push({e:nuevoEstado, f:today(), mailOk:false});
+  if(obs){ p.notas = p.notas||[]; p.notas.push({txt:'[Post-entrevista] '+obs, fecha:new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}), hora:new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})}); }
+  saveDB(); resultadoSel = null; closeM();
+  enviarMailAdmin(p, nuevoEstado, function(ok, mode){
+    if(ok && mode==='mailto') toast('Resultado → '+EL[nuevoEstado]+' · Abriendo correo...','info');
+    else if(ok) toast('✓ Resultado → '+EL[nuevoEstado]+' · Mail enviado','ok');
+    else toast('Resultado guardado. Configurá el Apps Script para envío automático.','info');
+  });
+  renderAdminCal(); renderEntAdminLista('proximas'); renderDashboard(); updateSidebarBadges();
+}
+
+function guardarFechaDesdeDetalle(id){
+  const p = DB.postulantes.find(x=>x.id===id); if(!p) return;
+  const f = document.getElementById('det-entf-'+id);
+  const h = document.getElementById('det-enth-'+id);
+  if(f && f.value) p.entFecha = f.value;
+  if(h && h.value) p.entHora = h.value;
+  saveDB();
+  toast('Fecha de entrevista guardada','ok');
+  updateSidebarBadges(); renderDashboard();
+}
+
 function marcarNoAsistio(id){
   const p = DB.postulantes.find(x=>x.id===id); if(!p) return;
-  if(!confirm(`¿Confirmar que ${p.alumno} NO asistió a la entrevista del ${formatFechaLinda(p.entFecha)}?\n\nSe enviará un mail de reprogramación.`)) return;
+  if(!confirm('Confirmar que '+p.alumno+' NO asistió a la entrevista del '+formatFechaLinda(p.entFecha)+'.\n\nSe enviará un mail de reprogramación.')) return;
   p.entResultado = 'no_asistio';
   p.ultAccion = today();
   p.notas = p.notas||[];
