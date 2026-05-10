@@ -1954,7 +1954,9 @@ function formatFechaLinda(str){
   const [y,m,d]=str.split('-');
   const dias=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
   const meses=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-  const dt=new Date(Number(y),Num
+  const dt=new Date(Number(y),Number(m)-1,Number(d));
+  return dias[dt.getDay()]+' '+d+' de '+meses[Number(m)-1];
+}
 
 // ═══════════════════════════
 // CALENDARIO ADMIN
@@ -2146,6 +2148,7 @@ function guardarDisponibilidad(){
 
 function abrirBloqueo(){
   document.getElementById('mt').textContent = '🚫 Bloquear día u horario';
+  const optsHorarios = buildHorariosOptions_();
   document.getElementById('mb').innerHTML = `
     <div class="warn-box" style="margin-bottom:14px">
       Bloqueá un día completo (vacaciones, ausencia) o un horario específico. Las familias no podrán reservar en ese momento. El bloqueo se sincroniza al Apps Script si está configurado.
@@ -2155,11 +2158,7 @@ function abrirBloqueo(){
       <div class="fgm"><label class="flm">Horario (opcional)</label>
         <select class="fsm" id="blq-hora">
           <option value="">— Día completo —</option>
-          ${(() => {
-            const disp = getDisponibilidadBase();
-            const todos = [...new Set(Object.values(disp).flat().map(s=>s.hora||s))].sort();
-            return todos.map(h=>`<option value="${h}">${h}</option>`).join('');
-          })()}
+          ${optsHorarios}
         </select>
       </div>
     </div>
@@ -2172,6 +2171,12 @@ function abrirBloqueo(){
     <button class="btn btn-out" onclick="closeM()">Cancelar</button>
     <button class="btn btn-danger" onclick="guardarBloqueo()">Bloquear</button>`;
   openM();
+}
+
+function buildHorariosOptions_(){
+  const disp = getDisponibilidadBase();
+  const todos = [...new Set(Object.values(disp).flat().map(function(s){ return s.hora||s; }))].sort();
+  return todos.map(function(h){ return '<option value="'+h+'">'+h+'</option>'; }).join('');
 }
 
 function renderListaBloqueos(){
