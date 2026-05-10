@@ -989,7 +989,6 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
 <div class="toast" id="toast"></div>
 
 <script>
-'use strict';
 // ═══════════════════════════
 // CONSTANTES Y ESTADO GLOBAL
 // ═══════════════════════════
@@ -1212,6 +1211,8 @@ function renderDashboard(){
       <td style="color:var(--tx3);font-size:11.5px">${fDate(p.ultAccion||p.fecha)}</td>
       <td><button class="btn btn-sm btn-td" onclick="event.stopPropagation();openDetalle(${p.id})">Gestionar</button></td>
     </tr>`).join('');
+  // Entrevistas de hoy (al final del render)
+  renderDashEntHoy();
 }
 
 function dismissN(id){ DB.pendingNotif=DB.pendingNotif.filter(x=>x!==id); renderDashboard(); }
@@ -2216,15 +2217,6 @@ function quitarBloqueo(i){
   saveDB();
   document.getElementById('blq-lista').innerHTML = renderListaBloqueos();
   toast('Bloqueo eliminado','ok');
-}
-
-// ═══════════════════════════
-// DASHBOARD update to call renderDashEntHoy
-// ═══════════════════════════
-const _origRenderDash = renderDashboard;
-function renderDashboard(){
-  _origRenderDash();
-  renderDashEntHoy();
 }
 
 function openM(){ document.getElementById('ov').classList.add('open'); }
