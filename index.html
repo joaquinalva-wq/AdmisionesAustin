@@ -1052,8 +1052,19 @@ function loadDB(){
 function resetDB(){
   if(!confirm('¿Borrar TODOS los postulantes y datos? Esta acción no se puede deshacer.')) return;
   localStorage.removeItem('austin_ebs_v2');
+  localStorage.removeItem('austin_turnos');
   DB.postulantes=[]; DB.nextId=1; DB.pendingNotif=[];
   renderDashboard(); toast('Datos eliminados','info');
+}
+
+function eliminarPostulante(id){
+  const p=DB.postulantes.find(x=>x.id===id); if(!p) return;
+  if(!confirm('¿Eliminar a '+p.alumno+' del sistema? Esta acción no se puede deshacer.')) return;
+  DB.postulantes=DB.postulantes.filter(x=>x.id!==id);
+  DB.pendingNotif=DB.pendingNotif.filter(x=>x!==id);
+  saveDB(); closeM();
+  renderDashboard(); updateSidebarBadges();
+  toast(p.alumno+' eliminado','ok');
 }
 
 // ═══════════════════════════
@@ -1344,7 +1355,8 @@ function openDetalle(id){
     </div>`;
 
   document.getElementById('mf').innerHTML=`
-    <button class="btn btn-out" onclick="closeM()">Cerrar</button>`;
+    <button class="btn btn-out" onclick="closeM()">Cerrar</button>
+    <button class="btn btn-danger btn-sm" onclick="eliminarPostulante(${id})" style="margin-right:auto">🗑 Eliminar</button>`;
 
   openM();
   setTimeout(()=>prevMail(id),50);
@@ -1827,17 +1839,42 @@ function submitPost(){
 // ═══════════════════════════
 // API APPS SCRIPT
 // ═══════════════════════════
+// ── API APPS SCRIPT (sin CORS) ─────────────────────────────────
+// GET para lecturas (respuesta legible), no-cors POST para escrituras
 async function apiCall(action, data){
   const url = DB.config.appsScriptUrl;
-  if(!url) return {ok:false, error:'Sin URL de Apps Script'};
+  if(!url) return {ok:false, error:'Sin URL'};
+
+  const READ_ACTIONS = ['ping','getTurnos','getBloqueos'];
+  const isRead = READ_ACTIONS.includes(action);
+
   try{
-    const res = await fetch(url, {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({action, data})
-    });
-    return await res.json();
-  } catch(e){ return {ok:false, error:e.message}; }
+    if(isRead){
+      // GET — sin CORS issues, respuesta legible
+      const params = new URLSearchParams({action: action});
+      if(data) params.set('data', JSON.stringify(data));
+      const res = await fetch(url + '?' + params.toString(), {
+        method: 'GET',
+        redirect: 'follow'
+      });
+      const text = await res.text();
+      try{ return JSON.parse(text); }
+      catch(e){ return {ok:false, error:'Respuesta inválida: '+text.substring(0,100)}; }
+    } else {
+      // POST no-cors — no hay preflight, pero la respuesta es opaca (no legible)
+      // El Apps Script recibe y ejecuta igual, nosotros asumimos ok:true
+      const payload = JSON.stringify({action, data});
+      await fetch(url, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {'Content-Type': 'text/plain'},
+        body: payload
+      });
+      return {ok: true};
+    }
+  } catch(e){
+    return {ok:false, error:e.message};
+  }
 }
 
 // ═══════════════════════════
