@@ -381,6 +381,7 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
 .bg-en{background:#E8F2F8;color:#2C5A74}.bg-po{background:#E4EDF3;color:#2C4A5E}
 .bg-ma{background:#D4E4EE;color:#1E3A4E}.bg-es{background:#FEF5E6;color:#8A5510}
 .bg-de{background:#F0F0EE;color:#555552}
+.bg-nq{background:#F0F0EE;color:#555552}
 .ph-n{background:#EBF7D4}.ph-ci{background:#FEF0E6}.ph-en{background:#E8F2F8}
 .ph-po{background:#E4EDF3}.ph-ma{background:#D4E4EE}.ph-es{background:#FEF5E6}.ph-de{background:#F0F0EE}
 
@@ -573,9 +574,44 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
     <div style="width:80px"></div>
   </nav>
   <div class="fwrap">
-    <div class="fbar"><div class="fs active" id="fb0"></div><div class="fs" id="fb1"></div><div class="fs" id="fb2"></div><div class="fs" id="fb3"></div></div>
+    <div class="fbar"><div class="fs active" id="fb0"></div><div class="fs" id="fb1"></div><div class="fs" id="fb2"></div><div class="fs" id="fb3"></div><div class="fs" id="fb4"></div></div>
 
-    <div class="fstep on" id="fst0">
+    <!-- PASO 0: TARIFAS Y BROCHURE -->
+    <div class="fstep on" id="fst-tar">
+      <div class="fstep-h">Tarifas y aranceles 2026</div>
+      <div class="fstep-s">Revisá los aranceles del ciclo lectivo 2026 antes de continuar. Queremos que llegues a la entrevista con toda la información.</div>
+
+      <!-- INLINE TARIFAS DISPLAY -->
+      <div id="tar-inline-display" style="margin-bottom:18px"></div>
+
+      <!-- Brochure link -->
+      <div style="background:var(--cr);border:1px solid var(--bd);border-radius:10px;padding:13px 16px;display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--td)">Brochure del colegio</div>
+          <div style="font-size:12px;color:var(--tx3);margin-top:2px">Proyecto educativo, instalaciones y propuesta pedagógica</div>
+        </div>
+        <a href="https://drive.google.com/drive/folders/1c0vFf1MWUcSC8-lqBjBCGDQ-hbXxGQDA" target="_blank"
+           style="display:inline-flex;align-items:center;gap:6px;background:var(--tl);color:#fff;padding:9px 16px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:500;flex-shrink:0">
+          Ver brochure ↗
+        </a>
+      </div>
+
+      <!-- Checkbox confirmar -->
+      <div id="tar-check-wrap" style="background:#fff;border:2px solid var(--bd2);border-radius:11px;padding:14px 16px;cursor:pointer;display:flex;align-items:flex-start;gap:12px;transition:all .2s" onclick="toggleTarCheck()">
+        <div id="tar-check-box" style="width:22px;height:22px;border-radius:6px;border:2px solid var(--bd2);background:#fff;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:all .2s;font-size:14px;font-weight:700"></div>
+        <div>
+          <div style="font-size:13.5px;font-weight:600;color:var(--td)">Revisé las tarifas y quiero continuar con el proceso de admisión</div>
+          <div style="font-size:12px;color:var(--tx3);margin-top:3px">Al marcar esto confirmás que conocés los aranceles del colegio para el ciclo 2026.</div>
+        </div>
+      </div>
+
+      <div class="fbtns" style="margin-top:20px">
+        <button class="sbtn sbtn-b" onclick="goPortal()">← Volver</button>
+        <button class="sbtn sbtn-n" id="btn-tar-next" onclick="fNextTar()" disabled style="opacity:.5;cursor:not-allowed">Continuar →</button>
+      </div>
+    </div>
+
+    <div class="fstep" id="fst0">
       <div class="fstep-h">Datos del estudiante</div>
       <div class="fstep-s">Completá los datos del niño/a que desea postularse a Austin EBS.</div>
       <div class="fgrow">
@@ -883,10 +919,11 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
               <input class="fsrch" id="fq" placeholder="🔍 Buscar..." oninput="filterT()">
               <select class="fsel2" id="fest" onchange="filterT()">
                 <option value="">Todos los estados</option>
-                <option value="nueva">Nueva consulta</option><option value="citado">Citado entrevista</option>
+<option value="citado">Citado entrevista</option>
                 <option value="entrevistado">Entrevistado</option><option value="postulado">Postulado</option>
                 <option value="matriculado">Matriculado</option><option value="lista de espera">Lista de espera</option>
                 <option value="desiste">Desiste</option>
+                <option value="no_queremos">No incorporado</option>
               </select>
               <select class="fsel2" id="fniv" onchange="filterT()">
                 <option value="">Todos los niveles</option>
@@ -916,10 +953,7 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
       <!-- EMAILS -->
       <div id="view-emails" class="view">
         <div class="ph"><h1>Plantillas de mail</h1><p>Editá el contenido de cada correo automático · Usá las variables para personalizar</p></div>
-        <div class="calinfo">
-          <div class="calinfo-ic">📅</div>
-          <div class="calinfo-t"><h3>Link de agenda de entrevistas</h3><p>Se incluye automáticamente en el mail "Citado entrevista"</p><a id="callink" href="#" target="_blank">calendar.app.google/WrfYGGSiRH3smkxL8</a></div>
-        </div>
+
         <div id="email-tpls"></div>
       </div>
 
@@ -930,7 +964,10 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
         <div style="background:var(--cr);border-radius:9px;padding:10px 13px;font-size:12px;color:var(--tx3);margin:10px 0 14px;line-height:1.6">
           Descuentos por hermanos: 2do hijo 10% · 3er hijo 25% · 4to hijo 50% · 5to hijo 50% — solo sobre cuotas, no sobre matrícula ni materiales.
         </div>
-        <button class="btn btn-td" onclick="saveTar()">Guardar tarifas</button>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-td" onclick="saveTar()">Guardar tarifas</button>
+          <button class="btn btn-gr" onclick="generarPDFTarifas()">Descargar PDF de Tarifas</button>
+        </div>
       </div>
 
       <!-- CONFIG -->
@@ -941,7 +978,6 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
           <div class="mb">
             <div class="cfgrow"><div><div class="cfglbl">Nombre del remitente</div><div class="cfgsub">Aparece en el campo "De:" de cada mail</div></div><input class="cfgi" id="cfg-nom" value="Admisiones Austin EBS"></div>
             <div class="cfgrow"><div><div class="cfglbl">Email de admisiones</div><div class="cfgsub">Dirección desde la que se envían los correos</div></div><input class="cfgi" id="cfg-em" value="admisiones@austinebs-ah.edu.ar"></div>
-            <div class="cfgrow"><div><div class="cfglbl">Link agenda entrevistas</div><div class="cfgsub">Se incluye en el mail de "Citado entrevista" (solo si no hay Apps Script)</div></div><input class="cfgi" id="cfg-cal" value="https://calendar.app.google/WrfYGGSiRH3smkxL8"></div>
             <div class="cfgrow"><div><div class="cfglbl">Link Google Drive (brochure)</div><div class="cfgsub">Para que las familias descarguen información</div></div><input class="cfgi" id="cfg-drv" value="https://drive.google.com/drive/folders/1c0vFf1MWUcSC8-lqBjBCGDQ-hbXxGQDA"></div>
             <div class="cfgrow" style="background:linear-gradient(135deg,#EBF7D4,#D4F0A8);border-radius:10px;padding:10px 14px;margin-top:6px">
               <div><div class="cfglbl" style="color:#3A6A0A">🔑 URL del Apps Script (Google Sheets)</div><div class="cfgsub" style="color:#5A8A1A">Necesario para mails automáticos y calendario en tiempo real. Ver instructivo.</div></div>
@@ -994,11 +1030,11 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
 // ═══════════════════════════
 let currentStep = 0;
 const SCREENS = ['s-portal','s-postulacion','s-login','s-panel'];
-const ESTADOS = ['nueva','citado','entrevistado','postulado','matriculado','lista de espera','desiste'];
-const EL = {nueva:'Nueva consulta',citado:'Citado entrevista',entrevistado:'Entrevistado',postulado:'Postulado',matriculado:'Matriculado','lista de espera':'Lista de espera',desiste:'Desiste'};
-const ECLS = {nueva:'bg-n',citado:'bg-ci',entrevistado:'bg-en',postulado:'bg-po',matriculado:'bg-ma','lista de espera':'bg-es',desiste:'bg-de'};
-const EPCLS = {nueva:'ph-n',citado:'ph-ci',entrevistado:'ph-en',postulado:'ph-po',matriculado:'ph-ma','lista de espera':'ph-es',desiste:'ph-de'};
-const ECOL = {nueva:'var(--cn)',citado:'var(--cc)',entrevistado:'var(--ce)',postulado:'var(--cp)',matriculado:'var(--cm)','lista de espera':'var(--cs)',desiste:'var(--cd)'};
+const ESTADOS = ['citado','entrevistado','postulado','matriculado','lista de espera','desiste','no_queremos'];
+const EL = {nueva:'Nueva consulta',citado:'Citado entrevista',entrevistado:'Entrevistado',postulado:'Postulado',matriculado:'Matriculado','lista de espera':'Lista de espera',desiste:'Desiste',no_queremos:'No incorporado'};
+const ECLS = {nueva:'bg-n',citado:'bg-ci',entrevistado:'bg-en',postulado:'bg-po',matriculado:'bg-ma','lista de espera':'bg-es',desiste:'bg-de',no_queremos:'bg-de'};
+const EPCLS = {nueva:'ph-n',citado:'ph-ci',entrevistado:'ph-en',postulado:'ph-po',matriculado:'ph-ma','lista de espera':'ph-es',desiste:'ph-de',no_queremos:'ph-de'};
+const ECOL = {nueva:'var(--cn)',citado:'var(--cc)',entrevistado:'var(--ce)',postulado:'var(--cp)',matriculado:'var(--cm)','lista de espera':'var(--cs)',desiste:'var(--cd)',no_queremos:'var(--cd)'};
 const CURSOS = ['K2 (Puppies)','K3 (Koalas/Dolphins)','K4 (Foxes/Monkeys)','K5 (Bears/Hippos)','1er año Elementary','2do año Elementary','3er año Elementary','4to año Elementary','5to año Elementary','6to año Elementary','1er año High School','2do año High School','3er año High School','4to año High School','5to año High School','6to año High School'];
 const NIVEL = c => c.startsWith('K') ? 'Kindergarten' : c.includes('Elementary') ? 'Elementary' : 'High School';
 const DIAS_INACTIVO = 7;
@@ -1014,15 +1050,15 @@ let DB = {
     '1er año Elementary':{t:20,u:0},'2do año Elementary':{t:20,u:0},'3er año Elementary':{t:20,u:0},'4to año Elementary':{t:20,u:0},'5to año Elementary':{t:20,u:0},'6to año Elementary':{t:20,u:0},
     '1er año High School':{t:20,u:0},'2do año High School':{t:20,u:0},'3er año High School':{t:20,u:0},'4to año High School':{t:20,u:0},'5to año High School':{t:20,u:0},'6to año High School':{t:20,u:0}
   },
-  tarifas:{k2_m:618243.75,k2_s:494595,k2_c:658512,k3_m:746713.75,k3_s:494595,k3_c:597371,k45_m:746713.75,k45_c:597371,el_m:926812.5,el_c:741450,hs13_m:1056251.25,hs13_c:845001,hs46_m:1093611.25,hs46_c:874889},
+  tarifas:{k2_m:660285,k2_s:528228,k2_c:703291,k3_m:797491,k3_s:528228,k3_c:637993,k45_m:797491,k45_c:637993,el_m:989835,el_c:791868,hs13_m:1128077,hs13_c:902462,hs46_m:1167976,hs46_c:934381},
   emails:{
-    nueva:{subj:'¡Gracias por postular a Austin EBS!',body:'Hola {{padre}},\n\nSoy parte del staff de Austin Eco Bilingual School, encargada del proceso de admisiones.\n\n¡Nos alegra muchísimo tu postulación para {{alumno}}! Para conocer el proyecto en detalle y las tarifas, podés ver el brochure y los aranceles aquí:\n{{link_drive}}\n\nPara empezar con el proceso, ingresá al siguiente link y reservá un horario disponible de visita con entrevista para conocer el proyecto educativo en profundidad y las instalaciones del colegio:\n{{link_calendario}}\n\nQuedo a disposición por cualquier consulta.\n\nSaludos cordiales,\nAdmisiones – Austin EBS'},
-    citado:{subj:'¡Tu entrevista quedó agendada!',body:'Hola {{padre}},\n\nGracias por agendar su entrevista para conocer el Colegio Austin EBS. Será un gusto recibirlos en la fecha y hora seleccionada.\n\nQuedo a disposición por cualquier consulta. Dejo el link del calendario por cualquier inconveniente o modificación:\n{{link_calendario}}\n\n¡Nos vemos pronto!\nAdmisiones – Austin EBS'},
+    citado:{subj:'Tu entrevista en Austin EBS esta confirmada',body:'Hola {{padre}},\n\nTu entrevista en Austin Eco Bilingual School esta confirmada. Te esperamos con gusto.\n\nSi necesitas reprogramar, respondenos este mail a admisiones@austinebs-ah.edu.ar y lo coordinamos.\n\nUn saludo,\nLaura Unamuno\nAdmisiones – Austin EBS'},
     entrevistado:{subj:'¡Gracias por la entrevista!',body:'Hola {{padre}},\n\nFue un gusto recibirlos y conocerlos. Estamos orgullosos de que nos contemplen para la elección escolar de {{alumno}}.\n\nPara seguir acompañándolos en el proceso, les pedimos que completen este breve formulario post entrevista:\nhttps://forms.gle/rsQwi9ps1chN2q8x5\n\nEn caso de querer avanzar, esperamos su confirmación por este medio.\n\nUn afectuoso saludo,\nAdmisiones – Austin EBS'},
     postulado:{subj:'Siguiente paso en el proceso de admisión',body:'Hola {{padre}},\n\nGracias por la postulación de {{alumno}}.\n\nEstamos muy contentos de acompañarlos en los pasos a seguir para continuar con la reserva de vacante. Podrán encontrar las tarifas en el siguiente enlace:\n{{link_drive}}\n\nEl proceso quedará confirmado una vez que recibamos el comprobante de pago de la reserva de vacante por este medio.\n\nUn afectuoso saludo,\nAdmisiones – Austin EBS'},
     matriculado:{subj:'¡Bienvenidos a la familia Austin EBS!',body:'Hola {{padre}},\n\nHemos recibido su comprobante de pago y {{alumno}} ya se encuentra matriculado/a. ¡Bienvenidos a la comunidad Austin!\n\nEstamos para lo que necesiten.\n\nAdmisiones – Austin EBS'},
     'lista de espera':{subj:'Actualización: lista de espera',body:'Hola {{padre}},\n\nPor el momento, la postulación de {{alumno}} se encuentra en lista de espera. Les avisaremos ante cualquier novedad. ¡Muchas gracias!\n\nQuedamos a disposición.\nAdmisiones – Austin EBS'},
     desiste:{subj:'Proceso de admisión: baja solicitada',body:'Hola {{padre}},\n\nTomamos nota de que no continuarán con la postulación de {{alumno}}. Gracias por habernos considerado.\n\nSi desean retomar más adelante, cuenten con nosotros.\n\nAdmisiones – Austin EBS'},
+    no_queremos:{subj:'Proceso de admisión — Austin EBS',body:'Hola {{padre}},\n\nQueremos agradecerles sinceramente el tiempo y la confianza depositada en Austin Eco Bilingual School durante este proceso.\n\nLuego de evaluar con mucho cuidado las posibilidades de incorporación para el ciclo lectivo, lamentablemente no contamos con las vacantes necesarias para incorporar a {{alumno}} en esta ocasión.\n\nLes deseamos lo mejor en este proceso de encontrar la escuela que mejor acompañe su búsqueda, y esperamos que encuentren pronto el lugar ideal.\n\nQuedamos a disposición por cualquier consulta.\n\nUn afectuoso saludo,\nLaura Unamuno\nAdmisiones – Austin EBS'},
     seguimiento_entrevista:{subj:'¿Cómo fue la entrevista? — Austin EBS',body:'Hola {{padre}},\n\nFue un placer recibirlos en la entrevista. Esperamos que {{alumno}} y ustedes hayan quedado tan contentos como nosotros.\n\nSi desean continuar con el proceso de admisión, por favor respondé este mail confirmando tu interés. Con eso podremos avanzar con los pasos de reserva de vacante.\n\nSi por algún motivo decidieron no continuar, también podés avisarnos por este medio — lo entendemos perfectamente y siempre será bienvenida la familia si desean retomar en el futuro.\n\nEsperamos tu respuesta.\n\nUn afectuoso saludo,\nAdmisiones – Austin EBS'},
     no_asistio:{subj:'¡Que lástima! Podemos reprogramar tu entrevista — Austin EBS',body:'Hola {{padre}},\n\nLamentamos que no hayas podido llegar a la entrevista que tenías agendada. ¡Nos hubiera encantado conocerlos!\n\nSi querés reprogramarla, respondé este mail y coordinamos un nuevo horario con gusto. También podés volver a completar el formulario de postulación para elegir una nueva fecha.\n\nEsperamos poder conocerlos pronto.\n\nUn afectuoso saludo,\nAdmisiones – Austin EBS'}
   },
@@ -1080,7 +1116,7 @@ function go(id){
 }
 function goPortal(){ go('s-portal'); }
 function goLogin(){ go('s-login'); }
-function goPost(){ currentStep=0; showFStep(0); go('s-postulacion'); }
+function goPost(){ tarChecked=false; showFStepTar(); go('s-postulacion'); }
 function navScroll(id){ const el=document.querySelector(id); if(el) el.scrollIntoView({behavior:'smooth'}); }
 
 // ═══════════════════════════
@@ -1124,7 +1160,7 @@ function fDate(d){ if(!d) return '—'; const p=d.split('-'); return `${p[2]}/${
 function fDateFull(d){ if(!d) return '—'; const dt=new Date(d+'T00:00:00'); return dt.toLocaleDateString('es-AR',{day:'2-digit',month:'short',year:'numeric'}); }
 function today(){ return new Date().toISOString().split('T')[0]; }
 function diasDesde(d){ if(!d) return 0; return Math.floor((new Date()-new Date(d+'T00:00:00'))/(1000*60*60*24)); }
-function esInactivo(p){ if(p.estado==='matriculado'||p.estado==='desiste') return false; return diasDesde(p.ultAccion||p.fecha)>=DIAS_INACTIVO; }
+function esInactivo(p){ if(p.estado==='matriculado'||p.estado==='desiste'||p.estado==='no_queremos') return false; return diasDesde(p.ultAccion||p.fecha)>=DIAS_INACTIVO; }
 function toast(msg,type=''){
   const t=document.getElementById('toast');
   t.textContent=msg; t.className='toast show'+(type?' '+type:'');
@@ -1136,7 +1172,7 @@ function toast(msg,type=''){
 // ═══════════════════════════
 function updateSidebarBadges(){
   const ps=DB.postulantes;
-  const nn=ps.filter(p=>p.estado==='nueva').length;
+  const nn=ps.filter(p=>p.estado==='citado'&&!p.entFecha).length; // citados sin fecha
   const ni=ps.filter(p=>esInactivo(p)).length;
   const tot=ps.length;
   const entPend=ps.filter(p=>p.entFecha&&p.entFecha<today()&&!p.entResultado).length;
@@ -1154,7 +1190,7 @@ function renderDashboard(){
   const ps=DB.postulantes;
   const cnt=e=>ps.filter(p=>p.estado===e).length;
   const total=ps.length;
-  const mat=cnt('matriculado'), post=cnt('postulado'), nuevas=cnt('nueva'), esp=cnt('lista de espera'), cit=cnt('citado');
+  const mat=cnt('matriculado'), post=cnt('postulado'), esp=cnt('lista de espera'), cit=cnt('citado');
   const inac=ps.filter(p=>esInactivo(p));
 
   // Fecha
@@ -1163,12 +1199,7 @@ function renderDashboard(){
   // Notificaciones
   const nc=document.getElementById('notif-cont'); nc.innerHTML='';
   // Nuevas postulaciones pendientes
-  DB.pendingNotif.forEach(id=>{
-    const p=DB.postulantes.find(x=>x.id===id); if(!p) return;
-    const d=document.createElement('div'); d.className='notif-b';
-    d.innerHTML=`<div class="notif-t"><h4>🔔 Nueva postulación: ${p.alumno}</h4><p>${p.curso} · Ciclo ${p.anio} · ${p.padre} · ${p.email}</p></div>
-    <div class="notif-a"><button class="nbtn nbtn-v" onclick="openDetalle(${id})">Ver y enviar mail</button><button class="nbtn nbtn-d" onclick="dismissN(${id})">Descartar</button></div>`; nc.appendChild(d);
-  });
+  
   // Inactivos
   if(inac.length>0){
     const d=document.createElement('div'); d.className='notif-b warn';
@@ -1181,8 +1212,8 @@ function renderDashboard(){
     {l:'Total',v:total,s:'postulantes activos',style:'border-color:var(--tl)'},
     {l:'Matriculados',v:mat,s:`${total?Math.round(mat/total*100):0}% conversión`,c:'var(--cm)',style:'border-color:var(--cm)'},
     {l:'Postulados',v:post,s:'pendientes de pago',c:'var(--cp)',style:'border-color:var(--cp)'},
-    {l:'Nuevas consultas',v:nuevas,s:'sin acción aún',c:'var(--cn)',style:'border-color:var(--cn)'},
-    {l:'Citados',v:cit,s:'entrevista pendiente',c:'var(--cc)',style:'border-color:var(--cc)'},
+    {l:'Pendientes',v:cit,s:'citados sin fecha asignada',c:'var(--cc)',style:'border-color:var(--cc)'},
+
     {l:'Lista espera',v:esp,s:'curso lleno',c:'var(--cs)',style:'border-color:var(--cs)'},
     {l:'⚠ Inactivos',v:inac.length,s:`+${DIAS_INACTIVO} días sin acción`,style:'border-color:#DC2626'},
   ].map(s=>`<div class="stc" style="${s.style?'--bc:'+s.style:''}; border-left:3px solid ${s.style?.replace('border-color:','')||'var(--bd)'}">
@@ -1192,7 +1223,7 @@ function renderDashboard(){
   </div>`).join('');
 
   // Requieren acción
-  const accion=ps.filter(p=>['nueva','entrevistado','postulado'].includes(p.estado)).sort((a,b)=>esInactivo(b)-esInactivo(a)).slice(0,8);
+  const accion=ps.filter(p=>['citado','entrevistado','postulado'].includes(p.estado)).sort((a,b)=>esInactivo(b)-esInactivo(a)).slice(0,8);
   document.getElementById('dash-accion').innerHTML=accion.length===0
     ?`<div class="empty"><div class="empty-ic">✓</div><p>Todo al día — sin pendientes</p></div>`
     :accion.map(p=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 17px;border-bottom:1px solid var(--bd);font-size:12.5px">
@@ -1317,7 +1348,7 @@ function openDetalle(id){
       <div class="eatit">⚡ Cambiar estado · El mail se envía automáticamente</div>
       <div class="earow">
         <select class="easel" id="new-st-${id}" onchange="prevMail(${id})">
-          ${ESTADOS.map(e=>`<option value="${e}" ${p.estado===e?'selected':''}>${EL[e]}</option>`).join('')}
+          ${[...ESTADOS,'no_queremos'].filter((v,i,a)=>a.indexOf(v)===i).map(e=>`<option value="${e}" ${p.estado===e?'selected':''}>${EL[e]||e}</option>`).join('')}
         </select>
         <button class="btn btn-or" onclick="changeE(${id})">Actualizar estado y enviar mail</button>
         <button class="btn btn-out" onclick="sendMailOnly(${id})">✉ Solo enviar mail</button>
@@ -1417,7 +1448,7 @@ function prevMail(id){
 function fillV(text,p){
   return text
     .replace(/{{alumno}}/g,p.alumno).replace(/{{padre}}/g,p.padre).replace(/{{curso}}/g,p.curso)
-    .replace(/{{link_calendario}}/g,DB.config.calendar).replace(/{{link_drive}}/g,DB.config.drive)
+    .replace(/{{link_calendario}}/g,'').replace(/{{link_drive}}/g,DB.config.drive)
     .replace(/{{link_tarifas}}/g,DB.config.drive);
 }
 
@@ -1511,9 +1542,9 @@ function saveNuevo(){
     anio:parseInt(document.getElementById('nm-an').value),
     colegio:document.getElementById('nm-cole').value,
     hermano:document.getElementById('nm-he').value,
-    estado:'nueva',fecha:today(),ultAccion:today(),
+    estado:'citado',fecha:today(),ultAccion:today(),
     notas:obsVal?[{txt:obsVal,fecha:new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}),hora:new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})}]:[],
-    hist:[{e:'nueva',f:today(),mailOk:false}]
+    hist:[{e:'citado',f:today(),mailOk:false}]
   };
   DB.postulantes.unshift(p);
   DB.pendingNotif.push(p.id);
@@ -1594,8 +1625,6 @@ function saveVac(){
 // EMAIL TEMPLATES
 // ═══════════════════════════
 function renderEmails(){
-  const cal=document.getElementById('callink');
-  if(cal){ cal.textContent=DB.config.calendar; cal.href=DB.config.calendar; }
   const allTpls=[...ESTADOS,'seguimiento_entrevista'];
   const labels={...EL,seguimiento_entrevista:'Seguimiento post-entrevista (envío manual)'};
   document.getElementById('email-tpls').innerHTML=allTpls.map(e=>`
@@ -1610,7 +1639,7 @@ function renderEmails(){
         <div class="fgm"><label class="flm">Cuerpo del mensaje</label><textarea class="ftm" id="ebody-${e}" style="min-height:130px">${DB.emails[e]?.body||''}</textarea></div>
         <div style="margin-top:7px;font-size:11px;color:var(--tx3)">Variables:
           <span class="etvar">{{alumno}}</span><span class="etvar">{{padre}}</span><span class="etvar">{{curso}}</span>
-          <span class="etvar">{{link_calendario}}</span><span class="etvar">{{link_drive}}</span>
+          <span class="etvar">{{link_drive}}</span>
         </div>
       </div>
     </div>`).join('');
@@ -1652,13 +1681,136 @@ function saveTar(){
   saveDB(); toast('Tarifas actualizadas','ok');
 }
 
+// ── HELPER: formatear número como pesos ───────────────────────
+function fPesos(n){
+  return '$\u00a0'+Math.round(n).toLocaleString('es-AR').replace(/,/g,'.')+'.-';
+}
+
+// ── INLINE DISPLAY DE TARIFAS (para el formulario público) ────
+function renderTarifasInline(){
+  const el = document.getElementById('tar-inline-display'); if(!el) return;
+  const t = DB.tarifas;
+  const bloque = (titulo, filas, color) => {
+    const filasHtml = filas.map(([lbl,val])=>
+      '<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.15)">' +
+      '<span style="color:rgba(255,255,255,.85);font-size:12.5px">'+lbl+'</span>' +
+      '<span style="color:#fff;font-weight:700;font-size:13px">'+val+'</span></div>'
+    ).join('');
+    return '<div style="background:'+color+';border-radius:10px;padding:13px 16px;margin-bottom:10px">' +
+      '<div style="color:#fff;font-family:\'Lora\',serif;font-size:13px;font-weight:600;margin-bottom:8px">'+titulo+'</div>'+filasHtml+'</div>';
+  };
+  el.innerHTML =
+    '<div style="background:#fff;border:1px solid var(--bd);border-radius:14px;overflow:hidden;box-shadow:var(--sh);margin-bottom:4px">' +
+      '<div style="background:var(--td);padding:14px 18px;display:flex;align-items:center;justify-content:space-between">' +
+        '<div style="color:#fff;font-family:\'Lora\',serif;font-size:15px;font-weight:600">Tarifas Ciclo Lectivo 2026</div>' +
+        '<div style="color:rgba(255,255,255,.6);font-size:11px">Austin EBS</div>' +
+      '</div>' +
+      '<div style="padding:14px 18px">' +
+        bloque('Kindergarten K2 (Puppies)', [['Matrícula',fPesos(t.k2_m)],['Jornada Simple',fPesos(t.k2_s)],['Jornada Completa',fPesos(t.k2_c)]], '#7CB518') +
+        bloque('Kindergarten K3 (Koalas / Dolphins)', [['Matrícula',fPesos(t.k3_m)],['Jornada Simple',fPesos(t.k3_s)],['Jornada Completa',fPesos(t.k3_c)]], '#7CB518') +
+        bloque('Kindergarten K4 y K5 (Foxes / Monkeys / Bears / Hippos)', [['Matrícula',fPesos(t.k45_m)],['Jornada Completa',fPesos(t.k45_c)]], '#7CB518') +
+        bloque('Elementary School (1ro a 6to año)', [['Matrícula',fPesos(t.el_m)],['Jornada Completa',fPesos(t.el_c)]], '#3A607A') +
+        bloque('High School (1ro a 3ro)', [['Matrícula',fPesos(t.hs13_m)],['Jornada Completa',fPesos(t.hs13_c)]], '#2C4A5E') +
+        bloque('High School (4to a 6to)', [['Matrícula',fPesos(t.hs46_m)],['Jornada Completa',fPesos(t.hs46_c)]], '#2C4A5E') +
+        '<div style="background:var(--cr);border-radius:8px;padding:10px 13px;font-size:11.5px;color:var(--tx3);line-height:1.65">' +
+          '<strong style="color:var(--tx2)">Descuentos por hermanos:</strong> 2do hijo 10% · 3er hijo 25% · 4to hijo 50% · 5to hijo 50%<br>' +
+          'Los descuentos aplican solo sobre cuotas, no sobre matrícula ni materiales.' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+}
+
+// ── GENERADOR DE PDF (abre ventana de impresión) ───────────────
+function generarPDFTarifas(){
+  const t = DB.tarifas;
+  const fila = (lbl, val) =>
+    '<tr><td style="padding:5px 12px;font-size:13px;color:#444">'+lbl+'</td>' +
+    '<td style="padding:5px 12px;font-size:13px;font-weight:600;color:#222;text-align:right">'+val+'</td></tr>';
+
+  const seccion = (titulo, filas) =>
+    '<div style="background:#8daa4f;border-radius:6px;padding:10px 14px;margin-bottom:14px">' +
+      '<div style="color:#fff;font-weight:700;font-size:13.5px;margin-bottom:8px">'+titulo+'</div>' +
+      '<table style="width:100%;border-collapse:collapse;background:rgba(255,255,255,.15);border-radius:5px;overflow:hidden">' +
+        filas.map(([l,v])=>fila(l,v)).join('') +
+      '</table>' +
+    '</div>';
+
+  const intros = [
+    'Al momento de la inscripci\u00f3n para el ciclo lectivo siguiente se abona una matr\u00edcula cuyo monto es igual al valor de una cuota del curso al que concurrir\u00e1 el alumno.',
+    'Adem\u00e1s de la matr\u00edcula el Colegio cobra 11 (once) cuotas; 10 (diez) mensuales y consecutivas de Marzo a Diciembre y una adicional a abonar mitad en Julio y mitad en Diciembre.',
+    'Las cuotas se abonan del 1ero al 5to d\u00eda h\u00e1bil de cada mes por adelantado.'
+  ];
+
+  const paginaBase = (titulo, secciones, notas) =>
+    '<div style="font-family:Arial,sans-serif;max-width:720px;margin:0 auto;padding:40px 48px;background:#fff;page-break-after:always">' +
+      '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:32px">' +
+        '<h1 style="font-size:22px;font-weight:400;color:#333;margin:0;line-height:1.3">'+titulo+'</h1>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:2px;width:52px;height:52px;transform:rotate(-3deg);flex-shrink:0">' +
+          '<div style="background:#E8621A;display:flex;align-items:center;justify-content:center;border-radius:3px"><span style="color:#fff;font-weight:700;font-family:Georgia,serif;font-size:12px">A</span></div>' +
+          '<div style="background:#7CB518;display:flex;align-items:center;justify-content:center;border-radius:3px"><span style="color:#fff;font-weight:700;font-family:Georgia,serif;font-size:12px">e</span></div>' +
+          '<div style="background:#7CB518;display:flex;align-items:center;justify-content:center;border-radius:3px"><span style="color:#fff;font-weight:700;font-family:Georgia,serif;font-size:12px">b</span></div>' +
+          '<div style="background:#3A607A;display:flex;align-items:center;justify-content:center;border-radius:3px"><span style="color:#fff;font-weight:700;font-family:Georgia,serif;font-size:12px">s</span></div>' +
+        '</div>' +
+      '</div>' +
+      '<div style="border:1px solid #ddd;border-radius:6px;padding:14px 18px;margin-bottom:20px">' +
+        '<div style="font-weight:700;font-size:13px;margin-bottom:10px;color:#333">Matr\u00edcula y cuotas</div>' +
+        intros.map(i=>'<div style="display:flex;gap:8px;margin-bottom:6px"><span style="color:#7CB518;font-weight:700;flex-shrink:0">&#8226;</span><span style="font-size:12.5px;color:#555;line-height:1.5">'+i+'</span></div>').join('') +
+      '</div>' +
+      secciones +
+      '<div style="border:1px solid #ddd;border-radius:6px;padding:12px 16px;margin-top:12px;margin-bottom:14px">' +
+        '<div style="font-weight:700;font-size:12.5px;color:#333;margin-bottom:6px">Descuentos por hermanos</div>' +
+        '<div style="font-size:12px;color:#555">2do. Hijo: 10% / 3er. Hijo: 25% / 4to. Hijo: 50% / 5to. Hijo: 50%</div>' +
+        '<div style="font-size:11.5px;color:#777;margin-top:4px">Los descuentos solo aplican al valor de las cuotas y no comprenden matr\u00edcula, cuotas de materiales, etc.</div>' +
+      '</div>' +
+      (notas||'') +
+      '<div style="font-size:11px;color:#888;line-height:1.6;margin-top:10px">' +
+        '(*) Los valores consignados en la presente comunicaci\u00f3n son los vigentes a la fecha y los mismos podr\u00e1n ser modificados en virtud de lo que pudiesen disponer las Autoridades de aplicaci\u00f3n y/o modificaciones obligatorias de costos salariales o circunstancias que modifiquen fuertemente la realidad econ\u00f3mica actual.' +
+      '</div>' +
+    '</div>';
+
+  const p1 = paginaBase(
+    'Tarifas (*) Ciclo Lectivo 2026 \u2013 Kindergarten',
+    seccion('K2 (Puppies)',[['Matr\u00edcula',fPesos(t.k2_m)],['Jornada Simple',fPesos(t.k2_s)],['Jornada Completa',fPesos(t.k2_c)]]) +
+    seccion('K3 (Koalas Dolphins)',[['Matr\u00edcula',fPesos(t.k3_m)],['Jornada Simple',fPesos(t.k3_s)],['Jornada Completa',fPesos(t.k3_c)]]) +
+    seccion('K4 (Foxes \u2013 Monkeys) y K5 (Bears \u2013 Hippos)',[['Matr\u00edcula',fPesos(t.k45_m)],['Jornada Completa',fPesos(t.k45_c)]]),
+    '<div style="font-size:11px;color:#888;line-height:1.6">(**) Para K2 la matr\u00edcula ser\u00e1 igual a una cuota de jornada simple (4hs). A partir de K3 la matr\u00edcula ser\u00e1 igual a una cuota de jornada completa.</div>'
+  );
+
+  const p2 = paginaBase(
+    'Tarifas (*) Ciclo Lectivo 2026 \u2013 Elementary School',
+    seccion('Elementary School (1st \u2013 6th year)',[['Matr\u00edcula',fPesos(t.el_m)],['Jornada Completa',fPesos(t.el_c)]]),
+    '<div style="font-size:11px;color:#888;line-height:1.6">(**) Para K2 la matr\u00edcula ser\u00e1 igual a una cuota de jornada simple (4hs). A partir de K3 la matr\u00edcula ser\u00e1 igual a una cuota de jornada completa.</div>'
+  );
+
+  const p3 = paginaBase(
+    'Tarifas (*) Ciclo Lectivo 2026 \u2013 High School',
+    seccion('High School (1st \u2013 3rd year)',[['Matr\u00edcula',fPesos(t.hs13_m)],['Jornada Completa',fPesos(t.hs13_c)]]) +
+    seccion('High School (4th \u2013 6th year)',[['Matr\u00edcula',fPesos(t.hs46_m)],['Jornada Completa',fPesos(t.hs46_c)]]),
+    null
+  );
+
+  const html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Tarifas Austin EBS 2026</title>' +
+    '<style>body{margin:0;background:#f5f2ec}@media print{body{background:#fff}.no-print{display:none}@page{margin:0}}</style>' +
+    '</head><body>' +
+    '<div class="no-print" style="text-align:center;padding:16px;background:#2C4A5E;position:sticky;top:0;z-index:10">' +
+      '<button onclick="window.print()" style="background:#E8621A;color:#fff;border:none;padding:10px 28px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:Arial,sans-serif">Guardar como PDF (Ctrl+P)</button>' +
+      '<span style="color:rgba(255,255,255,.6);font-size:12px;margin-left:14px">En el diálogo de impresión elegí "Guardar como PDF"</span>' +
+    '</div>' +
+    p1 + p2 + p3 +
+    '</body></html>';
+
+  const w = window.open('','_blank','width=850,height=900');
+  w.document.write(html);
+  w.document.close();
+}
+
+
 // ═══════════════════════════
 // CONFIG
 // ═══════════════════════════
 function renderCfg(){
   document.getElementById('cfg-nom').value=DB.config.nombre||'';
   document.getElementById('cfg-em').value=DB.config.email||'';
-  document.getElementById('cfg-cal').value=DB.config.calendar||'';
   document.getElementById('cfg-drv').value=DB.config.drive||'';
   document.getElementById('cfg-apps').value=DB.config.appsScriptUrl||'';
 
@@ -1667,7 +1819,6 @@ function renderCfg(){
 function saveCfg(){
   DB.config.nombre=document.getElementById('cfg-nom').value;
   DB.config.email=document.getElementById('cfg-em').value;
-  DB.config.calendar=document.getElementById('cfg-cal').value;
   DB.config.drive=document.getElementById('cfg-drv').value;
   DB.config.appsScriptUrl=(document.getElementById('cfg-apps').value||'').trim();
 
@@ -1718,14 +1869,49 @@ function exportCSV(){
 // ═══════════════════════════
 // FORMULARIO PORTAL
 // ═══════════════════════════
+let tarChecked = false;
+
+function showFStepTar(){
+  document.querySelectorAll('.fstep').forEach(s=>s.classList.remove('on'));
+  document.getElementById('fst-tar').classList.add('on');
+  // Render inline tarifas
+  renderTarifasInline();
+  // Reset checkbox
+  tarChecked=false;
+  const box=document.getElementById('tar-check-box');
+  const wrap=document.getElementById('tar-check-wrap');
+  const btn=document.getElementById('btn-tar-next');
+  if(box){box.textContent='';box.style.background='#fff';box.style.borderColor='var(--bd2)';}
+  if(wrap) wrap.style.borderColor='var(--bd2)';
+  if(btn){btn.disabled=true;btn.style.opacity='.5';btn.style.cursor='not-allowed';}
+  ['fb0','fb1','fb2','fb3','fb4'].forEach(id=>{const el=document.getElementById(id);if(el){el.classList.remove('done','active');}});
+  currentStep=-1;
+}
+
+function toggleTarCheck(){
+  tarChecked=!tarChecked;
+  const box=document.getElementById('tar-check-box');
+  const wrap=document.getElementById('tar-check-wrap');
+  const btn=document.getElementById('btn-tar-next');
+  if(box){box.textContent=tarChecked?'✓':'';box.style.background=tarChecked?'var(--gr)':'#fff';box.style.borderColor=tarChecked?'var(--gr)':'var(--bd2)';box.style.color='#fff';}
+  if(wrap) wrap.style.borderColor=tarChecked?'var(--gr)':'var(--bd2)';
+  if(btn){btn.disabled=!tarChecked;btn.style.opacity=tarChecked?'1':'.5';btn.style.cursor=tarChecked?'pointer':'not-allowed';}
+}
+
+function fNextTar(){
+  if(!tarChecked){toast('Confirmá que revisaste las tarifas para continuar','err');return;}
+  showFStep(0);
+}
+
 function showFStep(n){
-  document.querySelectorAll('.fstep').forEach((s,i)=>s.classList.toggle('on',i===n));
+  document.querySelectorAll('.fstep').forEach(s=>s.classList.remove('on'));
+  const stepEl=document.getElementById('fst'+n);
+  if(stepEl) stepEl.classList.add('on');
   ['fb0','fb1','fb2','fb3'].forEach((id,i)=>{
     const el=document.getElementById(id); if(!el) return;
     el.classList.toggle('done',i<n); el.classList.toggle('active',i===n);
   });
   currentStep=n;
-  // Cargar calendario al llegar al paso 2
   if(n===2) initCalFormulario();
 }
 function fNext(from){
@@ -1785,7 +1971,7 @@ function submitPost(){
     anio:parseInt(document.getElementById('pf-anio').value),
     colegio:document.getElementById('pf-cole').value,
     hermano:document.getElementById('pf-herm').value,
-    estado:'citado', // ya tiene entrevista agendada → directo a citado
+    estado:'citado',
     fecha:today(),ultAccion:today(),
     entFecha: calSlotSeleccionado?.fecha||'',
     entHora:  calSlotSeleccionado?.hora||'',
