@@ -2441,33 +2441,63 @@ function renderDesiste(){
 // Cuando un postulante pasa a 'matriculado', se llama automáticamente
 // URL del sistema EOE configurable en Configuración
 async function sincronizarConEOE(p){
-  const eoeUrl = DB.config.eoeApiUrl;
-  if(!eoeUrl) return; // no configurado
+  const FIRESTORE_URL = 'https://firestore.googleapis.com/v1/projects/eoe-aebs/databases/(default)/documents/matriculados-pendientes';
+
+  // Separar nombre y apellido del alumno
+  const partes = (p.alumno||'').trim().split(' ');
+  const nombre = partes[0] || '';
+  const apellido = partes.slice(1).join(' ') || '';
+
+  // Mapear nivel al formato EOE
+  const nivelEOE = p.nivel === 'Kindergarten' ? 'Inicial'
+                 : p.nivel === 'Elementary'   ? 'Primario'
+                 : p.nivel === 'High School'  ? 'Secundario'
+                 : p.nivel || '';
+
+  // Extraer número de curso (ej: "3er año Elementary" → "3")
+  const cursoMatch = (p.curso||'').match(/(\d+)/);
+  const cursoNum = cursoMatch ? cursoMatch[1]+'°' : p.curso||'';
+
+  // Notas del proceso
+  const notasTxt = (p.notas||[]).map(n=>'['+n.fecha+'] '+n.txt).join(' | ');
+
+  const body = {
+    fields: {
+      nombre:          { stringValue: nombre },
+      apellido:        { stringValue: apellido },
+      nivel:           { stringValue: nivelEOE },
+      curso:           { stringValue: cursoNum },
+      division:        { stringValue: '' },
+      anioIngreso:     { integerValue: String(p.anio || new Date().getFullYear()) },
+      email:           { stringValue: p.email || '' },
+      telefono:        { stringValue: (p.tel||'').replace(/\D/g,'') },
+      nombrePadre:     { stringValue: p.padre || '' },
+      emailPadre:      { stringValue: p.email || '' },
+      nombreMadre:     { stringValue: '' },
+      emailMadre:      { stringValue: '' },
+      fechaNacimiento: { stringValue: p.nacimiento || '' },
+      observaciones:   { stringValue: notasTxt || ('Matriculado desde sistema de admisiones. Curso original: '+p.curso) },
+      estado:          { stringValue: 'Pendiente de alta' },
+      timestamp:       { integerValue: String(Date.now()) }
+    }
+  };
+
   try{
-    const payload = {
-      action: 'agregarAlumno',
-      data: {
-        nombre: p.alumno,
-        padre: p.padre,
-        email: p.email,
-        tel: p.tel||'',
-        curso: p.curso,
-        nivel: p.nivel,
-        jornada: p.jornada||'',
-        anio: p.anio,
-        fechaMatricula: today(),
-        origen: 'Admisiones Austin EBS'
-      }
-    };
-    await fetch(eoeUrl, {
-      method:'POST',
-      mode:'no-cors',
-      headers:{'Content-Type':'text/plain'},
-      body: JSON.stringify(payload)
+    const res = await fetch(FIRESTORE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
     });
-    toast('✓ '+p.alumno+' sincronizado con sistema EOE','ok');
+    if(res.ok){
+      toast('✓ '+p.alumno+' enviado al sistema EOE','ok');
+    } else {
+      const err = await res.text();
+      console.error('EOE Firestore error:', res.status, err);
+      toast('⚠ EOE: error al sincronizar ('+res.status+')','err');
+    }
   } catch(e){
     console.error('EOE sync error:',e);
+    toast('⚠ EOE: no se pudo conectar','err');
   }
 }
 
