@@ -40,7 +40,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cr);color:var(--tx);min-h
 
 /* ── HERO ── */
 .hero{position:relative;padding:90px 40px 100px;text-align:center;overflow:hidden;min-height:480px;display:flex;align-items:center;justify-content:center}
-.hero-bg{position:absolute;inset:0;background-image:url('https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=1400&q=80');background-size:cover;background-position:center 40%}
+.hero-bg{position:absolute;inset:0;background-image:url('https://images.unsplash.com/photo-1509062522246-3755977927d7?w=1400&q=80');background-size:cover;background-position:center 40%}
 .hero-overlay{position:absolute;inset:0;background:linear-gradient(160deg,rgba(44,74,94,.88) 0%,rgba(44,74,94,.78) 50%,rgba(60,96,80,.82) 100%)}
 .hero-content{position:relative;z-index:1;max-width:680px}
 .hero-logo{display:grid;grid-template-columns:1fr 1fr;gap:3px;width:56px;height:56px;transform:rotate(-3deg);margin:0 auto 20px}
@@ -128,6 +128,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--cr);color:var(--tx);min-h
 .sbtn{padding:11px 22px;border-radius:10px;font-size:14px;font-weight:500;cursor:pointer;border:none;font-family:'DM Sans',sans-serif;transition:all .15s}
 .sbtn-n{background:var(--td);color:#fff}.sbtn-n:hover{background:var(--tl)}
 .sbtn-b{background:var(--cr2);color:var(--tx2)}.sbtn-b:hover{background:var(--bd2)}
+
+.sbtn-num{background:#fff;border:2.5px solid var(--bd2);color:var(--tx);padding:16px 22px;font-size:15px;font-weight:600;border-radius:12px;cursor:pointer;transition:all .2s;min-width:110px;text-align:center;line-height:1.4}
+.sbtn-num:hover{border-color:var(--tl);color:var(--tl)}
+.sbtn-num.selected{background:var(--td);color:#fff;border-color:var(--td);box-shadow:0 4px 12px rgba(44,74,94,.25)}
+.sbtn-num .num-big{font-size:26px;display:block;line-height:1.1;font-family:'Lora',serif}
+.sbtn-num .num-lbl{font-size:11px;opacity:.75;display:block;margin-top:2px;text-transform:uppercase;letter-spacing:.05em}
 .sbtn-ok{background:var(--gr);color:#fff}.sbtn-ok:hover{background:#6AA515}
 .fhermano{background:linear-gradient(135deg,#EBF7D4,#D4F0A8);border:1.5px solid var(--gr);border-radius:10px;padding:10px 14px;font-size:12.5px;color:#3A6A0A;display:none;margin-top:8px;line-height:1.6}
 .fhermano.on{display:block}
@@ -611,9 +617,28 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
       </div>
     </div>
 
+    <div class="fstep" id="fst-num">
+      <div class="fstep-h">¿Cuántos estudiantes?</div>
+      <div class="fstep-s">Podés inscribir hasta 4 estudiantes de la misma familia en este formulario. Se agendará una sola entrevista para toda la familia.</div>
+      <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin:28px 0 24px">
+        <button class="sbtn-num selected" id="bnum-1" onclick="setNumStudents(1)"><span class="num-big">1</span><span class="num-lbl">estudiante</span></button>
+        <button class="sbtn-num" id="bnum-2" onclick="setNumStudents(2)"><span class="num-big">2</span><span class="num-lbl">estudiantes</span></button>
+        <button class="sbtn-num" id="bnum-3" onclick="setNumStudents(3)"><span class="num-big">3</span><span class="num-lbl">estudiantes</span></button>
+        <button class="sbtn-num" id="bnum-4" onclick="setNumStudents(4)"><span class="num-big">4</span><span class="num-lbl">estudiantes</span></button>
+      </div>
+      <div style="background:var(--cr);border-radius:10px;padding:12px 15px;font-size:12.5px;color:var(--tx3);margin-bottom:20px;line-height:1.65">
+        💡 Se generará un perfil independiente por cada estudiante vinculado a la misma familia. 
+        La entrevista quedará agendada para todos en el mismo horario.
+      </div>
+      <div class="fbtns">
+        <button class="sbtn sbtn-b" onclick="showFStepTar()">← Volver</button>
+        <button class="sbtn sbtn-n" id="btn-num-next" onclick="goToStudentForm()">Continuar →</button>
+      </div>
+    </div>
+
     <div class="fstep" id="fst0">
-      <div class="fstep-h">Datos del estudiante</div>
-      <div class="fstep-s">Completá los datos del niño/a que desea postularse a Austin EBS.</div>
+      <div class="fstep-h" id="fst0-h">Datos del estudiante</div>
+      <div class="fstep-s" id="fst0-s">Completá los datos del niño/a que desea postularse a Austin EBS.</div>
       <div class="fgrow">
         <div class="fg"><label class="flabel">Nombre <span class="req">*</span></label><input class="fi" id="pf-n" placeholder="Nombre"></div>
         <div class="fg"><label class="flabel">Apellido <span class="req">*</span></label><input class="fi" id="pf-ap" placeholder="Apellido"></div>
@@ -1031,6 +1056,9 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
 // CONSTANTES Y ESTADO GLOBAL
 // ═══════════════════════════
 let currentStep = 0;
+let numStudents = 1;
+let estudianteIdx = 0;
+let estudiantesData = []; // [{n,ap,nac,dni,curso,nivel,jornada,anio,escuela,hermano,como}]
 const SCREENS = ['s-portal','s-postulacion','s-login','s-panel'];
 const ESTADOS = ['citado','entrevistado','postulado','matriculado','lista de espera','desiste','no_queremos'];
 const EL = {nueva:'Nueva consulta',citado:'Citado entrevista',entrevistado:'Entrevistado',postulado:'Postulado',matriculado:'Matriculado','lista de espera':'Lista de espera',desiste:'Desiste',no_queremos:'No incorporado'};
@@ -1935,7 +1963,59 @@ function toggleTarCheck(){
 
 function fNextTar(){
   if(!tarChecked){toast('Confirmá que revisaste las tarifas para continuar','err');return;}
+  // Go to number selector step
+  document.querySelectorAll('.fstep').forEach(s=>s.classList.remove('on'));
+  document.getElementById('fst-num').classList.add('on');
+  // Reset
+  numStudents=1; estudianteIdx=0; estudiantesData=[];
+  [1,2,3,4].forEach(i=>{const b=document.getElementById('bnum-'+i);if(b)b.classList.toggle('selected',i===1);});
+}
+
+function setNumStudents(n){
+  numStudents=n;
+  [1,2,3,4].forEach(i=>{const b=document.getElementById('bnum-'+i);if(b)b.classList.toggle('selected',i===n);});
+}
+
+function goToStudentForm(){
+  estudianteIdx=0; estudiantesData=[];
+  clearStudentForm();
+  updateStudentHeader();
   showFStep(0);
+}
+
+function clearStudentForm(){
+  ['pf-n','pf-ap','pf-nac','pf-dni','pf-cole','pf-obs'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  const c=document.getElementById('pf-curso'); if(c) c.value='';
+  const j=document.getElementById('pf-jornada'); if(j) j.selectedIndex=0;
+  const a=document.getElementById('pf-anio'); if(a) a.selectedIndex=0;
+  const h=document.getElementById('pf-herm'); if(h){ h.value='no'; toggleHermanoMsg(); }
+  const m=document.getElementById('pf-como'); if(m) m.value='';
+  // Clear field errors
+  document.querySelectorAll('#fst0 .err').forEach(el=>el.classList.remove('err'));
+}
+
+function updateStudentHeader(){
+  const h=document.getElementById('fst0-h');
+  const s=document.getElementById('fst0-s');
+  if(numStudents>1){
+    if(h) h.textContent='Estudiante '+(estudianteIdx+1)+' de '+numStudents;
+    if(s) s.textContent='Completá los datos del estudiante '+(estudianteIdx+1)+'. Los datos de contacto de la familia se completarán después.';
+  } else {
+    if(h) h.textContent='Datos del estudiante';
+    if(s) s.textContent='Completá los datos del niño/a que desea postularse a Austin EBS.';
+  }
+}
+
+function restoreStudentForm(d){
+  const set=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v||'';};
+  set('pf-n',d.n); set('pf-ap',d.ap); set('pf-nac',d.nac); set('pf-dni',d.dni);
+  set('pf-curso',d.curso); set('pf-cole',d.cole);
+  const j=document.getElementById('pf-jornada'); if(j) j.value=d.jornada||'Jornada Completa';
+  const a=document.getElementById('pf-anio'); if(a) a.value=d.anio||'2027';
+  const h=document.getElementById('pf-herm'); if(h){ h.value=d.hermano||'no'; toggleHermanoMsg(); }
+  const m=document.getElementById('pf-como'); if(m) m.value=d.como||'';
 }
 
 function showFStep(n){
@@ -1956,6 +2036,27 @@ function fNext(from){
     [n,ap].forEach(el=>{ if(!el.value.trim()){ el.classList.add('err'); ok=false; } else el.classList.remove('err'); });
     if(!cu.value){ cu.classList.add('err'); ok=false; } else cu.classList.remove('err');
     if(!ok){ toast('Completá los campos obligatorios','err'); return; }
+    // Save current student data
+    estudiantesData[estudianteIdx]={
+      n:n.value.trim(), ap:ap.value.trim(),
+      nac:(document.getElementById('pf-nac')||{}).value||'',
+      dni:(document.getElementById('pf-dni')||{}).value||'',
+      curso:cu.value,
+      nivel:NIVEL(cu.value),
+      jornada:(document.getElementById('pf-jornada')||{}).value||'Jornada Completa',
+      anio:parseInt((document.getElementById('pf-anio')||{}).value||'2027'),
+      cole:(document.getElementById('pf-cole')||{}).value||'',
+      hermano:(document.getElementById('pf-herm')||{}).value||'no',
+      como:(document.getElementById('pf-como')||{}).value||''
+    };
+    estudianteIdx++;
+    if(estudianteIdx < numStudents){
+      // More students — clear and show form again
+      clearStudentForm();
+      updateStudentHeader();
+      return; // stay on fst0
+    }
+    // All students done — proceed to family data
   }
   if(from===1){
     const pn=document.getElementById('pf-pn'), pap=document.getElementById('pf-pap');
@@ -1972,89 +2073,120 @@ function fNext(from){
   }
   showFStep(from+1);
 }
-function fBack(from){ showFStep(from-1); }
+function fBack(from){
+  if(from===1){
+    // Go back to last student form
+    estudianteIdx = Math.max(0, estudianteIdx-1);
+    if(estudiantesData[estudianteIdx]) restoreStudentForm(estudiantesData[estudianteIdx]);
+    else clearStudentForm();
+    updateStudentHeader();
+    showFStep(0);
+    return;
+  }
+  showFStep(from-1);
+}
 function toggleHermanoMsg(){ const v=document.getElementById('pf-herm').value; document.getElementById('fherm-msg').classList.toggle('on',v==='si'); }
 function buildResumen(){
-  const alumno=`${document.getElementById('pf-n').value} ${document.getElementById('pf-ap').value}`.trim();
   const padre=`${document.getElementById('pf-pn').value} ${document.getElementById('pf-pap').value}`.trim();
-  document.getElementById('pf-resumen').innerHTML=`
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 18px">
-      <div><span style="color:var(--tx3);font-size:10.5px;text-transform:uppercase;letter-spacing:.07em">Estudiante</span><br><strong>${alumno}</strong></div>
-      <div><span style="color:var(--tx3);font-size:10.5px;text-transform:uppercase;letter-spacing:.07em">Curso</span><br><strong>${document.getElementById('pf-curso').value}</strong></div>
-      <div><span style="color:var(--tx3);font-size:10.5px;text-transform:uppercase;letter-spacing:.07em">Jornada</span><br>${document.getElementById('pf-jornada').value}</div>
-      <div><span style="color:var(--tx3);font-size:10.5px;text-transform:uppercase;letter-spacing:.07em">Ciclo lectivo</span><br>${document.getElementById('pf-anio').value}</div>
-      <div><span style="color:var(--tx3);font-size:10.5px;text-transform:uppercase;letter-spacing:.07em">Padre/Tutor</span><br>${padre}</div>
-      <div><span style="color:var(--tx3);font-size:10.5px;text-transform:uppercase;letter-spacing:.07em">Email</span><br>${document.getElementById('pf-email').value}</div>
-      <div><span style="color:var(--tx3);font-size:10.5px;text-transform:uppercase;letter-spacing:.07em">Teléfono</span><br>${document.getElementById('pf-tel').value}</div>
-      ${document.getElementById('pf-herm').value==='si'?`<div><span style="color:var(--tx3);font-size:10.5px;text-transform:uppercase;letter-spacing:.07em">Hermano en Austin</span><br><span style="color:var(--gr);font-weight:600">★ Sí — prioridad de ingreso</span></div>`:''}
-    </div>`;
+  let rows='';
+  estudiantesData.forEach((est,i)=>{
+    const nombre=`${est.n} ${est.ap}`.trim();
+    if(numStudents>1) rows+=`<div style="grid-column:1/-1;margin-top:${i>0?'10px':'0'};padding-top:${i>0?'10px':'0'};border-top:${i>0?'1px solid var(--bd)':'none'}"><strong style="font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em">ESTUDIANTE ${i+1}</strong></div>`;
+    rows+=`<div><span style="color:var(--tx3);font-size:10.5px;text-transform:uppercase;letter-spacing:.07em">Nombre</span><br><strong>${nombre}</strong></div>`;
+    rows+=`<div><span style="color:var(--tx3);font-size:10.5px;text-transform:uppercase;letter-spacing:.07em">Curso</span><br><strong>${est.curso}</strong></div>`;
+    rows+=`<div><span style="color:var(--tx3);font-size:10.5px;text-transform:uppercase;letter-spacing:.07em">Jornada</span><br>${est.jornada}</div>`;
+    rows+=`<div><span style="color:var(--tx3);font-size:10.5px;text-transform:uppercase;letter-spacing:.07em">Ciclo</span><br>${est.anio}</div>`;
+    if(est.hermano==='si') rows+=`<div style="grid-column:1/-1"><span style="color:var(--gr);font-weight:600">★ Hermano/a de estudiante actual — prioridad de ingreso</span></div>`;
+  });
+  rows+=`<div style="grid-column:1/-1;margin-top:10px;padding-top:10px;border-top:1px solid var(--bd)"><strong style="font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em">FAMILIA</strong></div>`;
+  rows+=`<div><span style="color:var(--tx3);font-size:10.5px;text-transform:uppercase;letter-spacing:.07em">Padre/Tutor</span><br>${padre}</div>`;
+  rows+=`<div><span style="color:var(--tx3);font-size:10.5px;text-transform:uppercase;letter-spacing:.07em">Email</span><br>${document.getElementById('pf-email').value}</div>`;
+  rows+=`<div><span style="color:var(--tx3);font-size:10.5px;text-transform:uppercase;letter-spacing:.07em">Teléfono</span><br>${document.getElementById('pf-tel').value}</div>`;
+  document.getElementById('pf-resumen').innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:5px 18px">${rows}</div>`;
 }
 function submitPost(){
-  const alumno=`${document.getElementById('pf-n').value} ${document.getElementById('pf-ap').value}`.trim();
   const padre=`${document.getElementById('pf-pn').value} ${document.getElementById('pf-pap').value}`.trim();
   const email=document.getElementById('pf-email').value.trim();
-  const curso=document.getElementById('pf-curso').value;
+  const tel=document.getElementById('pf-tel').value;
+  const obs=(document.getElementById('pf-obs').value||'').trim();
+
+  // Check duplicate email
   if(DB.postulantes.find(p=>p.email.toLowerCase()===email.toLowerCase()&&p.estado!=='desiste')){
     toast('Este email ya tiene una postulación activa en el sistema','err'); return;
   }
-  const obs=(document.getElementById('pf-obs').value||'').trim();
-  const p={
-    id:DB.nextId++,alumno,padre,email,
-    tel:document.getElementById('pf-tel').value,
-    curso,nivel:NIVEL(curso),
-    jornada:document.getElementById('pf-jornada').value,
-    anio:parseInt(document.getElementById('pf-anio').value),
-    colegio:document.getElementById('pf-cole').value,
-    hermano:document.getElementById('pf-herm').value,
-    estado:'citado',
-    fecha:today(),ultAccion:today(),
-    entFecha: calSlotSeleccionado?.fecha||'',
-    entHora:  calSlotSeleccionado?.hora||'',
-    notas:obs?[{txt:obs,fecha:new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}),hora:new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})}]:[],
-    hist:[{e:'nueva',f:today()},{e:'citado',f:today(),mailOk:false}]
-  };
-  DB.postulantes.unshift(p);
-  DB.pendingNotif.push(p.id);
+
+  const now=new Date();
+  const nowDate=now.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const nowTime=now.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+
+  // Build sibling note if multiple students
+  const allNames=estudiantesData.map(e=>`${e.n} ${e.ap}`.trim());
+  const familyNote=numStudents>1 ? `Inscripción familiar (${numStudents} estudiantes): ${allNames.join(', ')}` : '';
+
+  const createdIds=[];
+  estudiantesData.forEach((est,i)=>{
+    const alumno=`${est.n} ${est.ap}`.trim();
+    const otrosNombres=allNames.filter((_,j)=>j!==i).join(', ');
+    const notaHermanos=numStudents>1 ? `Inscripción familiar — hermanos registrados juntos: ${otrosNombres}` : '';
+    const notasTxt=[obs,notaHermanos].filter(Boolean).join(' | ');
+    const p={
+      id:DB.nextId++, alumno, padre, email, tel,
+      curso:est.curso, nivel:est.nivel,
+      jornada:est.jornada,
+      anio:est.anio,
+      colegio:est.cole||'',
+      hermano:est.hermano,
+      estado:'citado',
+      fecha:today(), ultAccion:today(),
+      entFecha:calSlotSeleccionado?.fecha||'',
+      entHora: calSlotSeleccionado?.hora||'',
+      notas:notasTxt?[{txt:notasTxt,fecha:nowDate,hora:nowTime}]:[],
+      hist:[{e:'nueva',f:today()},{e:'citado',f:today(),mailOk:false}]
+    };
+    DB.postulantes.unshift(p);
+    DB.pendingNotif.push(p.id);
+    createdIds.push(p.id);
+  });
   saveDB();
 
-  // 1. Bloquear slot INMEDIATAMENTE en localStorage (evita doble reserva)
+  // Block slot in localStorage immediately
   if(calSlotSeleccionado){
-    const nuevoTurno = {Fecha: calSlotSeleccionado.fecha, Hora: calSlotSeleccionado.hora, Estado:'reservado'};
-    calTurnosReservados.push(nuevoTurno);
+    calTurnosReservados.push({Fecha:calSlotSeleccionado.fecha, Hora:calSlotSeleccionado.hora, Estado:'reservado'});
     try{ localStorage.setItem('austin_turnos', JSON.stringify(calTurnosReservados)); } catch(e){}
   }
 
-  // Deshabilitar botón para evitar doble envío
+  // Disable button
   const btn=document.getElementById('btn-submit-final');
   if(btn){ btn.disabled=true; btn.textContent='Enviando...'; }
 
-  // 1. Reservar turno en Google Sheets (envía mail de confirmación automáticamente)
-  if(calSlotSeleccionado && DB.config.appsScriptUrl){
+  // Use first postulante for the confirmation mail/slot API call
+  const p0=DB.postulantes.find(p=>p.id===createdIds[0]);
+  if(p0 && calSlotSeleccionado && DB.config.appsScriptUrl){
     apiCall('reservarTurno',{
-      alumnoId: p.id,
-      alumno, padre, email,
-      tel: p.tel, curso,
-      fecha: calSlotSeleccionado.fecha,
-      hora: calSlotSeleccionado.hora
+      alumnoId:p0.id,
+      alumno:p0.alumno, padre, email,
+      tel, curso:p0.curso,
+      fecha:calSlotSeleccionado.fecha,
+      hora:calSlotSeleccionado.hora,
+      familyNote
     }).then(res=>{
       if(res.ok){
-        p.hist[p.hist.length-1].mailOk=true;
+        p0.hist[p0.hist.length-1].mailOk=true;
         saveDB();
         calTurnosReservados.push({fecha:calSlotSeleccionado.fecha, hora:calSlotSeleccionado.hora});
       }
-    }).catch(()=>{
-      // Fallback: guardar localmente igual
-    });
-  } else {
-    // Sin Apps Script: mail via Apps Script no disponible
-    enviarMail(p,'citado',(ok)=>{ if(ok){ p.hist[p.hist.length-1].mailOk=true; saveDB(); } });
+    }).catch(()=>{});
+  } else if(p0){
+    enviarMail(p0,'citado',(ok)=>{ if(ok){ p0.hist[p0.hist.length-1].mailOk=true; saveDB(); } });
   }
 
-  // Mostrar éxito
+  // Show success
   document.querySelectorAll('.fstep').forEach(s=>s.classList.remove('on'));
   document.getElementById('fst-ok').classList.add('on');
   const entTxt=document.getElementById('fsuccess-ent-txt');
   if(entTxt&&calSlotSeleccionado) entTxt.textContent=formatFechaLinda(calSlotSeleccionado.fecha)+' a las '+calSlotSeleccionado.hora;
+  // Reset multi-student state
+  numStudents=1; estudianteIdx=0; estudiantesData=[];
 }
 
 // ═══════════════════════════
