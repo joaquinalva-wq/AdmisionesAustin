@@ -214,7 +214,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cr);color:var(--tx);min-h
 .nbtn-d{background:rgba(255,255,255,.2);color:#fff}
 
 /* PIPELINE */
-.pcols{display:grid;grid-template-columns:repeat(7,1fr);gap:9px;margin-bottom:22px}
+.pcols{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:9px;margin-bottom:22px}
 .pcol{background:#fff;border-radius:var(--r2);border:1px solid var(--bd);overflow:hidden}
 .pch{padding:9px 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--bd)}
 .pch-n{font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
@@ -388,8 +388,13 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
 .bg-ma{background:#D4E4EE;color:#1E3A4E}.bg-es{background:#FEF5E6;color:#8A5510}
 .bg-de{background:#F0F0EE;color:#555552}
 .bg-nq{background:#F0F0EE;color:#555552}
+.bg-co{background:#DCF0F5;color:#1A5F70}
+.bg-eoe{background:#F0EBF9;color:#6B21A8}
+.bg-dg{background:#FEF3C7;color:#92400E}
+.bg-reoe{background:#FEE2E2;color:#991B1B}
 .ph-n{background:#EBF7D4}.ph-ci{background:#FEF0E6}.ph-en{background:#E8F2F8}
 .ph-po{background:#E4EDF3}.ph-ma{background:#D4E4EE}.ph-es{background:#FEF5E6}.ph-de{background:#F0F0EE}
+.ph-co{background:#DCF0F5}.ph-eoe{background:#F0EBF9}.ph-dg{background:#FEF3C7}.ph-reoe{background:#FEE2E2}
 
 .pill{background:var(--cr2);color:var(--tl);font-size:10px;padding:2px 7px;border-radius:12px;font-weight:600}
 
@@ -649,7 +654,7 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
       </div>
       <div class="fgrow">
         <div class="fg"><label class="flabel">Curso al que aplica <span class="req">*</span></label>
-          <select class="fsel" id="pf-curso">
+          <select class="fsel" id="pf-curso" onchange="toggleJornada()">
             <option value="">— Seleccioná —</option>
             <optgroup label="Kindergarten">
               <option value="K2 (Puppies)">K2 · Puppies (2 años)</option>
@@ -680,8 +685,8 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
         </div>
       </div>
       <div class="fgrow">
-        <div class="fg"><label class="flabel">Jornada deseada</label>
-          <select class="fsel" id="pf-jornada"><option value="Jornada Completa">Jornada Completa</option><option value="Jornada Simple">Jornada Simple (solo Kinder)</option></select>
+        <div class="fg" id="fg-jornada"><label class="flabel">Jornada deseada</label>
+          <select class="fsel" id="pf-jornada"><option value="Jornada Completa">Jornada Completa</option><option value="Jornada Simple" id="opt-jornada-simple" style="display:none">Jornada Simple (solo K2)</option></select>
         </div>
         <div class="fg"><label class="flabel">Colegio actual / anterior</label><input class="fi" id="pf-cole" placeholder="Nombre del colegio"></div>
       </div>
@@ -762,6 +767,7 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
 
       <div class="fbtns">
         <button class="sbtn sbtn-b" onclick="fBack(2)">← Volver</button>
+        <button class="sbtn sbtn-b" onclick="sinFechaEntrevista()" style="font-size:12.5px;color:var(--tx2)">Aún no sé — agendar más adelante</button>
         <button class="sbtn sbtn-ok" id="btn-confirmar-ent" onclick="confirmarEntrevista()" disabled style="opacity:.5;cursor:not-allowed">Confirmar entrevista →</button>
       </div>
     </div>
@@ -769,12 +775,16 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
     <!-- PASO 3: RESUMEN FINAL -->
     <div class="fstep" id="fst3">
       <div class="fstep-h">Confirmar todo</div>
-      <div class="fstep-s">Revisá tus datos y la entrevista agendada antes de enviar.</div>
+      <div class="fstep-s" id="fst3-sub">Revisá tus datos y la entrevista agendada antes de enviar.</div>
       <div id="pf-resumen" style="background:#fff;border:1px solid var(--bd);border-radius:12px;padding:16px;margin-bottom:16px;font-size:13px;line-height:1.9"></div>
-      <div style="background:linear-gradient(135deg,#EBF7D4,#D4F0A8);border:1.5px solid var(--gr);border-radius:12px;padding:14px 16px;margin-bottom:16px">
+      <div id="fst3-ent-box" style="background:linear-gradient(135deg,#EBF7D4,#D4F0A8);border:1.5px solid var(--gr);border-radius:12px;padding:14px 16px;margin-bottom:16px">
         <div style="font-size:13px;font-weight:600;color:#3A6A0A;margin-bottom:3px">📅 Entrevista agendada</div>
         <div style="font-size:14px;color:var(--td);font-weight:600" id="pf-resumen-ent"></div>
         <div style="font-size:12px;color:var(--tx2);margin-top:3px">📍 Planta alta de High School · Recibirás un mail de confirmación y un recordatorio 24hs antes.</div>
+      </div>
+      <div id="fst3-noent-box" style="display:none;background:linear-gradient(135deg,#FEF3C7,#FDE68A);border:1.5px solid #F59E0B;border-radius:12px;padding:14px 16px;margin-bottom:16px">
+        <div style="font-size:13px;font-weight:600;color:#92400E;margin-bottom:3px">📅 Sin entrevista agendada aún</div>
+        <div style="font-size:12.5px;color:#78350F;line-height:1.6">Te enviaremos un mail con el link para agendar cuando estés listo/a. Podés coordinar la visita a tu ritmo.</div>
       </div>
       <div class="fbtns">
         <button class="sbtn sbtn-b" onclick="fBack(3)">← Volver</button>
@@ -833,6 +843,7 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
       <button class="sbi" id="nav-pipeline" onclick="showV('pipeline')"><span class="sbi-ic">⬡</span> Pipeline <span class="sbi-badge" id="badge-inac" style="display:none">!</span></button>
       <button class="sbi" id="nav-entrevistas" onclick="showV('entrevistas')"><span class="sbi-ic">📅</span> Entrevistas <span class="sbi-badge" id="badge-ent" style="display:none">0</span></button>
       <button class="sbi" id="nav-post" onclick="showV('post')"><span class="sbi-ic">◉</span> Postulantes <span class="sbi-badge green" id="badge-total" style="display:none">0</span></button>
+      <button class="sbi" id="nav-bajas" onclick="showV('bajas')"><span class="sbi-ic">↓</span> Bajas <span class="sbi-badge" id="badge-bajas" style="display:none">0</span></button>
       <div class="sbsec">Gestión</div>
       <button class="sbi" id="nav-vac" onclick="showV('vac')"><span class="sbi-ic">▣</span> Vacantes</button>
       <div class="sbsec">Comunicaciones</div>
@@ -942,9 +953,15 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
               <input class="fsrch" id="fq" placeholder="🔍 Buscar..." oninput="filterT()">
               <select class="fsel2" id="fest" onchange="filterT()">
                 <option value="">Todos los estados</option>
-<option value="citado">Citado entrevista</option>
-                <option value="entrevistado">Entrevistado</option><option value="postulado">Postulado</option>
-                <option value="matriculado">Matriculado</option><option value="lista de espera">Lista de espera</option>
+                <option value="contactado">Contactado</option>
+                <option value="citado">Citado entrevista</option>
+                <option value="entrevistado">Entrevistado</option>
+                <option value="postulado">Postulado</option>
+                <option value="eoe_ingles">EOE / Inglés</option>
+                <option value="pendiente_dg">Pend. Dir. General</option>
+                <option value="rechazado_eoe">Rechazado EOE</option>
+                <option value="matriculado">Matriculado</option>
+                <option value="lista de espera">Lista de espera</option>
                 <option value="desiste">Desiste</option>
                 <option value="no_queremos">No incorporado</option>
               </select>
@@ -1002,6 +1019,7 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
             <div class="cfgrow"><div><div class="cfglbl">Nombre del remitente</div><div class="cfgsub">Aparece en el campo "De:" de cada mail</div></div><input class="cfgi" id="cfg-nom" value="Admisiones Austin EBS"></div>
             <div class="cfgrow"><div><div class="cfglbl">Email de admisiones</div><div class="cfgsub">Dirección desde la que se envían los correos</div></div><input class="cfgi" id="cfg-em" value="admisiones@austinebs-ah.edu.ar"></div>
             <div class="cfgrow"><div><div class="cfglbl">Link Google Drive (brochure)</div><div class="cfgsub">Para que las familias descarguen información</div></div><input class="cfgi" id="cfg-drv" value="https://drive.google.com/drive/folders/1c0vFf1MWUcSC8-lqBjBCGDQ-hbXxGQDA"></div>
+            <div class="cfgrow"><div><div class="cfglbl">Email Dirección General</div><div class="cfgsub">Recibe la notificación cuando EOE/Inglés aprueba un caso</div></div><input class="cfgi" id="cfg-dg" placeholder="direccion@austinebs-ah.edu.ar"></div>
             <div class="cfgrow" style="background:linear-gradient(135deg,#EBF7D4,#D4F0A8);border-radius:10px;padding:10px 14px;margin-top:6px">
               <div><div class="cfglbl" style="color:#3A6A0A">🔑 URL del Apps Script (Google Sheets)</div><div class="cfgsub" style="color:#5A8A1A">Necesario para mails automáticos y calendario en tiempo real. Ver instructivo.</div></div>
               <input class="cfgi" id="cfg-apps" placeholder="https://script.google.com/macros/s/..." style="background:#fff">
@@ -1036,6 +1054,30 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
         </div>
       </div>
 
+      <!-- BAJAS -->
+      <div id="view-bajas" class="view">
+        <div class="ph"><h1>Bajas</h1><p>Estudiantes que desistieron del proceso de admisión</p></div>
+        <div class="cbox" style="margin-bottom:14px">
+          <div class="cbox-h" style="flex-wrap:wrap;gap:10px">
+            <div class="cbox-t" id="bajas-cnt">0 bajas</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+              <select class="fsel2" id="bajas-anio" onchange="renderBajas()"><option value="">Todos los ciclos</option><option value="2026">2026</option><option value="2027">2027</option><option value="2028">2028</option></select>
+              <select class="fsel2" id="bajas-niv" onchange="renderBajas()"><option value="">Todos los niveles</option><option value="Kindergarten">Kindergarten</option><option value="Elementary">Elementary</option><option value="High School">High School</option></select>
+              <input class="fsrch" id="bajas-q" placeholder="🔍 Buscar..." oninput="renderBajas()">
+            </div>
+          </div>
+          <div style="padding:8px 14px 4px;border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:10px;font-size:12px;color:var(--tx2);flex-wrap:wrap">
+            <label style="display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" id="bajas-sel-all" onchange="toggleSelectAllBajas(this)"> Seleccionar todos</label>
+            <button class="btn btn-or btn-sm" onclick="mailMasivoBajas()">✉ Enviar mail de recontacto a seleccionados</button>
+            <button class="btn btn-csv btn-sm" onclick="exportBajasCSV()">⬇ Exportar CSV</button>
+          </div>
+          <table>
+            <thead><tr><th style="width:36px"></th><th>Estudiante</th><th>Curso</th><th>Familia / Tel</th><th>Fecha baja</th><th>Ciclo</th><th></th></tr></thead>
+            <tbody id="bajas-tb"></tbody>
+          </table>
+        </div>
+      </div>
+
     </div>
   </main>
 </div>
@@ -1058,13 +1100,14 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
 let currentStep = 0;
 let numStudents = 1;
 let estudianteIdx = 0;
+let sinEntrevista = false;
 let estudiantesData = []; // [{n,ap,nac,dni,curso,nivel,jornada,anio,escuela,hermano,como}]
 const SCREENS = ['s-portal','s-postulacion','s-login','s-panel'];
-const ESTADOS = ['citado','entrevistado','postulado','matriculado','lista de espera','desiste','no_queremos'];
-const EL = {nueva:'Nueva consulta',citado:'Citado entrevista',entrevistado:'Entrevistado',postulado:'Postulado',matriculado:'Matriculado','lista de espera':'Lista de espera',desiste:'Desiste',no_queremos:'No incorporado'};
-const ECLS = {nueva:'bg-n',citado:'bg-ci',entrevistado:'bg-en',postulado:'bg-po',matriculado:'bg-ma','lista de espera':'bg-es',desiste:'bg-de',no_queremos:'bg-de'};
-const EPCLS = {nueva:'ph-n',citado:'ph-ci',entrevistado:'ph-en',postulado:'ph-po',matriculado:'ph-ma','lista de espera':'ph-es',desiste:'ph-de',no_queremos:'ph-de'};
-const ECOL = {nueva:'var(--cn)',citado:'var(--cc)',entrevistado:'var(--ce)',postulado:'var(--cp)',matriculado:'var(--cm)','lista de espera':'var(--cs)',desiste:'var(--cd)',no_queremos:'var(--cd)'};
+const ESTADOS = ['contactado','citado','entrevistado','postulado','eoe_ingles','pendiente_dg','matriculado','lista de espera','rechazado_eoe','desiste','no_queremos'];
+const EL = {nueva:'Nueva consulta',contactado:'Contactado',citado:'Citado entrevista',entrevistado:'Entrevistado',postulado:'Postulado',eoe_ingles:'EOE / Inglés',pendiente_dg:'Pend. Dir. General',rechazado_eoe:'Rechazado EOE',matriculado:'Matriculado','lista de espera':'Lista de espera',desiste:'Desiste',no_queremos:'No incorporado'};
+const ECLS = {nueva:'bg-n',contactado:'bg-co',citado:'bg-ci',entrevistado:'bg-en',postulado:'bg-po',eoe_ingles:'bg-eoe',pendiente_dg:'bg-dg',rechazado_eoe:'bg-reoe',matriculado:'bg-ma','lista de espera':'bg-es',desiste:'bg-de',no_queremos:'bg-de'};
+const EPCLS = {nueva:'ph-n',contactado:'ph-co',citado:'ph-ci',entrevistado:'ph-en',postulado:'ph-po',eoe_ingles:'ph-eoe',pendiente_dg:'ph-dg',rechazado_eoe:'ph-reoe',matriculado:'ph-ma','lista de espera':'ph-es',desiste:'ph-de',no_queremos:'ph-de'};
+const ECOL = {nueva:'var(--cn)',contactado:'#1A7A8E',citado:'var(--cc)',entrevistado:'var(--ce)',postulado:'var(--cp)',eoe_ingles:'#7B52AB',pendiente_dg:'#B45309',rechazado_eoe:'#DC2626',matriculado:'var(--cm)','lista de espera':'var(--cs)',desiste:'var(--cd)',no_queremos:'var(--cd)'};
 const CURSOS = ['K2 (Puppies)','K3 (Koalas/Dolphins)','K4 (Foxes/Monkeys)','K5 (Bears/Hippos)','1er año Elementary','2do año Elementary','3er año Elementary','4to año Elementary','5to año Elementary','6to año Elementary','1er año High School','2do año High School','3er año High School','4to año High School','5to año High School','6to año High School'];
 const NIVEL = c => c.startsWith('K') ? 'Kindergarten' : c.includes('Elementary') ? 'Elementary' : 'High School';
 const DIAS_INACTIVO = 7;
@@ -1082,10 +1125,12 @@ let DB = {
   },
   tarifas:{k2_m:660285,k2_s:528228,k2_c:703291,k3_m:797491,k3_s:528228,k3_c:637993,k45_m:797491,k45_c:637993,el_m:989835,el_c:791868,hs13_m:1128077,hs13_c:902462,hs46_m:1167976,hs46_c:934381},
   emails:{
+    contactado:{subj:'Postulación Austin EBS — información y próximos pasos',body:'Hola {{padre}},\n\nSoy Laura Unamuno, parte del staff de Austin Eco Bilingual School y encargada del proceso de admisiones.\n\n¡Nos alegra muchísimo tu postulación para {{alumno}}! Para conocer el proyecto en detalle y las tarifas, podés ver el brochure y los aranceles aquí: https://drive.google.com/drive/folders/1c0vFf1MWUcSC8-lqBjBCGDQ-hbXxGQDA\n\nPara empezar con el proceso, ingresá al siguiente link: https://calendar.app.google/WrfYGGSiRH3smkxL8 y reservá un horario disponible de visita con entrevista para conocer el proyecto educativo en profundidad y las instalaciones del colegio.\n\nQuedo a disposición por cualquier consulta.\n\nSaludos cordiales,\nLaura Unamuno\nAdmisiones – Austin EBS'},
     citado:{subj:'Tu entrevista en Austin EBS esta confirmada',body:'Hola {{padre}},\n\nTu entrevista en Austin Eco Bilingual School esta confirmada. Te esperamos con gusto.\n\nSi necesitas reprogramar, respondenos este mail a admisiones@austinebs-ah.edu.ar y lo coordinamos.\n\nUn saludo,\nLaura Unamuno\nAdmisiones – Austin EBS'},
     entrevistado:{subj:'¡Gracias por la entrevista!',body:'Hola {{padre}},\n\nFue un gusto recibirlos y conocerlos. Estamos orgullosos de que nos contemplen para la elección escolar de {{alumno}}.\n\nPara seguir acompañándolos en el proceso, les pedimos que completen este breve formulario post entrevista:\nhttps://forms.gle/rsQwi9ps1chN2q8x5\n\nEn caso de querer avanzar, esperamos su confirmación por este medio.\n\nUn afectuoso saludo,\nAdmisiones – Austin EBS'},
     postulado:{subj:'Siguiente paso en el proceso de admisión',body:'Hola {{padre}},\n\nGracias por la postulación de {{alumno}}.\n\nEstamos muy contentos de acompañarlos en los pasos a seguir para continuar con la reserva de vacante. Podrán encontrar las tarifas en el siguiente enlace:\n{{link_drive}}\n\nEl proceso quedará confirmado una vez que recibamos el comprobante de pago de la reserva de vacante por este medio.\n\nUn afectuoso saludo,\nAdmisiones – Austin EBS'},
-    matriculado:{subj:'¡Bienvenidos a la familia Austin EBS!',body:'Hola {{padre}},\n\nHemos recibido su comprobante de pago y {{alumno}} ya se encuentra matriculado/a. ¡Bienvenidos a la comunidad Austin!\n\nEstamos para lo que necesiten.\n\nAdmisiones – Austin EBS'},
+    eoe_ingles:{subj:'Próximo paso: entrevista en inglés y con el EOE',body:'Hola {{padre}},\n\nGracias por seguir avanzando en el proceso de admisión de {{alumno}} en Austin Eco Bilingual School.\n\nComo parte del proceso de ingreso, necesitamos coordinar una breve entrevista en inglés y con nuestro Equipo de Orientación Escolar (EOE). Nos comunicaremos a la brevedad para acordar el horario.\n\nQuedamos a disposición.\n\nSaludos cordiales,\nLaura Unamuno\nAdmisiones – Austin EBS'},
+    matriculado:{subj:'¡Bienvenidos a la familia Austin EBS!',body:'Hola {{padre}},\n\nEstamos muy felices de confirmar que {{alumno}} ya se encuentra matriculado/a en Austin Eco Bilingual School. ¡Bienvenidos a la comunidad Austin!\n\nA continuación les indicamos los pasos a seguir para completar el proceso de matrícula:\n1. Abonar la reserva de vacante según las tarifas compartidas.\n2. Enviar el comprobante de pago a admisiones@austinebs-ah.edu.ar.\n3. Completar la documentación de ingreso que les enviaremos por separado.\n\nPara cualquier consulta, estamos a disposición.\n\nAdmisiones – Austin EBS'},
     'lista de espera':{subj:'Actualización: lista de espera',body:'Hola {{padre}},\n\nPor el momento, la postulación de {{alumno}} se encuentra en lista de espera. Les avisaremos ante cualquier novedad. ¡Muchas gracias!\n\nQuedamos a disposición.\nAdmisiones – Austin EBS'},
     desiste:{subj:'Proceso de admisión: baja solicitada',body:'Hola {{padre}},\n\nTomamos nota de que no continuarán con la postulación de {{alumno}}. Gracias por habernos considerado.\n\nSi desean retomar más adelante, cuenten con nosotros.\n\nAdmisiones – Austin EBS'},
     desiste_recontacto:{subj:'Austin EBS — Seguimos pensando en ustedes',body:'Hola {{padre}},\n\nHace un tiempo estuvieron en contacto con Austin Eco Bilingual School evaluando la incorporación de {{alumno}} y queremos ponernos en contacto nuevamente.\n\nSi el proceso de búsqueda escolar sigue abierto, nos encantaría retomar la conversación y acompañarlos. Estamos a disposición para responder cualquier consulta.\n\nSaludos cordiales,\nLaura Unamuno\nAdmisiones – Austin EBS'},
@@ -1180,18 +1225,19 @@ function showV(v){
   document.querySelectorAll('.sbi').forEach(el=>el.classList.remove('active'));
   const ve=document.getElementById('view-'+v); if(ve) ve.classList.add('on');
   const nb=document.getElementById('nav-'+v); if(nb) nb.classList.add('active');
-  const titles={dashboard:'Dashboard',pipeline:'Pipeline de admisiones',entrevistas:'Entrevistas',post:'Postulantes',vac:'Vacantes por curso',emails:'Plantillas de mail',tar:'Tarifas 2026',cfg:'Configuración'};
+  const titles={dashboard:'Dashboard',pipeline:'Pipeline de admisiones',entrevistas:'Entrevistas',post:'Postulantes',bajas:'Bajas',vac:'Vacantes por curso',emails:'Plantillas de mail',tar:'Tarifas 2026',cfg:'Configuración'};
   document.getElementById('tb-t').textContent=titles[v]||v;
   if(v==='dashboard') renderDashboard();
   if(v==='pipeline') renderPipeline();
   if(v==='entrevistas') { renderAdminCal(); renderEntAdminLista('proximas'); }
   if(v==='post') renderTable();
+  if(v==='bajas') renderBajas();
   if(v==='vac') renderVac();
   if(v==='emails') renderEmails();
   if(v==='tar') renderTar();
   if(v==='cfg') renderCfg();
 }
-function renderPanel(){ renderDashboard(); updateSidebarBadges(); }
+function renderPanel(){ checkPendienteDG(); renderDashboard(); updateSidebarBadges(); }
 
 // ═══════════════════════════
 // HELPERS
@@ -1199,6 +1245,18 @@ function renderPanel(){ renderDashboard(); updateSidebarBadges(); }
 function badge(e){ return `<span class="badge ${ECLS[e]||''}">${EL[e]||e}</span>`; }
 function fDate(d){ if(!d) return '—'; const p=d.split('-'); return `${p[2]}/${p[1]}/${p[0]}`; }
 function fDateFull(d){ if(!d) return '—'; const dt=new Date(d+'T00:00:00'); return dt.toLocaleDateString('es-AR',{day:'2-digit',month:'short',year:'numeric'}); }
+function gcalLink(p){
+  if(!p.entFecha) return '#';
+  const hora=p.entHora||'09:00';
+  const [hh,mm]=hora.split(':').map(Number);
+  const fBase=p.entFecha.replace(/-/g,'');
+  const tStart=fBase+'T'+String(hh).padStart(2,'0')+String(mm).padStart(2,'0')+'00';
+  const endH=hh+1;
+  const tEnd=fBase+'T'+String(endH).padStart(2,'0')+String(mm).padStart(2,'0')+'00';
+  const title=`ENTREVISTA: ${p.alumno} (${p.curso})`;
+  const details=`Familia: ${p.padre}\nEmail: ${p.email}\nTel: ${p.tel||'—'}\nNivel: ${p.nivel}`;
+  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${tStart}/${tEnd}&details=${encodeURIComponent(details)}&location=${encodeURIComponent('Planta alta de High School — Austin EBS')}&sf=true`;
+}
 function today(){ return new Date().toISOString().split('T')[0]; }
 function diasDesde(d){ if(!d) return 0; return Math.floor((new Date()-new Date(d+'T00:00:00'))/(1000*60*60*24)); }
 function esInactivo(p){
@@ -1217,14 +1275,16 @@ function toast(msg,type=''){
 // ═══════════════════════════
 function updateSidebarBadges(){
   const ps=DB.postulantes;
-  const nn=ps.filter(p=>p.estado==='citado'&&!p.entFecha).length; // citados sin fecha
+  const nn=ps.filter(p=>p.estado==='citado'&&!p.entFecha).length;
   const ni=ps.filter(p=>esInactivo(p)).length;
   const tot=ps.length;
   const entPend=ps.filter(p=>p.entFecha&&p.entFecha<today()&&!p.entResultado).length;
+  const bajasN=ps.filter(p=>p.estado==='desiste').length;
   const bn=document.getElementById('badge-n'); if(bn){ bn.textContent=nn; bn.style.display=nn>0?'inline':'none'; }
   const bi=document.getElementById('badge-inac'); if(bi){ bi.textContent=ni; bi.style.display=ni>0?'inline':'none'; }
   const bt=document.getElementById('badge-total'); if(bt){ bt.textContent=tot; bt.style.display=tot>0?'inline':'none'; }
   const be=document.getElementById('badge-ent'); if(be){ be.textContent=entPend; be.style.display=entPend>0?'inline':'none'; }
+  const bb=document.getElementById('badge-bajas'); if(bb){ bb.textContent=bajasN; bb.style.display=bajasN>0?'inline':'none'; }
 }
 
 // ═══════════════════════════
@@ -1390,16 +1450,47 @@ function openDetalle(id){
     </div>
 
     <div class="eabox">
-      <div class="eatit">⚡ Cambiar estado · El mail se envía automáticamente</div>
+      <div class="eatit">⚡ Cambiar estado</div>
       <div class="earow">
         <select class="easel" id="new-st-${id}" onchange="prevMail(${id})">
-          ${[...ESTADOS,'no_queremos'].filter((v,i,a)=>a.indexOf(v)===i).map(e=>`<option value="${e}" ${p.estado===e?'selected':''}>${EL[e]||e}</option>`).join('')}
+          ${ESTADOS.map(e=>`<option value="${e}" ${p.estado===e?'selected':''}>${EL[e]||e}</option>`).join('')}
         </select>
-        <button class="btn btn-or" onclick="changeE(${id})">Actualizar estado y enviar mail</button>
+        <button class="btn btn-or" onclick="changeE(${id})">Actualizar estado</button>
         <button class="btn btn-out" onclick="sendMailOnly(${id})">✉ Solo enviar mail</button>
+      </div>
+      <div style="margin-top:7px;display:flex;align-items:center;gap:6px">
+        <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--tx2);cursor:pointer">
+          <input type="checkbox" id="solo-cat-${id}"> Solo mover categoría (sin enviar mail a la familia)
+        </label>
       </div>
       <div id="mprev-${id}"></div>
     </div>
+    ${p.estado==='eoe_ingles'?`
+    <div style="margin-top:12px;background:#F0EBF9;border:1px solid #C4B5FD;border-radius:10px;padding:13px 15px">
+      <div style="font-size:11px;font-weight:600;color:#6B21A8;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">🎓 Resultado EOE / Inglés</div>
+      <div style="font-size:12.5px;color:var(--tx2);margin-bottom:10px">Registrá el resultado de la evaluación realizada por EOE/Inglés para este estudiante.</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-gr" onclick="aprobarEOE(${id})">✓ EOE aprobó — pasar a Dir. General</button>
+        <button class="btn btn-danger" onclick="rechazarEOE(${id})">✗ EOE rechazó</button>
+      </div>
+    </div>`:''}
+    ${p.estado==='pendiente_dg'?`
+    <div style="margin-top:12px;background:#FEF3C7;border:1px solid #F59E0B;border-radius:10px;padding:13px 15px">
+      <div style="font-size:11px;font-weight:600;color:#92400E;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">⏳ Pendiente Dirección General</div>
+      <div style="font-size:12.5px;color:#78350F;margin-bottom:10px">DG tiene 48hs para confirmar. Si no responde, el sistema avanza automáticamente a Matriculado.${p.dgDeadline?' Vence: <strong>'+fDateFull(p.dgDeadline)+'</strong>':''}</div>
+      <button class="btn btn-gr" onclick="confirmarDG(${id})">✓ DG confirmó — pasar a Matriculado</button>
+    </div>`:''}
+    ${p.estado==='rechazado_eoe'?`
+    <div style="margin-top:12px;background:#FEE2E2;border:1px solid #FCA5A5;border-radius:10px;padding:13px 15px">
+      <div style="font-size:11px;font-weight:600;color:#991B1B;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">✗ Rechazado por EOE</div>
+      <div style="font-size:12.5px;color:#7F1D1D;line-height:1.6">Este estudiante fue rechazado en la etapa EOE/Inglés. Admisiones puede decidir si comunicar el resultado a la familia o moverlo a otro estado.</div>
+    </div>`:''}
+    ${p.estado==='contactado'?`
+    <div style="margin-top:12px;background:#DCF0F5;border:1px solid #67C0D4;border-radius:10px;padding:13px 15px">
+      <div style="font-size:11px;font-weight:600;color:#1A5F70;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">📅 Sin entrevista agendada</div>
+      <div style="font-size:12.5px;color:#174E5C;line-height:1.6">La familia indicó que agendará la entrevista más adelante. Cuando confirmen fecha, moverlo a "Citado entrevista".</div>
+    </div>`:''}
+
 
     <div style="margin-top:14px;background:var(--cr);border-radius:10px;padding:12px 14px">
       <div style="font-size:11px;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:9px">📅 Entrevista</div>
@@ -1407,7 +1498,8 @@ function openDetalle(id){
         <div><label style="font-size:11.5px;color:var(--tx3);display:block;margin-bottom:3px">Fecha</label><input type="date" id="det-entf-${id}" value="${p.entFecha||''}" style="padding:6px 9px;border:1.5px solid var(--bd2);border-radius:7px;font-size:12.5px;font-family:'DM Sans',sans-serif;color:var(--tx);background:#fff;outline:none"></div>
         <div><label style="font-size:11.5px;color:var(--tx3);display:block;margin-bottom:3px">Hora</label><input type="time" id="det-enth-${id}" value="${p.entHora||'09:00'}" style="padding:6px 9px;border:1.5px solid var(--bd2);border-radius:7px;font-size:12.5px;font-family:'DM Sans',sans-serif;color:var(--tx);background:#fff;outline:none"></div>
         <button class="btn btn-td btn-sm" onclick="guardarFechaDesdeDetalle(${id})">Guardar fecha</button>
-        ${p.entFecha?`<button class="btn btn-or btn-sm" onclick="closeM();showV('entrevistas')">Ver en Entrevistas →</button>`:''}
+        ${p.entFecha?`<button class="btn btn-or btn-sm" onclick="closeM();showV('entrevistas')">Ver en Entrevistas →</button><a class="btn btn-out btn-sm" href="${gcalLink(p)}" target="_blank" rel="noopener">📅 Agregar a Google Calendar</a>`:''}
+        ${!p.entFecha?`<span style="font-size:11.5px;color:var(--tx3)">Sin fecha agendada aún</span>`:''}
       </div>
       ${p.entResultado?`<div style="margin-top:8px;font-size:12px;color:var(--gr);font-weight:500">✓ Resultado registrado: ${EL[p.entResultado]||p.entResultado}</div>`:''}
     </div>
@@ -1489,7 +1581,8 @@ function prevMail(id){
   const est=sel.value;
   const tmpl=DB.emails[est];
   const pe=document.getElementById('mprev-'+id); if(!pe) return;
-  if(!tmpl){ pe.innerHTML=''; return; }
+  const noMailStates={rechazado_eoe:'Sin mail automático — Admisiones notifica manualmente.',pendiente_dg:'Sin mail a familia — se envía notificación interna a Dirección General.',no_queremos:'Sin mail automático — contacto telefónico.'};
+  if(!tmpl){ pe.innerHTML=noMailStates[est]?`<div style="background:var(--cr2);border-radius:8px;padding:9px 12px;font-size:12px;color:var(--tx2);margin-top:8px">ℹ ${noMailStates[est]}</div>`:''; return; }
   const body=fillV(tmpl.body,p);
   pe.innerHTML=`<div class="mprev">
     <div class="mph">
@@ -1514,11 +1607,13 @@ function changeE(id){
   const sel=document.getElementById('new-st-'+id); if(!sel) return;
   const newEst=sel.value;
   if(p.estado===newEst){ toast('El estado ya es '+EL[newEst],''); return; }
+  const soloCat=document.getElementById('solo-cat-'+id)?.checked||false;
+
   if(newEst==='postulado'||newEst==='lista de espera'){
     const v=DB.vacantes[p.curso];
     if(v){
       const lib=v.t-v.u;
-      const msg = lib<=0 ? 'Curso LLENO — sin vacantes disponibles' : lib<=3 ? lib+' vacante'+( lib>1?'s':'') +' disponibles (últimas)' : lib+' vacantes disponibles';
+      const msg = lib<=0 ? 'Curso LLENO — sin vacantes disponibles' : lib<=3 ? lib+' vacante'+(lib>1?'s':'')+' disponibles (últimas)' : lib+' vacantes disponibles';
       toast('Vacantes en '+p.curso+': '+msg, lib<=0?'err':'info');
     }
   }
@@ -1526,10 +1621,30 @@ function changeE(id){
   p.ultAccion=today();
   p.hist=p.hist||[];
   p.hist.push({e:newEst,f:today(),mailOk:false});
+
+  // Estado pendiente_dg → marcar deadline 48hs
+  if(newEst==='pendiente_dg'){
+    const dl=new Date(); dl.setHours(dl.getHours()+48);
+    p.dgDeadline=dl.toISOString().split('T')[0];
+  }
+
   saveDB();
-  if(newEst==='matriculado') sincronizarConEOE(p);
-  if(newEst==='no_queremos'){
-    toast('Estado actualizado → '+EL['no_queremos']+' · Sin mail automático (contacto telefónico)','info');
+
+  // Acciones especiales por estado
+  if(newEst==='matriculado'){
+    sincronizarConEOE(p);
+    enviarMailAdministracion(p);
+  }
+  if(newEst==='eoe_ingles'){
+    sincronizarConEOEEvaluacion(p);
+  }
+
+  // Sin mail automático a familia
+  const sinMail=['no_queremos','rechazado_eoe','pendiente_dg'];
+  if(sinMail.includes(newEst)){
+    toast('Estado actualizado → '+EL[newEst]+' · Sin mail a familia','info');
+  } else if(soloCat){
+    toast('Estado actualizado → '+EL[newEst]+' · Sin mail (solo categoría)','info');
   } else {
     enviarMailAdmin(p,newEst,(ok,mode)=>{
       if(ok){ p.hist[p.hist.length-1].mailOk=true; saveDB(); }
@@ -1538,6 +1653,7 @@ function changeE(id){
       else toast('Estado actualizado. Configurá el Apps Script para envío automático.','info');
     });
   }
+
   closeM(); renderDashboard();
   const pv=document.getElementById('view-pipeline'); if(pv&&pv.classList.contains('on')) renderPipeline();
   const tv=document.getElementById('view-post'); if(tv&&tv.classList.contains('on')) filterT();
@@ -1691,7 +1807,7 @@ function saveVac(){
 // EMAIL TEMPLATES
 // ═══════════════════════════
 function renderEmails(){
-  const allTpls=[...ESTADOS,'desiste_recontacto'].filter(e=>e!=='no_queremos'&&e!=='seguimiento_entrevista');
+  const allTpls=[...ESTADOS,'desiste_recontacto'].filter(e=>!['no_queremos','seguimiento_entrevista','rechazado_eoe','pendiente_dg'].includes(e));
   const labels={...EL,desiste_recontacto:'Re-contacto a desistidos'};
   document.getElementById('email-tpls').innerHTML=allTpls.map(e=>`
     <div class="etcard">
@@ -1875,7 +1991,7 @@ function renderCfg(){
   document.getElementById('cfg-drv').value=DB.config.drive||'';
   document.getElementById('cfg-apps').value=DB.config.appsScriptUrl||'';
   const eoeEl=document.getElementById('cfg-eoe'); if(eoeEl) eoeEl.value=DB.config.eoeApiUrl||'';
-
+  const dgEl=document.getElementById('cfg-dg'); if(dgEl) dgEl.value=DB.config.emailDG||'';
   setTimeout(updateEjsBadge,50);
 }
 function saveCfg(){
@@ -1884,7 +2000,7 @@ function saveCfg(){
   DB.config.drive=document.getElementById('cfg-drv').value;
   DB.config.appsScriptUrl=(document.getElementById('cfg-apps').value||'').trim();
   const eoeInp=document.getElementById('cfg-eoe'); if(eoeInp) DB.config.eoeApiUrl=eoeInp.value.trim();
-
+  const dgInp=document.getElementById('cfg-dg'); if(dgInp) DB.config.emailDG=dgInp.value.trim();
   updateEjsBadge(); saveDB(); toast('Configuración guardada','ok');
 }
 function updateEjsBadge(){
@@ -2075,13 +2191,22 @@ function fNext(from){
 }
 function fBack(from){
   if(from===1){
-    // Go back to last student form
     estudianteIdx = Math.max(0, estudianteIdx-1);
     if(estudiantesData[estudianteIdx]) restoreStudentForm(estudiantesData[estudianteIdx]);
     else clearStudentForm();
     updateStudentHeader();
     showFStep(0);
     return;
+  }
+  if(from===3){
+    // Reset "aún no sé" state when going back to calendar
+    sinEntrevista=false;
+    const entBox=document.getElementById('fst3-ent-box');
+    const noentBox=document.getElementById('fst3-noent-box');
+    if(entBox) entBox.style.display='block';
+    if(noentBox) noentBox.style.display='none';
+    const sub=document.getElementById('fst3-sub');
+    if(sub) sub.textContent='Revisá tus datos y la entrevista agendada antes de enviar.';
   }
   showFStep(from-1);
 }
@@ -2129,6 +2254,7 @@ function submitPost(){
     const otrosNombres=allNames.filter((_,j)=>j!==i).join(', ');
     const notaHermanos=numStudents>1 ? `Inscripción familiar — hermanos registrados juntos: ${otrosNombres}` : '';
     const notasTxt=[obs,notaHermanos].filter(Boolean).join(' | ');
+    const estadoInicial = sinEntrevista ? 'contactado' : 'citado';
     const p={
       id:DB.nextId++, alumno, padre, email, tel,
       curso:est.curso, nivel:est.nivel,
@@ -2136,12 +2262,12 @@ function submitPost(){
       anio:est.anio,
       colegio:est.cole||'',
       hermano:est.hermano,
-      estado:'citado',
+      estado:estadoInicial,
       fecha:today(), ultAccion:today(),
-      entFecha:calSlotSeleccionado?.fecha||'',
-      entHora: calSlotSeleccionado?.hora||'',
+      entFecha:sinEntrevista?'':(calSlotSeleccionado?.fecha||''),
+      entHora: sinEntrevista?'':(calSlotSeleccionado?.hora||''),
       notas:notasTxt?[{txt:notasTxt,fecha:nowDate,hora:nowTime}]:[],
-      hist:[{e:'nueva',f:today()},{e:'citado',f:today(),mailOk:false}]
+      hist:[{e:'nueva',f:today()},{e:estadoInicial,f:today(),mailOk:false}]
     };
     DB.postulantes.unshift(p);
     DB.pendingNotif.push(p.id);
@@ -2161,7 +2287,7 @@ function submitPost(){
 
   // Use first postulante for the confirmation mail/slot API call
   const p0=DB.postulantes.find(p=>p.id===createdIds[0]);
-  if(p0 && calSlotSeleccionado && DB.config.appsScriptUrl){
+  if(!sinEntrevista && p0 && calSlotSeleccionado && DB.config.appsScriptUrl){
     apiCall('reservarTurno',{
       alumnoId:p0.id,
       alumno:p0.alumno, padre, email,
@@ -2177,16 +2303,17 @@ function submitPost(){
       }
     }).catch(()=>{});
   } else if(p0){
-    enviarMail(p0,'citado',(ok)=>{ if(ok){ p0.hist[p0.hist.length-1].mailOk=true; saveDB(); } });
+    const estadoMail = sinEntrevista ? 'contactado' : 'citado';
+    enviarMail(p0, estadoMail, (ok)=>{ if(ok){ p0.hist[p0.hist.length-1].mailOk=true; saveDB(); } });
   }
 
   // Show success
   document.querySelectorAll('.fstep').forEach(s=>s.classList.remove('on'));
   document.getElementById('fst-ok').classList.add('on');
   const entTxt=document.getElementById('fsuccess-ent-txt');
-  if(entTxt&&calSlotSeleccionado) entTxt.textContent=formatFechaLinda(calSlotSeleccionado.fecha)+' a las '+calSlotSeleccionado.hora;
+  if(entTxt&&calSlotSeleccionado&&!sinEntrevista) entTxt.textContent=formatFechaLinda(calSlotSeleccionado.fecha)+' a las '+calSlotSeleccionado.hora;
   // Reset multi-student state
-  numStudents=1; estudianteIdx=0; estudiantesData=[];
+  numStudents=1; estudianteIdx=0; estudiantesData=[]; sinEntrevista=false;
 }
 
 // ═══════════════════════════
@@ -2644,15 +2771,214 @@ async function sincronizarConEOE(p){
 }
 
 
-function guardarFechaDesdeDetalle(id){
-  const p = DB.postulantes.find(x=>x.id===id); if(!p) return;
-  const f = document.getElementById('det-entf-'+id);
-  const h = document.getElementById('det-enth-'+id);
-  if(f && f.value) p.entFecha = f.value;
-  if(h && h.value) p.entHora = h.value;
+// ═══════════════════════════
+// JORNADA SIMPLE (solo K2)
+// ═══════════════════════════
+function toggleJornada(){
+  const curso=document.getElementById('pf-curso')?.value||'';
+  const opt=document.getElementById('opt-jornada-simple');
+  const sel=document.getElementById('pf-jornada');
+  if(!opt||!sel) return;
+  const esK2=curso==='K2 (Puppies)';
+  opt.style.display=esK2?'':'none';
+  if(!esK2&&sel.value==='Jornada Simple') sel.value='Jornada Completa';
+}
+
+// ═══════════════════════════
+// "AÚN NO SÉ" — SIN ENTREVISTA
+// ═══════════════════════════
+function sinFechaEntrevista(){
+  sinEntrevista=true;
+  calSlotSeleccionado=null;
+  const entBox=document.getElementById('fst3-ent-box');
+  const noentBox=document.getElementById('fst3-noent-box');
+  if(entBox) entBox.style.display='none';
+  if(noentBox) noentBox.style.display='block';
+  const sub=document.getElementById('fst3-sub');
+  if(sub) sub.textContent='Revisá tus datos antes de enviar.';
+  fNext(2);
+}
+
+// ═══════════════════════════
+// EOE: APROBAR / RECHAZAR
+// ═══════════════════════════
+function aprobarEOE(id){
+  const p=DB.postulantes.find(x=>x.id===id); if(!p) return;
+  p.estado='pendiente_dg';
+  p.ultAccion=today();
+  const dl=new Date(); dl.setHours(dl.getHours()+48);
+  p.dgDeadline=dl.toISOString().split('T')[0];
+  p.hist=p.hist||[];
+  p.hist.push({e:'pendiente_dg',f:today(),mailOk:false});
   saveDB();
-  toast('Fecha de entrevista guardada','ok');
-  updateSidebarBadges(); renderDashboard();
+  enviarMailDG(p);
+  toast('✓ EOE aprobó — caso enviado a Dirección General (48hs)','ok');
+  closeM(); renderDashboard();
+  const pv=document.getElementById('view-pipeline'); if(pv&&pv.classList.contains('on')) renderPipeline();
+}
+
+function rechazarEOE(id){
+  const p=DB.postulantes.find(x=>x.id===id); if(!p) return;
+  p.estado='rechazado_eoe';
+  p.ultAccion=today();
+  p.hist=p.hist||[];
+  p.hist.push({e:'rechazado_eoe',f:today()});
+  saveDB();
+  toast('Caso marcado como rechazado por EOE — sin mail automático a familia','info');
+  closeM(); renderDashboard();
+  const pv=document.getElementById('view-pipeline'); if(pv&&pv.classList.contains('on')) renderPipeline();
+}
+
+// ═══════════════════════════
+// DIRECCIÓN GENERAL: CONFIRMAR → MATRICULADO
+// ═══════════════════════════
+function confirmarDG(id){
+  const p=DB.postulantes.find(x=>x.id===id); if(!p) return;
+  p.estado='matriculado';
+  p.ultAccion=today();
+  p.hist=p.hist||[];
+  p.hist.push({e:'matriculado',f:today(),mailOk:false});
+  saveDB();
+  sincronizarConEOE(p);
+  enviarMailAdministracion(p);
+  enviarMailAdmin(p,'matriculado',(ok,mode)=>{
+    if(ok){ p.hist[p.hist.length-1].mailOk=true; saveDB(); }
+    if(ok&&mode==='mailto') toast('Bienvenida enviada · Abriendo correo...','info');
+    else if(ok) toast('✓ Matriculado · Mail de bienvenida enviado','ok');
+    else toast('Matriculado · Configurá el Apps Script para envío automático','info');
+  });
+  closeM(); renderDashboard();
+  const pv=document.getElementById('view-pipeline'); if(pv&&pv.classList.contains('on')) renderPipeline();
+}
+
+// ═══════════════════════════
+// AUTO-AVANCE pendiente_dg (48hs)
+// ═══════════════════════════
+function checkPendienteDG(){
+  const hoy=today();
+  let changed=false;
+  DB.postulantes.forEach(p=>{
+    if(p.estado==='pendiente_dg'&&p.dgDeadline&&p.dgDeadline<=hoy){
+      p.estado='matriculado';
+      p.ultAccion=today();
+      p.hist=p.hist||[];
+      p.hist.push({e:'matriculado',f:today(),mailOk:false,auto:true});
+      sincronizarConEOE(p);
+      enviarMailAdministracion(p);
+      enviarMailAdmin(p,'matriculado',(ok)=>{ if(ok){ p.hist[p.hist.length-1].mailOk=true; saveDB(); } });
+      changed=true;
+    }
+  });
+  if(changed){ saveDB(); renderDashboard(); toast('⏰ Auto-avance: pendiente DG → Matriculado por vencimiento 48hs','info'); }
+}
+
+// ═══════════════════════════
+// MAIL A DIRECCIÓN GENERAL
+// ═══════════════════════════
+function enviarMailDG(p){
+  const dgEmail=DB.config.emailDG||'alejandra.luna@austinebs-ah.edu.ar';
+  const subj=`EOE aprobó a ${p.alumno} — pendiente confirmación DG`;
+  const dl=p.dgDeadline?fDateFull(p.dgDeadline):'48hs desde ahora';
+  const body=`Estimada Dirección General,\n\nEOE e Inglés dieron el visto bueno para el ingreso de ${p.alumno} (${p.curso}, ciclo ${p.anio}).\nAdmisiones confirmó la vacante.\n\nPor favor confirmar el ingreso antes del ${dl}.\nSi no hay respuesta en 48hs, el sistema procederá automáticamente con la matrícula.\n\nDatos:\n- Nombre: ${p.alumno}\n- Nivel: ${p.nivel} — ${p.curso}\n- Ciclo: ${p.anio}\n- Familia: ${p.padre}\n- Email: ${p.email}\n- Teléfono: ${p.tel||'—'}\n\nSaludos,\nSistema de Admisiones – Austin EBS`;
+  if(DB.config.appsScriptUrl){
+    apiCall('sendMail',{to:dgEmail,subject:subj,body}).then(()=>{});
+  } else {
+    window.open('mailto:'+dgEmail+'?subject='+encodeURIComponent(subj)+'&body='+encodeURIComponent(body));
+  }
+}
+
+// ═══════════════════════════
+// MAIL A ADMINISTRACIÓN (al matricular)
+// ═══════════════════════════
+function enviarMailAdministracion(p){
+  const adminEmail='administracion@austinebs-ah.edu.ar';
+  const subj=`NUEVO MATRICULADO: ${p.alumno} — ${p.curso} ${p.anio}`;
+  const histTxt=(p.hist||[]).map(h=>`  · ${fDate(h.f)} → ${EL[h.e]||h.e}${h.mailOk?' (mail ✓)':''}`).join('\n');
+  const body=`Estimado equipo de Administración,\n\nEl siguiente estudiante completó el proceso de admisión y se encuentra MATRICULADO:\n\n── DATOS DEL ESTUDIANTE ──\nNombre: ${p.alumno}\nNivel: ${p.nivel}\nCurso: ${p.curso}\nJornada: ${p.jornada||'—'}\nCiclo lectivo: ${p.anio}\nColegio anterior: ${p.colegio||'—'}\n\n── DATOS DE LA FAMILIA ──\nPadre / Tutor: ${p.padre}\nEmail: ${p.email}\nTeléfono: ${p.tel||'—'}\n\n── APROBACIONES ──\nAdmisiones: ✓\nEOE / Inglés: ✓\nDirección General: ✓\n\n── HISTORIAL ──\n${histTxt}\n\nPor favor proceder con el alta y el cobro de matrícula.\n\nSistema de Admisiones – Austin EBS`;
+  if(DB.config.appsScriptUrl){
+    apiCall('sendMail',{to:adminEmail,subject:subj,body}).then(()=>{});
+  } else {
+    window.open('mailto:'+adminEmail+'?subject='+encodeURIComponent(subj)+'&body='+encodeURIComponent(body));
+  }
+  toast('📋 Resumen enviado a Administración','info');
+}
+
+// ═══════════════════════════
+// FIRESTORE: EVALUACIÓN EOE/INGLÉS
+// ═══════════════════════════
+async function sincronizarConEOEEvaluacion(p){
+  const URL='https://firestore.googleapis.com/v1/projects/eoe-aebs/databases/(default)/documents/evaluaciones-admisiones';
+  const partes=(p.alumno||'').trim().split(' ');
+  const nivelEOE=p.nivel==='Kindergarten'?'Inicial':p.nivel==='Elementary'?'Primario':'Secundario';
+  const body={fields:{
+    nombre:{stringValue:partes[0]||''},apellido:{stringValue:partes.slice(1).join(' ')||''},
+    nivel:{stringValue:nivelEOE},curso:{stringValue:p.curso||''},
+    anioIngreso:{integerValue:String(p.anio||new Date().getFullYear())},
+    email:{stringValue:p.email||''},telefono:{stringValue:(p.tel||'').replace(/\D/g,'')},
+    nombrePadre:{stringValue:p.padre||''},admisionesId:{integerValue:String(p.id)},
+    estado:{stringValue:'Pendiente evaluación'},timestamp:{integerValue:String(Date.now())}
+  }};
+  try{
+    const res=await fetch(URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(res.ok){
+      const data=await res.json();
+      p.eoeDocId=data.name?.split('/').pop()||'';
+      saveDB();
+      toast('✓ Caso enviado al sistema EOE para evaluación','ok');
+    } else {
+      toast('⚠ EOE: error al enviar evaluación ('+res.status+')','err');
+    }
+  } catch(e){ toast('⚠ EOE: no se pudo conectar','err'); }
+}
+
+// ═══════════════════════════
+// VISTA BAJAS
+// ═══════════════════════════
+function renderBajas(){
+  const q=(document.getElementById('bajas-q')?.value||'').toLowerCase();
+  const anio=document.getElementById('bajas-anio')?.value||'';
+  const niv=document.getElementById('bajas-niv')?.value||'';
+  const bajas=DB.postulantes.filter(p=>
+    p.estado==='desiste'&&
+    (!q||p.alumno.toLowerCase().includes(q)||p.padre.toLowerCase().includes(q)||p.curso.toLowerCase().includes(q))&&
+    (!anio||String(p.anio)===anio)&&(!niv||p.nivel===niv)
+  ).sort((a,b)=>(b.ultAccion||b.fecha||'').localeCompare(a.ultAccion||a.fecha||''));
+  const cnt=document.getElementById('bajas-cnt');
+  if(cnt) cnt.textContent=`${bajas.length} baja${bajas.length!==1?'s':''}`;
+  const tb=document.getElementById('bajas-tb');
+  if(!tb) return;
+  if(bajas.length===0){
+    tb.innerHTML=`<tr><td colspan="7"><div class="empty"><div class="empty-ic">✓</div><p>Sin bajas registradas</p></div></td></tr>`;
+    return;
+  }
+  tb.innerHTML=bajas.map(p=>`<tr>
+    <td onclick="event.stopPropagation()"><input type="checkbox" class="baja-chk" data-id="${p.id}"></td>
+    <td style="cursor:pointer" onclick="openDetalle(${p.id})"><strong>${p.alumno}</strong></td>
+    <td><small style="color:var(--tx3)">${p.nivel} ·</small> ${p.curso}</td>
+    <td>${p.padre}${p.tel?`<br><small style="color:var(--tx3)">${p.tel}</small>`:''}</td>
+    <td>${fDateFull(p.ultAccion||p.fecha)}</td>
+    <td><span class="pill">${p.anio}</span></td>
+    <td><button class="btn btn-sm btn-out" onclick="openDetalle(${p.id})">Ver perfil</button></td>
+  </tr>`).join('');
+}
+function toggleSelectAllBajas(cb){ document.querySelectorAll('.baja-chk').forEach(c=>{ c.checked=cb.checked; }); }
+function mailMasivoBajas(){
+  const sel=[...document.querySelectorAll('.baja-chk:checked')].map(c=>parseInt(c.dataset.id));
+  if(sel.length===0){ toast('Seleccioná al menos un estudiante','err'); return; }
+  if(!confirm(`¿Enviar mail de recontacto a ${sel.length} familia${sel.length!==1?'s':''}?`)) return;
+  let n=0;
+  sel.forEach(id=>{
+    const p=DB.postulantes.find(x=>x.id===id); if(!p) return;
+    enviarMailAdmin(p,'desiste_recontacto',(ok,mode)=>{ n++; if(n===sel.length) toast(`✉ Mail de recontacto procesado para ${sel.length} familia${sel.length!==1?'s':''}`,ok?'ok':'info'); });
+  });
+}
+function exportBajasCSV(){
+  const bajas=DB.postulantes.filter(p=>p.estado==='desiste');
+  const cols=['ID','Alumno','Padre/Tutor','Email','Teléfono','Curso','Nivel','Ciclo','Fecha baja'];
+  const rows=bajas.map(p=>[p.id,p.alumno,p.padre,p.email,p.tel||'',p.curso,p.nivel,p.anio,fDate(p.ultAccion||p.fecha)]);
+  const csv=cols.join(',')+'\n'+rows.map(r=>r.map(v=>'"'+String(v||'').replace(/"/g,'""')+'"').join(',')).join('\n');
+  const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,'+encodeURIComponent('﻿'+csv);
+  a.download='bajas_admisiones_'+today()+'.csv'; a.click();
 }
 
 function marcarNoAsistio(id){
