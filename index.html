@@ -2313,10 +2313,10 @@ function fNext(from){
     if(!ok){ toast('Completá los campos obligatorios','err'); return; }
   }
   if(from===2){
-    if(!calSlotSeleccionado){ toast('Seleccioná un horario para la entrevista','err'); return; }
+    if(!calSlotSeleccionado && !sinEntrevista){ toast('Seleccioná un horario para la entrevista','err'); return; }
     buildResumen();
     const eEl=document.getElementById('pf-resumen-ent');
-    if(eEl) eEl.textContent=formatFechaLinda(calSlotSeleccionado.fecha)+' a las '+calSlotSeleccionado.hora;
+    if(eEl && calSlotSeleccionado) eEl.textContent=formatFechaLinda(calSlotSeleccionado.fecha)+' a las '+calSlotSeleccionado.hora;
   }
   showFStep(from+1);
 }
