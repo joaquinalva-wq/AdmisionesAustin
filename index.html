@@ -2937,7 +2937,7 @@ async function pollEOEResults(){
 
   for(const p of pendientes){
     try{
-      const url=`${FS_BASE}/evaluaciones-admisiones/${p.eoeDocId}`;
+      const url=`${FS_BASE}/admisiones-revision/${p.eoeDocId}`;
       const res=await fetch(url);
       if(!res.ok) continue;
       const doc=await res.json();
@@ -3135,7 +3135,7 @@ function enviarMailAdministracion(p){
 // FIRESTORE: EVALUACIÓN EOE/INGLÉS
 // ═══════════════════════════
 async function sincronizarConEOEEvaluacion(p){
-  const URL='https://firestore.googleapis.com/v1/projects/eoe-aebs/databases/(default)/documents/evaluaciones-admisiones';
+  const URL='https://firestore.googleapis.com/v1/projects/eoe-aebs/databases/(default)/documents/admisiones-revision';
   const partes=(p.alumno||'').trim().split(' ');
   const nivelEOE=p.nivel==='Kindergarten'?'Inicial':p.nivel==='Elementary'?'Primario':'Secundario';
   const body={fields:{
@@ -3144,7 +3144,7 @@ async function sincronizarConEOEEvaluacion(p){
     anioIngreso:{integerValue:String(p.anio||new Date().getFullYear())},
     email:{stringValue:p.email||''},telefono:{stringValue:(p.tel||'').replace(/\D/g,'')},
     nombrePadre:{stringValue:p.padre||''},admisionesId:{integerValue:String(p.id)},
-    estado:{stringValue:'Pendiente evaluación'},timestamp:{integerValue:String(Date.now())}
+    estado:{stringValue:'pendiente'},timestamp:{integerValue:String(Date.now())}
   }};
   try{
     const res=await fetch(URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
