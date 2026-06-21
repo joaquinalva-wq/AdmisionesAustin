@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -807,7 +807,8 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
       <div class="fsuccess">
         <div class="fsuccess-ic">🎉</div>
         <div class="fsuccess-h">¡Todo listo!</div>
-        <p class="fsuccess-p">Tu postulación fue enviada y tu entrevista quedó agendada. Recibirás un mail de confirmación en los próximos minutos con todos los detalles.</p>
+        <p class="fsuccess-p" id="fsuccess-p-main"></p>
+        <p class="fsuccess-p" style="font-size:12px;color:var(--tx3);margin-top:8px">Si no ves el mail, revisá la carpeta de <strong>spam</strong> o correo no deseado.</p>
         <div id="fsuccess-ent" style="background:linear-gradient(135deg,#EBF7D4,#D4F0A8);border-radius:12px;padding:13px 16px;margin:18px auto 0;max-width:360px;text-align:left;font-size:13px">
           <div style="font-weight:600;color:#3A6A0A;margin-bottom:3px">📅 Tu entrevista</div>
           <div style="color:var(--td);font-weight:600" id="fsuccess-ent-txt"></div>
@@ -833,9 +834,8 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
     <label class="ll">Correo electrónico</label>
     <input class="li" id="lem" type="email" value="admisiones@austinebs-ah.edu.ar">
     <label class="ll">Contraseña</label>
-    <input class="li" id="lpw" type="password" value="austin2026" onkeydown="if(event.key==='Enter')doLogin()">
+    <input class="li" id="lpw" type="password" placeholder="Contraseña" onkeydown="if(event.key==='Enter')doLogin()">
     <button class="lbtn" onclick="doLogin()">Ingresar al panel</button>
-    <p class="lhint">austin2026</p>
     <p class="lback" onclick="goPortal()">← Volver al portal de familias</p>
   </div>
 </div>
@@ -1121,7 +1121,7 @@ const ECLS = {nueva:'bg-n',contactado:'bg-co',citado:'bg-ci',entrevistado:'bg-en
 const EPCLS = {nueva:'ph-n',contactado:'ph-co',citado:'ph-ci',entrevistado:'ph-en',postulado:'ph-po',eoe_ingles:'ph-eoe',pendiente_dg:'ph-dg',rechazado_eoe:'ph-reoe',matriculado:'ph-ma','lista de espera':'ph-es',desiste:'ph-de',no_queremos:'ph-de'};
 const ECOL = {nueva:'var(--cn)',contactado:'#1A7A8E',citado:'var(--cc)',entrevistado:'var(--ce)',postulado:'var(--cp)',eoe_ingles:'#7B52AB',pendiente_dg:'#B45309',rechazado_eoe:'#DC2626',matriculado:'var(--cm)','lista de espera':'var(--cs)',desiste:'var(--cd)',no_queremos:'var(--cd)'};
 const CURSOS = ['K2 (Puppies)','K3 (Koalas/Dolphins)','K4 (Foxes/Monkeys)','K5 (Bears/Hippos)','1er año Elementary','2do año Elementary','3er año Elementary','4to año Elementary','5to año Elementary','6to año Elementary','1er año High School','2do año High School','3er año High School','4to año High School','5to año High School','6to año High School'];
-const NIVEL = c => c.startsWith('K') ? 'Kindergarten' : c.includes('Elementary') ? 'Elementary' : 'High School';
+const NIVEL = c => !c ? '' : c.startsWith('K') ? 'Kindergarten' : c.includes('Elementary') ? 'Elementary' : 'High School';
 const DIAS_INACTIVO = 7;
 
 // ═══════════════════════════
@@ -1150,7 +1150,7 @@ let DB = {
     seguimiento_entrevista:{subj:'¿Cómo fue la entrevista? — Austin EBS',body:'Hola {{padre}},\n\nFue un placer recibirlos en la entrevista. Esperamos que {{alumno}} y ustedes hayan quedado tan contentos como nosotros.\n\nSi desean continuar con el proceso de admisión, por favor respondé este mail confirmando tu interés. Con eso podremos avanzar con los pasos de reserva de vacante.\n\nSi por algún motivo decidieron no continuar, también podés avisarnos por este medio — lo entendemos perfectamente y siempre será bienvenida la familia si desean retomar en el futuro.\n\nEsperamos tu respuesta.\n\nUn afectuoso saludo,\nAdmisiones – Austin EBS'},
     no_asistio:{subj:'¡Que lástima! Podemos reprogramar tu entrevista — Austin EBS',body:'Hola {{padre}},\n\nLamentamos que no hayas podido llegar a la entrevista que tenías agendada. ¡Nos hubiera encantado conocerlos!\n\nSi querés reprogramarla, respondé este mail y coordinamos un nuevo horario con gusto. También podés volver a completar el formulario de postulación para elegir una nueva fecha.\n\nEsperamos poder conocerlos pronto.\n\nUn afectuoso saludo,\nAdmisiones – Austin EBS'}
   },
-  config:{nombre:'Admisiones Austin EBS',email:'admisiones@austinebs-ah.edu.ar',calendar:'https://calendar.app.google/WrfYGGSiRH3smkxL8',drive:'https://drive.google.com/drive/folders/1c0vFf1MWUcSC8-lqBjBCGDQ-hbXxGQDA',appsScriptUrl:''},
+  config:{nombre:'Admisiones Austin EBS',email:'admisiones@austinebs-ah.edu.ar',calendar:'https://calendar.app.google/WrfYGGSiRH3smkxL8',drive:'https://drive.google.com/drive/folders/1c0vFf1MWUcSC8-lqBjBCGDQ-hbXxGQDA',appsScriptUrl:'https://script.google.com/macros/s/AKfycbzK82ibenmWqIdWQAWb4x5Wy6gXRFrg8ASGhW-DvNOwt-Eo7GzY2alnFhLaUYIcy8bBUg/exec',},
   pendingNotif:[]
 };
 
@@ -2361,6 +2361,10 @@ function buildResumen(){
   document.getElementById('pf-resumen').innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:5px 18px">${rows}</div>`;
 }
 function submitPost(){
+  // Prevent double-submit
+  const btn=document.getElementById('btn-submit-final');
+  if(btn){ btn.disabled=true; btn.textContent='Enviando...'; }
+
   const padre=`${document.getElementById('pf-pn').value} ${document.getElementById('pf-pap').value}`.trim();
   const email=document.getElementById('pf-email').value.trim();
   const tel=document.getElementById('pf-tel').value;
@@ -2368,6 +2372,7 @@ function submitPost(){
 
   // Check duplicate email
   if(DB.postulantes.find(p=>p.email.toLowerCase()===email.toLowerCase()&&p.estado!=='desiste')){
+    if(btn){ btn.disabled=false; btn.textContent='Enviar postulación ✓'; }
     toast('Este email ya tiene una postulación activa en el sistema','err'); return;
   }
 
@@ -2412,10 +2417,6 @@ function submitPost(){
     try{ localStorage.setItem('austin_turnos', JSON.stringify(calTurnosReservados)); } catch(e){}
   }
 
-  // Disable button
-  const btn=document.getElementById('btn-submit-final');
-  if(btn){ btn.disabled=true; btn.textContent='Enviando...'; }
-
   // Use first postulante for the confirmation mail/slot API call
   const p0=DB.postulantes.find(p=>p.id===createdIds[0]);
   if(!sinEntrevista && p0 && calSlotSeleccionado && DB.config.appsScriptUrl){
@@ -2441,8 +2442,17 @@ function submitPost(){
   // Show success
   document.querySelectorAll('.fstep').forEach(s=>s.classList.remove('on'));
   document.getElementById('fst-ok').classList.add('on');
+  const entDiv=document.getElementById('fsuccess-ent');
   const entTxt=document.getElementById('fsuccess-ent-txt');
-  if(entTxt&&calSlotSeleccionado&&!sinEntrevista) entTxt.textContent=formatFechaLinda(calSlotSeleccionado.fecha)+' a las '+calSlotSeleccionado.hora;
+  const pMain=document.getElementById('fsuccess-p-main');
+  if(sinEntrevista){
+    if(pMain) pMain.textContent='Tu postulación fue enviada. El equipo de admisiones se comunicará con vos para coordinar la entrevista.';
+    if(entDiv) entDiv.style.display='none';
+  } else {
+    if(pMain) pMain.textContent='Tu postulación fue enviada y tu entrevista quedó agendada. Recibirás un mail de confirmación en los próximos minutos con todos los detalles.';
+    if(entDiv) entDiv.style.display='';
+    if(entTxt&&calSlotSeleccionado) entTxt.textContent=formatFechaLinda(calSlotSeleccionado.fecha)+' a las '+calSlotSeleccionado.hora;
+  }
   // Reset multi-student state
   numStudents=1; estudianteIdx=0; estudiantesData=[]; sinEntrevista=false;
 }
