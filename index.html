@@ -1335,7 +1335,8 @@ function navScroll(id){ const el=document.querySelector(id); if(el) el.scrollInt
 function doLogin(){
   const em=document.getElementById('lem').value.trim();
   const pw=document.getElementById('lpw').value;
-  if(em==='admisiones@austinebs-ah.edu.ar'&&pw==='austin2026'){
+  const correctPw=DB.config.password||'austin2026';
+  if(em==='admisiones@austinebs-ah.edu.ar'&&pw===correctPw){
     go('s-panel'); renderPanel();
     syncFromCloud();      // pull/push Firestore in background
     startEOEPolling();    // start watching for EOE results
@@ -2123,6 +2124,7 @@ function renderCfg(){
   document.getElementById('cfg-apps').value=DB.config.appsScriptUrl||'';
   const eoeEl=document.getElementById('cfg-eoe'); if(eoeEl) eoeEl.value=DB.config.eoeApiUrl||'';
   const dgEl=document.getElementById('cfg-dg'); if(dgEl) dgEl.value=DB.config.emailDG||'';
+  const pwEl=document.getElementById('cfg-pw'); if(pwEl) pwEl.value=DB.config.password||'';
   setTimeout(updateEjsBadge,50);
 }
 function saveCfg(){
@@ -2132,6 +2134,7 @@ function saveCfg(){
   DB.config.appsScriptUrl=(document.getElementById('cfg-apps').value||'').trim();
   const eoeInp=document.getElementById('cfg-eoe'); if(eoeInp) DB.config.eoeApiUrl=eoeInp.value.trim();
   const dgInp=document.getElementById('cfg-dg'); if(dgInp) DB.config.emailDG=dgInp.value.trim();
+  const pwInp=document.getElementById('cfg-pw'); if(pwInp&&pwInp.value.trim()) DB.config.password=pwInp.value.trim();
   updateEjsBadge(); saveDB(); toast('Configuración guardada','ok');
 }
 function updateEjsBadge(){
