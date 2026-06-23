@@ -1279,7 +1279,7 @@ function loadDB(){
     if(!s){
       // First load: show seed until cloud sync provides real data
       DB.postulantes = SEED_POSTULANTES;
-      DB.nextId = 1328;
+      DB.nextId = 1635;
       // ts=0 so Firestore always wins on first sync
       try{ localStorage.setItem('austin_ebs_v2', JSON.stringify({nextId:DB.nextId,postulantes:DB.postulantes,vacantes:DB.vacantes,tarifas:DB.tarifas,emails:DB.emails,config:DB.config,pendingNotif:DB.pendingNotif})); localStorage.setItem('austin_ebs_ts','0'); }catch(e){}
       return;
