@@ -854,7 +854,8 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
       <button class="sbi" id="nav-pipeline" onclick="showV('pipeline')"><span class="sbi-ic">⬡</span> Pipeline <span class="sbi-badge" id="badge-inac" style="display:none">!</span></button>
       <button class="sbi" id="nav-entrevistas" onclick="showV('entrevistas')"><span class="sbi-ic">📅</span> Entrevistas <span class="sbi-badge" id="badge-ent" style="display:none">0</span></button>
       <button class="sbi" id="nav-post" onclick="showV('post')"><span class="sbi-ic">◉</span> Postulantes <span class="sbi-badge green" id="badge-total" style="display:none">0</span></button>
-      <button class="sbi" id="nav-bajas" onclick="showV('bajas')"><span class="sbi-ic">↓</span> Bajas <span class="sbi-badge" id="badge-bajas" style="display:none">0</span></button>
+      <button class="sbi" id="nav-bajas" onclick="showV('bajas')"><span class="sbi-ic">↓</span> Desistieron <span class="sbi-badge" id="badge-bajas" style="display:none">0</span></button>
+      <button class="sbi" id="nav-bajasesc" onclick="showV('bajasesc')"><span class="sbi-ic">⊠</span> Bajas <span class="sbi-badge" id="badge-bajasesc" style="display:none">0</span></button>
       <div class="sbsec">Gestión</div>
       <button class="sbi" id="nav-vac" onclick="showV('vac')"><span class="sbi-ic">▣</span> Vacantes</button>
       <div class="sbsec">Comunicaciones</div>
@@ -1068,10 +1069,10 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
 
       <!-- BAJAS -->
       <div id="view-bajas" class="view">
-        <div class="ph"><h1>Bajas</h1><p>Estudiantes que desistieron del proceso de admisión</p></div>
+        <div class="ph"><h1>Desistieron</h1><p>Familias que desistieron del proceso de admisión</p></div>
         <div class="cbox" style="margin-bottom:14px">
           <div class="cbox-h" style="flex-wrap:wrap;gap:10px">
-            <div class="cbox-t" id="bajas-cnt">0 bajas</div>
+            <div class="cbox-t" id="bajas-cnt">0 familias</div>
             <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
               <select class="fsel2" id="bajas-anio" onchange="renderBajas()"><option value="">Todos los ciclos</option><option value="2026">2026</option><option value="2027">2027</option><option value="2028">2028</option></select>
               <select class="fsel2" id="bajas-niv" onchange="renderBajas()"><option value="">Todos los niveles</option><option value="Kindergarten">Kindergarten</option><option value="Elementary">Elementary</option><option value="High School">High School</option></select>
@@ -1086,6 +1087,24 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
           <table>
             <thead><tr><th style="width:36px"></th><th>Estudiante</th><th>Curso</th><th>Familia / Tel</th><th>Fecha baja</th><th>Ciclo</th><th></th></tr></thead>
             <tbody id="bajas-tb"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="view-bajasesc" class="view">
+        <div class="ph"><h1>Bajas de alumnos</h1><p>Registro de alumnos actuales que se dieron de baja del colegio</p></div>
+        <div class="cbox" style="margin-bottom:14px">
+          <div class="cbox-h" style="flex-wrap:wrap;gap:10px">
+            <div class="cbox-t" id="bajasesc-cnt">0 bajas</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+              <input class="fsrch" id="bajasesc-q" placeholder="Buscar..." oninput="renderBajasEsc()">
+              <button class="btn btn-pri btn-sm" onclick="abrirModalBajaEsc()">+ Registrar baja</button>
+              <button class="btn btn-csv btn-sm" onclick="exportBajasEscCSV()">Exportar CSV</button>
+            </div>
+          </div>
+          <table>
+            <thead><tr><th>Alumno</th><th>Curso</th><th>Fecha</th><th>Motivo</th><th></th></tr></thead>
+            <tbody id="bajasesc-tb"></tbody>
           </table>
         </div>
       </div>
@@ -1151,7 +1170,8 @@ let DB = {
     no_asistio:{subj:'¡Que lástima! Podemos reprogramar tu entrevista — Austin EBS',body:'Hola {{padre}},\n\nLamentamos que no hayas podido llegar a la entrevista que tenías agendada. ¡Nos hubiera encantado conocerlos!\n\nSi querés reprogramarla, respondé este mail y coordinamos un nuevo horario con gusto. También podés volver a completar el formulario de postulación para elegir una nueva fecha.\n\nEsperamos poder conocerlos pronto.\n\nUn afectuoso saludo,\nAdmisiones – Austin EBS'}
   },
   config:{nombre:'Admisiones Austin EBS',email:'admisiones@austinebs-ah.edu.ar',calendar:'https://calendar.app.google/WrfYGGSiRH3smkxL8',drive:'https://drive.google.com/drive/folders/1c0vFf1MWUcSC8-lqBjBCGDQ-hbXxGQDA',appsScriptUrl:'https://script.google.com/macros/s/AKfycbzK82ibenmWqIdWQAWb4x5Wy6gXRFrg8ASGhW-DvNOwt-Eo7GzY2alnFhLaUYIcy8bBUg/exec',},
-  pendingNotif:[]
+  pendingNotif:[],
+  bajasEscolares:[]
 };
 
 // ═══════════════════════════
@@ -1196,6 +1216,7 @@ async function fsSave(){
     emails: DB.emails,
     config: DB.config,
     pendingNotif: DB.pendingNotif,
+    bajasEscolares: DB.bajasEscolares||[],
     ts: Date.now()
   });
   try{
@@ -1237,8 +1258,16 @@ async function syncFromCloud(){
     if(remote.vacantes) DB.vacantes = {...DB.vacantes,...remote.vacantes};
     if(remote.tarifas) DB.tarifas = {...DB.tarifas,...remote.tarifas};
     if(remote.emails) DB.emails = {...DB.emails,...remote.emails};
-    if(remote.config) DB.config = {...DB.config,...remote.config};
+    if(remote.config){
+      const merged={...DB.config};
+      for(const k of Object.keys(remote.config)){
+        const v=remote.config[k];
+        if(v!==''&&v!==null&&v!==undefined) merged[k]=v;
+      }
+      DB.config=merged;
+    }
     if(remote.pendingNotif) DB.pendingNotif = remote.pendingNotif;
+    if(remote.bajasEscolares) DB.bajasEscolares = remote.bajasEscolares;
     saveLocalOnly();
     renderPanel();
     updateSyncStatus('synced');
@@ -1258,7 +1287,7 @@ function saveLocalOnly(){
     const ts = Date.now();
     localStorage.setItem('austin_ebs_v2', JSON.stringify({
       nextId:DB.nextId, postulantes:DB.postulantes, vacantes:DB.vacantes,
-      tarifas:DB.tarifas, emails:DB.emails, config:DB.config, pendingNotif:DB.pendingNotif
+      tarifas:DB.tarifas, emails:DB.emails, config:DB.config, pendingNotif:DB.pendingNotif, bajasEscolares:DB.bajasEscolares||[]
     }));
     localStorage.setItem('austin_ebs_ts', String(ts));
   } catch(e){}
@@ -1281,7 +1310,7 @@ function loadDB(){
       DB.postulantes = SEED_POSTULANTES;
       DB.nextId = 1635;
       // ts=0 so Firestore always wins on first sync
-      try{ localStorage.setItem('austin_ebs_v2', JSON.stringify({nextId:DB.nextId,postulantes:DB.postulantes,vacantes:DB.vacantes,tarifas:DB.tarifas,emails:DB.emails,config:DB.config,pendingNotif:DB.pendingNotif})); localStorage.setItem('austin_ebs_ts','0'); }catch(e){}
+      try{ localStorage.setItem('austin_ebs_v2', JSON.stringify({nextId:DB.nextId,postulantes:DB.postulantes,vacantes:DB.vacantes,tarifas:DB.tarifas,emails:DB.emails,config:DB.config,pendingNotif:DB.pendingNotif,bajasEscolares:DB.bajasEscolares||[]})); localStorage.setItem('austin_ebs_ts','0'); }catch(e){}
       return;
     }
     const d=JSON.parse(s);
@@ -1292,6 +1321,7 @@ function loadDB(){
     if(d.emails) DB.emails={...DB.emails,...d.emails};
     if(d.config) DB.config={...DB.config,...d.config};
     if(d.pendingNotif) DB.pendingNotif=d.pendingNotif;
+    if(d.bajasEscolares) DB.bajasEscolares=d.bajasEscolares;
   } catch(e){}
 }
 function resetDB(){
@@ -1358,13 +1388,14 @@ function showV(v){
   document.querySelectorAll('.sbi').forEach(el=>el.classList.remove('active'));
   const ve=document.getElementById('view-'+v); if(ve) ve.classList.add('on');
   const nb=document.getElementById('nav-'+v); if(nb) nb.classList.add('active');
-  const titles={dashboard:'Dashboard',pipeline:'Pipeline de admisiones',entrevistas:'Entrevistas',post:'Postulantes',bajas:'Bajas',vac:'Vacantes por curso',emails:'Plantillas de mail',tar:'Tarifas 2026',cfg:'Configuración'};
+  const titles={dashboard:'Dashboard',pipeline:'Pipeline de admisiones',entrevistas:'Entrevistas',post:'Postulantes',bajas:'Desistieron',bajasesc:'Bajas de alumnos',vac:'Vacantes por curso',emails:'Plantillas de mail',tar:'Tarifas 2026',cfg:'Configuración'};
   document.getElementById('tb-t').textContent=titles[v]||v;
   if(v==='dashboard') renderDashboard();
   if(v==='pipeline') renderPipeline();
   if(v==='entrevistas') { renderAdminCal(); renderEntAdminLista('proximas'); }
   if(v==='post') renderTable();
   if(v==='bajas') renderBajas();
+  if(v==='bajasesc') renderBajasEsc();
   if(v==='vac') renderVac();
   if(v==='emails') renderEmails();
   if(v==='tar') renderTar();
@@ -1418,6 +1449,8 @@ function updateSidebarBadges(){
   const bt=document.getElementById('badge-total'); if(bt){ bt.textContent=tot; bt.style.display=tot>0?'inline':'none'; }
   const be=document.getElementById('badge-ent'); if(be){ be.textContent=entPend; be.style.display=entPend>0?'inline':'none'; }
   const bb=document.getElementById('badge-bajas'); if(bb){ bb.textContent=bajasN; bb.style.display=bajasN>0?'inline':'none'; }
+  const besc=(DB.bajasEscolares||[]).length;
+  const bbe=document.getElementById('badge-bajasesc'); if(bbe){ bbe.textContent=besc; bbe.style.display=besc>0?'inline':'none'; }
 }
 
 // ═══════════════════════════
@@ -3173,7 +3206,7 @@ function renderBajas(){
     (!anio||String(p.anio)===anio)&&(!niv||p.nivel===niv)
   ).sort((a,b)=>(b.ultAccion||b.fecha||'').localeCompare(a.ultAccion||a.fecha||''));
   const cnt=document.getElementById('bajas-cnt');
-  if(cnt) cnt.textContent=`${bajas.length} baja${bajas.length!==1?'s':''}`;
+  if(cnt) cnt.textContent=`${bajas.length} familia${bajas.length!==1?'s':''}`;
   const tb=document.getElementById('bajas-tb');
   if(!tb) return;
   if(bajas.length===0){
@@ -3208,6 +3241,83 @@ function exportBajasCSV(){
   const csv=cols.join(',')+'\n'+rows.map(r=>r.map(v=>'"'+String(v||'').replace(/"/g,'""')+'"').join(',')).join('\n');
   const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,'+encodeURIComponent('﻿'+csv);
   a.download='bajas_admisiones_'+today()+'.csv'; a.click();
+}
+
+// ═══════════════════════════
+// BAJAS ESCOLARES
+// ═══════════════════════════
+function renderBajasEsc(){
+  const q=(document.getElementById('bajasesc-q')?.value||'').toLowerCase();
+  const lista=(DB.bajasEscolares||[]).filter(b=>
+    !q||b.alumno.toLowerCase().includes(q)||b.curso.toLowerCase().includes(q)||(b.motivo||'').toLowerCase().includes(q)
+  ).sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
+  const cnt=document.getElementById('bajasesc-cnt');
+  if(cnt) cnt.textContent=`${(DB.bajasEscolares||[]).length} baja${(DB.bajasEscolares||[]).length!==1?'s':''}`;
+  const tb=document.getElementById('bajasesc-tb');
+  if(!tb) return;
+  if(lista.length===0){
+    tb.innerHTML=`<tr><td colspan="5"><div class="empty"><div class="empty-ic">✓</div><p>Sin bajas registradas</p></div></td></tr>`;
+    return;
+  }
+  tb.innerHTML=lista.map(b=>`<tr>
+    <td><strong>${b.alumno}</strong></td>
+    <td><small style="color:var(--tx3)">${b.nivel||''} ·</small> ${b.curso}</td>
+    <td>${fDateFull(b.fecha)}</td>
+    <td style="max-width:280px;white-space:pre-wrap;font-size:13px">${b.motivo||'—'}</td>
+    <td><button class="btn btn-sm btn-out" onclick="eliminarBajaEsc(${b.id})" style="color:var(--err)">Eliminar</button></td>
+  </tr>`).join('');
+}
+
+function abrirModalBajaEsc(){
+  const cursoOpts=CURSOS.map(c=>`<option value="${c}">${c}</option>`).join('');
+  document.getElementById('mt').textContent='Registrar baja de alumno';
+  document.getElementById('mb').innerHTML=`
+    <div style="display:grid;gap:12px;padding:4px 0">
+      <div class="fg"><label class="flabel">Nombre del alumno</label><input class="fi" id="be-alumno" placeholder="Nombre completo"></div>
+      <div class="fg"><label class="flabel">Curso</label><select class="fsel" id="be-curso"><option value="">Seleccionar curso</option>${cursoOpts}</select></div>
+      <div class="fg"><label class="flabel">Fecha de baja</label><input class="fi" id="be-fecha" type="date" value="${today()}"></div>
+      <div class="fg"><label class="flabel">Motivo de la baja</label><textarea class="fi" id="be-motivo" rows="4" placeholder="Describir el motivo..." style="resize:vertical"></textarea></div>
+    </div>`;
+  document.getElementById('mf').innerHTML=`
+    <button class="btn btn-out" onclick="closeM()">Cancelar</button>
+    <button class="btn btn-pri" onclick="guardarBajaEsc()">Guardar baja</button>`;
+  openM();
+}
+
+function guardarBajaEsc(){
+  const alumno=(document.getElementById('be-alumno')?.value||'').trim();
+  const curso=document.getElementById('be-curso')?.value||'';
+  const fecha=document.getElementById('be-fecha')?.value||today();
+  const motivo=(document.getElementById('be-motivo')?.value||'').trim();
+  if(!alumno){ toast('Ingresá el nombre del alumno','err'); return; }
+  if(!curso){ toast('Seleccioná el curso','err'); return; }
+  const nivel=NIVEL(curso);
+  const id=Date.now();
+  DB.bajasEscolares=DB.bajasEscolares||[];
+  DB.bajasEscolares.push({id,alumno,curso,nivel,fecha,motivo});
+  saveDB();
+  closeM();
+  updateSidebarBadges();
+  renderBajasEsc();
+  toast('Baja registrada','ok');
+}
+
+function eliminarBajaEsc(id){
+  if(!confirm('¿Eliminar este registro de baja?')) return;
+  DB.bajasEscolares=(DB.bajasEscolares||[]).filter(b=>b.id!==id);
+  saveDB();
+  updateSidebarBadges();
+  renderBajasEsc();
+  toast('Registro eliminado','ok');
+}
+
+function exportBajasEscCSV(){
+  const lista=DB.bajasEscolares||[];
+  const cols=['Alumno','Curso','Nivel','Fecha','Motivo'];
+  const rows=lista.map(b=>[b.alumno,b.curso,b.nivel||'',b.fecha,b.motivo||'']);
+  const csv=cols.join(',')+'\n'+rows.map(r=>r.map(v=>'"'+String(v||'').replace(/"/g,'""')+'"').join(',')).join('\n');
+  const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,'+encodeURIComponent('﻿'+csv);
+  a.download='bajas_alumnos_'+today()+'.csv'; a.click();
 }
 
 function marcarNoAsistio(id){
