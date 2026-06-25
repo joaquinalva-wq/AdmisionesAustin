@@ -914,6 +914,21 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
       <!-- PIPELINE -->
       <div id="view-pipeline" class="view">
         <div class="ph"><h1>Pipeline de admisiones</h1><p>Hacé clic en cualquier postulante para gestionar · <span style="color:#DC2626;font-weight:500">⚠ borde rojo = inactivo +7 días</span></p></div>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+          <select class="fsel2" id="pipeline-anio" onchange="renderPipeline()">
+            <option value="">Todos los ciclos</option>
+            <option value="2026">2026</option>
+            <option value="2027">2027</option>
+            <option value="2028">2028</option>
+          </select>
+          <select class="fsel2" id="pipeline-niv" onchange="renderPipeline()">
+            <option value="">Todos los niveles</option>
+            <option value="Kindergarten">Kindergarten</option>
+            <option value="Elementary">Elementary</option>
+            <option value="High School">High School</option>
+          </select>
+          <span id="pipeline-count" style="font-size:12px;color:var(--tx3)"></span>
+        </div>
         <div class="pcols" id="pcols"></div>
       </div>
 
@@ -1085,7 +1100,7 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
             <button class="btn btn-csv btn-sm" onclick="exportBajasCSV()">⬇ Exportar CSV</button>
           </div>
           <table>
-            <thead><tr><th style="width:36px"></th><th>Estudiante</th><th>Curso</th><th>Familia / Tel</th><th>Fecha baja</th><th>Ciclo</th><th></th></tr></thead>
+            <thead><tr><th style="width:36px"></th><th>Estudiante</th><th>Curso</th><th>Familia / Tel</th><th>Fecha baja</th><th>Últ. contacto</th><th>Ciclo</th><th></th></tr></thead>
             <tbody id="bajas-tb"></tbody>
           </table>
         </div>
@@ -1141,6 +1156,17 @@ const EPCLS = {nueva:'ph-n',contactado:'ph-co',citado:'ph-ci',entrevistado:'ph-e
 const ECOL = {nueva:'var(--cn)',contactado:'#1A7A8E',citado:'var(--cc)',entrevistado:'var(--ce)',postulado:'var(--cp)',eoe_ingles:'#7B52AB',pendiente_dg:'#B45309',rechazado_eoe:'#DC2626',matriculado:'var(--cm)','lista de espera':'var(--cs)',desiste:'var(--cd)',no_queremos:'var(--cd)'};
 const CURSOS = ['K2 (Puppies)','K3 (Koalas/Dolphins)','K4 (Foxes/Monkeys)','K5 (Bears/Hippos)','1er año Elementary','2do año Elementary','3er año Elementary','4to año Elementary','5to año Elementary','6to año Elementary','1er año High School','2do año High School','3er año High School','4to año High School','5to año High School','6to año High School'];
 const NIVEL = c => !c ? '' : c.startsWith('K') ? 'Kindergarten' : c.includes('Elementary') ? 'Elementary' : 'High School';
+
+const DEFAULT_PW_HASH = '91cbed8dc52bfd459bfdb4acea9f131df6e919fedff279fe86ec788830c0cc82';
+async function hashPw(pw){
+  const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(pw));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+function ajustarVacante(curso,prevEst,newEst){
+  const v=DB.vacantes[curso]; if(!v||prevEst===newEst) return;
+  if(newEst==='matriculado'&&prevEst!=='matriculado') v.u=Math.min(v.t,(v.u||0)+1);
+  else if(prevEst==='matriculado'&&newEst!=='matriculado') v.u=Math.max(0,(v.u||0)-1);
+}
 const DIAS_INACTIVO = 7;
 
 // ═══════════════════════════
@@ -1363,14 +1389,23 @@ function navScroll(id){ const el=document.querySelector(id); if(el) el.scrollInt
 // ═══════════════════════════
 // AUTH
 // ═══════════════════════════
-function doLogin(){
+async function doLogin(){
   const em=document.getElementById('lem').value.trim();
   const pw=document.getElementById('lpw').value;
-  const correctPw=DB.config.password||'austin2026';
-  if(em==='admisiones@austinebs-ah.edu.ar'&&pw===correctPw){
+  const stored=DB.config.password||DEFAULT_PW_HASH;
+  const isHash=/^[a-f0-9]{64}$/.test(stored);
+  let ok=false;
+  if(isHash){
+    ok=em==='admisiones@austinebs-ah.edu.ar'&&(await hashPw(pw))===stored;
+  } else {
+    // plain-text legacy: compare then auto-upgrade
+    ok=em==='admisiones@austinebs-ah.edu.ar'&&pw===stored;
+    if(ok){ hashPw(pw).then(h=>{DB.config.password=h;saveDB();}); }
+  }
+  if(ok){
     go('s-panel'); renderPanel();
-    syncFromCloud();      // pull/push Firestore in background
-    startEOEPolling();    // start watching for EOE results
+    syncFromCloud();
+    startEOEPolling();
   } else {
     document.getElementById('lerr').style.display='block';
   }
@@ -1534,8 +1569,17 @@ function dismissN(id){ DB.pendingNotif=DB.pendingNotif.filter(x=>x!==id); render
 // PIPELINE
 // ═══════════════════════════
 function renderPipeline(){
+  const anioF=document.getElementById('pipeline-anio')?.value||'';
+  const nivF=document.getElementById('pipeline-niv')?.value||'';
+  const ACTIVE=['contactado','citado','entrevistado','postulado','eoe_ingles','pendiente_dg'];
+  let total=0;
   document.getElementById('pcols').innerHTML=ESTADOS.map(e=>{
-    const ps=DB.postulantes.filter(p=>p.estado===e);
+    const ps=DB.postulantes.filter(p=>
+      p.estado===e&&
+      (!anioF||String(p.anio)===anioF)&&
+      (!nivF||p.nivel===nivF)
+    );
+    if(ACTIVE.includes(e)) total+=ps.length;
     return `<div class="pcol">
       <div class="pch ${EPCLS[e]}"><span class="pch-n" style="color:${ECOL[e]}">${EL[e]}</span><span class="pch-c" style="color:${ECOL[e]}">${ps.length}</span></div>
       <div class="pcb">
@@ -1548,6 +1592,8 @@ function renderPipeline(){
       </div>
     </div>`;
   }).join('');
+  const cnt=document.getElementById('pipeline-count');
+  if(cnt) cnt.textContent=(anioF||nivF)?`${total} activos con filtro`:'';
 }
 
 // ═══════════════════════════
@@ -1774,6 +1820,7 @@ function changeE(id){
   const newEst=sel.value;
   if(p.estado===newEst){ toast('El estado ya es '+EL[newEst],''); return; }
   const soloCat=document.getElementById('solo-cat-'+id)?.checked||false;
+  const prevEst=p.estado;
 
   if(newEst==='postulado'||newEst==='lista de espera'){
     const v=DB.vacantes[p.curso];
@@ -1787,6 +1834,7 @@ function changeE(id){
   p.ultAccion=today();
   p.hist=p.hist||[];
   p.hist.push({e:newEst,f:today(),mailOk:false});
+  ajustarVacante(p.curso,prevEst,newEst);
 
   // Estado pendiente_dg → marcar deadline 48hs
   if(newEst==='pendiente_dg'){
@@ -2158,7 +2206,7 @@ function renderCfg(){
   document.getElementById('cfg-apps').value=DB.config.appsScriptUrl||'';
   const eoeEl=document.getElementById('cfg-eoe'); if(eoeEl) eoeEl.value=DB.config.eoeApiUrl||'';
   const dgEl=document.getElementById('cfg-dg'); if(dgEl) dgEl.value=DB.config.emailDG||'';
-  const pwEl=document.getElementById('cfg-pw'); if(pwEl) pwEl.value=DB.config.password||'';
+  const pwEl=document.getElementById('cfg-pw'); if(pwEl) pwEl.value='';
   setTimeout(updateEjsBadge,50);
 }
 function saveCfg(){
@@ -2168,7 +2216,11 @@ function saveCfg(){
   DB.config.appsScriptUrl=(document.getElementById('cfg-apps').value||'').trim();
   const eoeInp=document.getElementById('cfg-eoe'); if(eoeInp) DB.config.eoeApiUrl=eoeInp.value.trim();
   const dgInp=document.getElementById('cfg-dg'); if(dgInp) DB.config.emailDG=dgInp.value.trim();
-  const pwInp=document.getElementById('cfg-pw'); if(pwInp&&pwInp.value.trim()) DB.config.password=pwInp.value.trim();
+  const pwInp=document.getElementById('cfg-pw');
+  if(pwInp&&pwInp.value.trim()){
+    hashPw(pwInp.value.trim()).then(h=>{DB.config.password=h;saveDB();});
+    pwInp.value='';
+  }
   updateEjsBadge(); saveDB(); toast('Configuración guardada','ok');
 }
 function updateEjsBadge(){
@@ -3096,10 +3148,12 @@ function rechazarEOE(id){
 // ═══════════════════════════
 function confirmarDG(id){
   const p=DB.postulantes.find(x=>x.id===id); if(!p) return;
+  const prevEst=p.estado;
   p.estado='matriculado';
   p.ultAccion=today();
   p.hist=p.hist||[];
   p.hist.push({e:'matriculado',f:today(),mailOk:false});
+  ajustarVacante(p.curso,prevEst,'matriculado');
   saveDB();
   sincronizarConEOE(p);
   enviarMailAdministracion(p);
@@ -3121,10 +3175,12 @@ function checkPendienteDG(){
   let changed=false;
   DB.postulantes.forEach(p=>{
     if(p.estado==='pendiente_dg'&&p.dgDeadline&&p.dgDeadline<=hoy){
+      const prevEst=p.estado;
       p.estado='matriculado';
       p.ultAccion=today();
       p.hist=p.hist||[];
       p.hist.push({e:'matriculado',f:today(),mailOk:false,auto:true});
+      ajustarVacante(p.curso,prevEst,'matriculado');
       sincronizarConEOE(p);
       enviarMailAdministracion(p);
       enviarMailAdmin(p,'matriculado',(ok)=>{ if(ok){ p.hist[p.hist.length-1].mailOk=true; saveDB(); } });
@@ -3210,7 +3266,7 @@ function renderBajas(){
   const tb=document.getElementById('bajas-tb');
   if(!tb) return;
   if(bajas.length===0){
-    tb.innerHTML=`<tr><td colspan="7"><div class="empty"><div class="empty-ic">✓</div><p>Sin bajas registradas</p></div></td></tr>`;
+    tb.innerHTML=`<tr><td colspan="8"><div class="empty"><div class="empty-ic">✓</div><p>Sin desistimientos registrados</p></div></td></tr>`;
     return;
   }
   tb.innerHTML=bajas.map(p=>`<tr>
@@ -3219,6 +3275,7 @@ function renderBajas(){
     <td><small style="color:var(--tx3)">${p.nivel} ·</small> ${p.curso}</td>
     <td>${p.padre}${p.tel?`<br><small style="color:var(--tx3)">${p.tel}</small>`:''}</td>
     <td>${fDateFull(p.ultAccion||p.fecha)}</td>
+    <td>${p.lastContact?fDateFull(p.lastContact):`<span style="color:var(--tx3);font-size:11px">Sin contacto</span>`}</td>
     <td><span class="pill">${p.anio}</span></td>
     <td><button class="btn btn-sm btn-out" onclick="openDetalle(${p.id})">Ver perfil</button></td>
   </tr>`).join('');
@@ -3231,7 +3288,10 @@ function mailMasivoBajas(){
   let n=0;
   sel.forEach(id=>{
     const p=DB.postulantes.find(x=>x.id===id); if(!p) return;
-    enviarMailAdmin(p,'desiste_recontacto',(ok,mode)=>{ n++; if(n===sel.length) toast(`✉ Mail de recontacto procesado para ${sel.length} familia${sel.length!==1?'s':''}`,ok?'ok':'info'); });
+    enviarMailAdmin(p,'desiste_recontacto',(ok,mode)=>{
+      if(ok){ p.lastContact=today(); saveDB(); }
+      n++; if(n===sel.length) toast(`✉ Mail de recontacto procesado para ${sel.length} familia${sel.length!==1?'s':''}`,ok?'ok':'info');
+    });
   });
 }
 function exportBajasCSV(){
