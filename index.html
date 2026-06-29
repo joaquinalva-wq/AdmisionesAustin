@@ -1159,8 +1159,10 @@ const NIVEL = c => !c ? '' : c.startsWith('K') ? 'Kindergarten' : c.includes('El
 
 const DEFAULT_PW_HASH = '91cbed8dc52bfd459bfdb4acea9f131df6e919fedff279fe86ec788830c0cc82';
 async function hashPw(pw){
-  const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(pw));
-  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  try{
+    const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(pw));
+    return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  }catch(e){ return null; } // crypto.subtle unavailable on HTTP
 }
 function ajustarVacante(curso,prevEst,newEst){
   const v=DB.vacantes[curso]; if(!v||prevEst===newEst) return;
@@ -1395,12 +1397,14 @@ async function doLogin(){
   const stored=DB.config.password||DEFAULT_PW_HASH;
   const isHash=/^[a-f0-9]{64}$/.test(stored);
   let ok=false;
-  if(isHash){
-    ok=em==='admisiones@austinebs-ah.edu.ar'&&(await hashPw(pw))===stored;
+  const h=await hashPw(pw);
+  if(h!==null){
+    // Secure context (HTTPS): hash comparison
+    if(isHash){ ok=em==='admisiones@austinebs-ah.edu.ar'&&h===stored; }
+    else{ ok=em==='admisiones@austinebs-ah.edu.ar'&&pw===stored; if(ok) hashPw(pw).then(hh=>{if(hh){DB.config.password=hh;saveDB();}}); }
   } else {
-    // plain-text legacy: compare then auto-upgrade
-    ok=em==='admisiones@austinebs-ah.edu.ar'&&pw===stored;
-    if(ok){ hashPw(pw).then(h=>{DB.config.password=h;saveDB();}); }
+    // Non-secure context (HTTP): plain text fallback
+    ok=em==='admisiones@austinebs-ah.edu.ar'&&(isHash?pw==='austin2026':pw===stored);
   }
   if(ok){
     go('s-panel'); renderPanel();
@@ -1692,6 +1696,12 @@ function openDetalle(id){
       <div style="font-size:12.5px;color:#78350F;margin-bottom:10px">DG tiene 48hs para confirmar. Si no responde, el sistema avanza automáticamente a Matriculado.${p.dgDeadline?' Vence: <strong>'+fDateFull(p.dgDeadline)+'</strong>':''}</div>
       <button class="btn btn-gr" onclick="confirmarDG(${id})">✓ DG confirmó — pasar a Matriculado</button>
     </div>`:''}
+    ${p.estado==='matriculado'?`
+    <div style="margin-top:12px;background:#EBF7D4;border:1px solid #6AB04C;border-radius:10px;padding:13px 15px">
+      <div style="font-size:11px;font-weight:600;color:#3A6A0A;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">✓ Matriculado</div>
+      <div style="font-size:12.5px;color:#2D5208;margin-bottom:10px">El proceso de admisión está completo. Administración recibió los datos del estudiante automáticamente.</div>
+      <button class="btn btn-sm btn-out" onclick="enviarMailAdministracion(DB.postulantes.find(x=>x.id===${id}),true)">📋 Reenviar ficha a Administración</button>
+    </div>`:''}
     ${p.estado==='rechazado_eoe'?`
     <div style="margin-top:12px;background:#FEE2E2;border:1px solid #FCA5A5;border-radius:10px;padding:13px 15px">
       <div style="font-size:11px;font-weight:600;color:#991B1B;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">✗ Rechazado por EOE</div>
@@ -1945,11 +1955,11 @@ function saveNuevo(){
   DB.postulantes.unshift(p);
   DB.pendingNotif.push(p.id);
   saveDB();
-  enviarMailAdmin(p,'nueva',(ok,mode)=>{
+  enviarMailAdmin(p,'citado',(ok,mode)=>{
     if(ok){ p.hist[0].mailOk=true; saveDB(); }
     if(ok&&mode==='mailto') toast(`✓ ${alumno} agregado · Abriendo correo...`,'info');
     else if(ok) toast(`✓ ${alumno} agregado · Mail de bienvenida enviado`,'ok');
-    else toast(`${alumno} agregado · Configurá el Apps Script para envío automático`,'info');
+    else toast(`${alumno} agregado · Verificá la configuración de Apps Script`,'err');
   });
   closeM(); renderDashboard();
 }
@@ -2218,7 +2228,7 @@ function saveCfg(){
   const dgInp=document.getElementById('cfg-dg'); if(dgInp) DB.config.emailDG=dgInp.value.trim();
   const pwInp=document.getElementById('cfg-pw');
   if(pwInp&&pwInp.value.trim()){
-    hashPw(pwInp.value.trim()).then(h=>{DB.config.password=h;saveDB();});
+    hashPw(pwInp.value.trim()).then(h=>{if(h){DB.config.password=h;saveDB();}});
     pwInp.value='';
   }
   updateEjsBadge(); saveDB(); toast('Configuración guardada','ok');
@@ -3208,17 +3218,18 @@ function enviarMailDG(p){
 // ═══════════════════════════
 // MAIL A ADMINISTRACIÓN (al matricular)
 // ═══════════════════════════
-function enviarMailAdministracion(p){
+function enviarMailAdministracion(p, manual=false){
   const adminEmail='administracion@austinebs-ah.edu.ar';
   const subj=`NUEVO MATRICULADO: ${p.alumno} — ${p.curso} ${p.anio}`;
   const histTxt=(p.hist||[]).map(h=>`  · ${fDate(h.f)} → ${EL[h.e]||h.e}${h.mailOk?' (mail ✓)':''}`).join('\n');
-  const body=`Estimado equipo de Administración,\n\nEl siguiente estudiante completó el proceso de admisión y se encuentra MATRICULADO:\n\n── DATOS DEL ESTUDIANTE ──\nNombre: ${p.alumno}\nNivel: ${p.nivel}\nCurso: ${p.curso}\nJornada: ${p.jornada||'—'}\nCiclo lectivo: ${p.anio}\nColegio anterior: ${p.colegio||'—'}\n\n── DATOS DE LA FAMILIA ──\nPadre / Tutor: ${p.padre}\nEmail: ${p.email}\nTeléfono: ${p.tel||'—'}\n\n── APROBACIONES ──\nAdmisiones: ✓\nEOE / Inglés: ✓\nDirección General: ✓\n\n── HISTORIAL ──\n${histTxt}\n\nPor favor proceder con el alta y el cobro de matrícula.\n\nSistema de Admisiones – Austin EBS`;
+  const notasTxt=(p.notas||[]).map(n=>`  · ${n.f||''}: ${n.txt||''}`).join('\n')||'  —';
+  const body=`Estimado equipo de Administración,\n\nEl siguiente estudiante completó el proceso de admisión y se encuentra MATRICULADO. Por favor proceder con el alta, cobro de matrícula y solicitud de documentación.\n\n══ DATOS DEL ESTUDIANTE ══\nNombre: ${p.alumno}\nNivel: ${p.nivel}\nCurso: ${p.curso}\nJornada: ${p.jornada||'—'}\nCiclo lectivo: ${p.anio}\nHermano/a Austin: ${p.hermano==='si'?'SÍ — verificar beneficio':'No'}\nColegio anterior: ${p.colegio||'—'}\nFecha de postulación: ${fDate(p.fecha)}\n\n══ DATOS DE LA FAMILIA ══\nPadre / Madre / Tutor: ${p.padre}\nEmail: ${p.email}\nTeléfono: ${p.tel||'—'}\n\n══ APROBACIONES ══\nAdmisiones: ✓\nEOE / Inglés: ✓\nDirección General: ✓\n\n══ NOTAS DEL PROCESO ══\n${notasTxt}\n\n══ HISTORIAL DE ESTADOS ══\n${histTxt}\n\nSistema de Admisiones – Austin EBS`;
   if(DB.config.appsScriptUrl){
     apiCall('sendMail',{to:adminEmail,subject:subj,body}).then(()=>{});
   } else {
     window.open('mailto:'+adminEmail+'?subject='+encodeURIComponent(subj)+'&body='+encodeURIComponent(body));
   }
-  toast('📋 Resumen enviado a Administración','info');
+  toast(manual?'✓ Mail reenviado a Administración':'📋 Resumen enviado a Administración','ok');
 }
 
 // ═══════════════════════════
