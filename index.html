@@ -1921,6 +1921,8 @@ function changeE(id){
   closeM(); renderDashboard();
   const pv=document.getElementById('view-pipeline'); if(pv&&pv.classList.contains('on')) renderPipeline();
   const tv=document.getElementById('view-post'); if(tv&&tv.classList.contains('on')) filterT();
+  const vv=document.getElementById('view-vac'); if(vv&&vv.classList.contains('on')) renderVac();
+  renderOcupacionCards();
   dismissN(id);
 }
 
@@ -2047,10 +2049,12 @@ function abrirMailto_(email,subj,body){
 function renderVac(){
   document.getElementById('vacgrid').innerHTML=CURSOS.map(c=>{
     const v=DB.vacantes[c]||{t:20,u:0};
-    const pct=Math.min(100,Math.round(v.u/v.t*100));
+    // Derivar matriculados del dato real para mantener sincronía con Ocupación
+    const matCount=DB.postulantes.filter(p=>p.estado==='matriculado'&&p.curso===c).length;
+    const pct=Math.min(100,Math.round(matCount/v.t*100));
     const fc=pct>=100?'full':pct>=80?'warn':'';
     const key=c.replace(/[\s()\/]/g,'_');
-    const libres=Math.max(0,v.t-v.u);
+    const libres=Math.max(0,v.t-matCount);
     return `<div class="vacc">
       <div class="vacc-t">${c}${pct>=100?`<span class="vacfull-badge">LLENO</span>`:''}</div>
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
@@ -2058,7 +2062,7 @@ function renderVac(){
         <input class="vaci" type="number" id="vt-${key}" value="${v.t}" min="0" max="60">
       </div>
       <div class="vacbar"><div class="vacfill ${fc}" style="width:${pct}%"></div></div>
-      <div class="vacnums"><span>${v.u} inscriptos</span><span>${libres} libre${libres!==1?'s':''}</span></div>
+      <div class="vacnums"><span>${matCount} matriculado${matCount!==1?'s':''}</span><span>${libres} libre${libres!==1?'s':''}</span></div>
     </div>`;
   }).join('');
 }
@@ -2581,6 +2585,8 @@ function submitPost(){
   // Show success
   document.querySelectorAll('.fstep').forEach(s=>s.classList.remove('on'));
   document.getElementById('fst-ok').classList.add('on');
+  // Mark all progress bar segments as done
+  ['fb0','fb1','fb2','fb3','fb4'].forEach(id=>{const el=document.getElementById(id);if(el){el.classList.remove('active');el.classList.add('done');}});
   const entDiv=document.getElementById('fsuccess-ent');
   const entTxt=document.getElementById('fsuccess-ent-txt');
   const pMain=document.getElementById('fsuccess-p-main');
@@ -2671,20 +2677,20 @@ async function cargarTurnosYRenderizar(){
     const local = JSON.parse(localStorage.getItem('austin_turnos')||'[]');
     calTurnosReservados = local;
   } catch(e){ calTurnosReservados = []; }
-  // Intentar sincronizar con Apps Script
+  // Intentar sincronizar con Apps Script (timeout 6s para no bloquear el spinner)
   if(DB.config.appsScriptUrl){
     try{
-      const res = await apiCall('getTurnos',{});
+      const withTimeout = (p, ms) => Promise.race([p, new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),ms))]);
+      const res = await withTimeout(apiCall('getTurnos',{}), 6000);
       if(res && res.ok && res.turnos){
         calTurnosReservados = res.turnos.filter(function(t){
           return t.Estado==='reservado'||t.Estado==='recordatorio_enviado';
         });
-        // Actualizar cache local
         localStorage.setItem('austin_turnos', JSON.stringify(calTurnosReservados));
       }
-      const rb = await apiCall('getBloqueos',{});
+      const rb = await withTimeout(apiCall('getBloqueos',{}), 6000);
       if(rb && rb.ok) calBloqueos = rb.bloqueos||[];
-    } catch(e){ /* usar cache local */ }
+    } catch(e){ /* usar cache local si timeout o error */ }
   }
   if(loading) loading.style.display='none';
   renderCalFormulario();
@@ -3411,6 +3417,7 @@ function guardarBajaEsc(){
   closeM();
   updateSidebarBadges();
   renderBajasEsc();
+  renderOcupacionCards();
   toast('Baja registrada','ok');
 }
 
@@ -3420,6 +3427,7 @@ function eliminarBajaEsc(id){
   saveDB();
   updateSidebarBadges();
   renderBajasEsc();
+  renderOcupacionCards();
   toast('Registro eliminado','ok');
 }
 
