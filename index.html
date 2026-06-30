@@ -857,6 +857,7 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
       <button class="sbi" id="nav-bajas" onclick="showV('bajas')"><span class="sbi-ic">↓</span> Desistieron <span class="sbi-badge" id="badge-bajas" style="display:none">0</span></button>
       <button class="sbi" id="nav-bajasesc" onclick="showV('bajasesc')"><span class="sbi-ic">⊠</span> Bajas <span class="sbi-badge" id="badge-bajasesc" style="display:none">0</span></button>
       <div class="sbsec">Gestión</div>
+      <button class="sbi" id="nav-ocupacion" onclick="showV('ocupacion')"><span class="sbi-ic">📊</span> Ocupación</button>
       <button class="sbi" id="nav-vac" onclick="showV('vac')"><span class="sbi-ic">▣</span> Vacantes</button>
       <div class="sbsec">Comunicaciones</div>
       <button class="sbi" id="nav-emails" onclick="showV('emails')"><span class="sbi-ic">✉</span> Plantillas de mail</button>
@@ -1124,6 +1125,22 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
         </div>
       </div>
 
+      <!-- OCUPACIÓN -->
+      <div id="view-ocupacion" class="view">
+        <div class="ph"><h1>Ocupación del colegio</h1><p>Matrícula actual, vacantes disponibles y movimientos por sección — Ciclo 2026</p></div>
+        <div class="stats" id="oc-cards"></div>
+        <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
+          <button class="btn btn-sm" id="oc-tab-resumen" onclick="ocTab('resumen')" style="background:var(--gr);color:#fff;border:none">Resumen</button>
+          <button class="btn btn-sm btn-out" id="oc-tab-inicial" onclick="ocTab('inicial')">Inicial</button>
+          <button class="btn btn-sm btn-out" id="oc-tab-elementary" onclick="ocTab('elementary')">Elementary</button>
+          <button class="btn btn-sm btn-out" id="oc-tab-highschool" onclick="ocTab('highschool')">High School</button>
+          <button class="btn btn-sm btn-out" id="oc-tab-movimientos" onclick="ocTab('movimientos')">Movimientos 2026</button>
+          <div style="flex:1"></div>
+          <button class="btn btn-csv btn-sm" onclick="exportOcupacionCSV()">Exportar CSV</button>
+        </div>
+        <div id="oc-body"></div>
+      </div>
+
     </div>
   </main>
 </div>
@@ -1156,6 +1173,12 @@ const EPCLS = {nueva:'ph-n',contactado:'ph-co',citado:'ph-ci',entrevistado:'ph-e
 const ECOL = {nueva:'var(--cn)',contactado:'#1A7A8E',citado:'var(--cc)',entrevistado:'var(--ce)',postulado:'var(--cp)',eoe_ingles:'#7B52AB',pendiente_dg:'#B45309',rechazado_eoe:'#DC2626',matriculado:'var(--cm)','lista de espera':'var(--cs)',desiste:'var(--cd)',no_queremos:'var(--cd)'};
 const CURSOS = ['K2 (Puppies)','K3 (Koalas/Dolphins)','K4 (Foxes/Monkeys)','K5 (Bears/Hippos)','1er año Elementary','2do año Elementary','3er año Elementary','4to año Elementary','5to año Elementary','6to año Elementary','1er año High School','2do año High School','3er año High School','4to año High School','5to año High School','6to año High School'];
 const NIVEL = c => !c ? '' : c.startsWith('K') ? 'Kindergarten' : c.includes('Elementary') ? 'Elementary' : 'High School';
+
+// Secciones reales del colegio (para ocupación)
+const SCHOOL_CURSOS = ['S2 · Puppies','S3 · Dolphins','S3 · Koalas','S4 · Foxes','S4 · Monkeys','S5 · Bears','S5 · Hippos','1° A Prim','1° B Prim','2° A Prim','2° B Prim','3° A Prim','3° B Prim','4° A Prim','4° B Prim','5° A Prim','5° B Prim','6° A Prim','6° B Prim','1° A Sec','1° B Sec','2° A Sec','2° B Sec','3° A Sec','3° B Sec','4° A Sec','4° B Sec','5° A Sec','5° B Sec','6° A Sec','6° B Sec'];
+const SCHOOL_NIVEL = sc => sc.includes(' Sec') ? 'High School' : sc.includes(' Prim') ? 'Elementary' : 'Inicial';
+const PIPELINE_TO_SECTIONS = {'K2 (Puppies)':['S2 · Puppies'],'K3 (Koalas/Dolphins)':['S3 · Dolphins','S3 · Koalas'],'K4 (Foxes/Monkeys)':['S4 · Foxes','S4 · Monkeys'],'K5 (Bears/Hippos)':['S5 · Bears','S5 · Hippos'],'1er año Elementary':['1° A Prim','1° B Prim'],'2do año Elementary':['2° A Prim','2° B Prim'],'3er año Elementary':['3° A Prim','3° B Prim'],'4to año Elementary':['4° A Prim','4° B Prim'],'5to año Elementary':['5° A Prim','5° B Prim'],'6to año Elementary':['6° A Prim','6° B Prim'],'1er año High School':['1° A Sec','1° B Sec'],'2do año High School':['2° A Sec','2° B Sec'],'3er año High School':['3° A Sec','3° B Sec'],'4to año High School':['4° A Sec','4° B Sec'],'5to año High School':['5° A Sec','5° B Sec'],'6to año High School':['6° A Sec','6° B Sec']};
+const OC_DEFAULT = {'S2 · Puppies':{base:25,cap:24},'S3 · Dolphins':{base:18,cap:27},'S3 · Koalas':{base:17,cap:27},'S4 · Foxes':{base:19,cap:27},'S4 · Monkeys':{base:16,cap:27},'S5 · Bears':{base:21,cap:27},'S5 · Hippos':{base:22,cap:27},'1° A Prim':{base:26,cap:27},'1° B Prim':{base:26,cap:27},'2° A Prim':{base:27,cap:27},'2° B Prim':{base:27,cap:27},'3° A Prim':{base:27,cap:27},'3° B Prim':{base:27,cap:27},'4° A Prim':{base:26,cap:27},'4° B Prim':{base:28,cap:27},'5° A Prim':{base:22,cap:27},'5° B Prim':{base:19,cap:27},'6° A Prim':{base:22,cap:27},'6° B Prim':{base:25,cap:27},'1° A Sec':{base:27,cap:27},'1° B Sec':{base:27,cap:27},'2° A Sec':{base:17,cap:27},'2° B Sec':{base:15,cap:27},'3° A Sec':{base:22,cap:27},'3° B Sec':{base:26,cap:27},'4° A Sec':{base:25,cap:27},'4° B Sec':{base:26,cap:27},'5° A Sec':{base:18,cap:27},'5° B Sec':{base:22,cap:27},'6° A Sec':{base:20,cap:27},'6° B Sec':{base:20,cap:27}};
 
 const DEFAULT_PW_HASH = '91cbed8dc52bfd459bfdb4acea9f131df6e919fedff279fe86ec788830c0cc82';
 async function hashPw(pw){
@@ -1199,7 +1222,8 @@ let DB = {
   },
   config:{nombre:'Admisiones Austin EBS',email:'admisiones@austinebs-ah.edu.ar',calendar:'https://calendar.app.google/WrfYGGSiRH3smkxL8',drive:'https://drive.google.com/drive/folders/1c0vFf1MWUcSC8-lqBjBCGDQ-hbXxGQDA',appsScriptUrl:'https://script.google.com/macros/s/AKfycbzK82ibenmWqIdWQAWb4x5Wy6gXRFrg8ASGhW-DvNOwt-Eo7GzY2alnFhLaUYIcy8bBUg/exec',},
   pendingNotif:[],
-  bajasEscolares:[]
+  bajasEscolares:[],
+  ocupacion:{}
 };
 
 // ═══════════════════════════
@@ -1245,6 +1269,7 @@ async function fsSave(){
     config: DB.config,
     pendingNotif: DB.pendingNotif,
     bajasEscolares: DB.bajasEscolares||[],
+    ocupacion: DB.ocupacion||{},
     ts: Date.now()
   });
   try{
@@ -1296,6 +1321,8 @@ async function syncFromCloud(){
     }
     if(remote.pendingNotif) DB.pendingNotif = remote.pendingNotif;
     if(remote.bajasEscolares) DB.bajasEscolares = remote.bajasEscolares;
+    if(remote.ocupacion) DB.ocupacion = {...OC_DEFAULT,...remote.ocupacion};
+    else if(!DB.ocupacion||!Object.keys(DB.ocupacion).length) DB.ocupacion={...OC_DEFAULT};
     saveLocalOnly();
     renderPanel();
     updateSyncStatus('synced');
@@ -1315,7 +1342,7 @@ function saveLocalOnly(){
     const ts = Date.now();
     localStorage.setItem('austin_ebs_v2', JSON.stringify({
       nextId:DB.nextId, postulantes:DB.postulantes, vacantes:DB.vacantes,
-      tarifas:DB.tarifas, emails:DB.emails, config:DB.config, pendingNotif:DB.pendingNotif, bajasEscolares:DB.bajasEscolares||[]
+      tarifas:DB.tarifas, emails:DB.emails, config:DB.config, pendingNotif:DB.pendingNotif, bajasEscolares:DB.bajasEscolares||[], ocupacion:DB.ocupacion||{}
     }));
     localStorage.setItem('austin_ebs_ts', String(ts));
   } catch(e){}
@@ -1338,7 +1365,8 @@ function loadDB(){
       DB.postulantes = SEED_POSTULANTES;
       DB.nextId = 1635;
       // ts=0 so Firestore always wins on first sync
-      try{ localStorage.setItem('austin_ebs_v2', JSON.stringify({nextId:DB.nextId,postulantes:DB.postulantes,vacantes:DB.vacantes,tarifas:DB.tarifas,emails:DB.emails,config:DB.config,pendingNotif:DB.pendingNotif,bajasEscolares:DB.bajasEscolares||[]})); localStorage.setItem('austin_ebs_ts','0'); }catch(e){}
+      DB.ocupacion={...OC_DEFAULT};
+      try{ localStorage.setItem('austin_ebs_v2', JSON.stringify({nextId:DB.nextId,postulantes:DB.postulantes,vacantes:DB.vacantes,tarifas:DB.tarifas,emails:DB.emails,config:DB.config,pendingNotif:DB.pendingNotif,bajasEscolares:DB.bajasEscolares||[],ocupacion:DB.ocupacion})); localStorage.setItem('austin_ebs_ts','0'); }catch(e){}
       return;
     }
     const d=JSON.parse(s);
@@ -1350,7 +1378,10 @@ function loadDB(){
     if(d.config) DB.config={...DB.config,...d.config};
     if(d.pendingNotif) DB.pendingNotif=d.pendingNotif;
     if(d.bajasEscolares) DB.bajasEscolares=d.bajasEscolares;
+    if(d.ocupacion) DB.ocupacion={...OC_DEFAULT,...d.ocupacion};
+    else DB.ocupacion={...OC_DEFAULT};
   } catch(e){}
+  if(!DB.ocupacion||!Object.keys(DB.ocupacion).length) DB.ocupacion={...OC_DEFAULT};
 }
 function resetDB(){
   if(!confirm('¿Borrar TODOS los postulantes y datos de la nube? Esta acción no se puede deshacer.')) return;
@@ -1427,7 +1458,7 @@ function showV(v){
   document.querySelectorAll('.sbi').forEach(el=>el.classList.remove('active'));
   const ve=document.getElementById('view-'+v); if(ve) ve.classList.add('on');
   const nb=document.getElementById('nav-'+v); if(nb) nb.classList.add('active');
-  const titles={dashboard:'Dashboard',pipeline:'Pipeline de admisiones',entrevistas:'Entrevistas',post:'Postulantes',bajas:'Desistieron',bajasesc:'Bajas de alumnos',vac:'Vacantes por curso',emails:'Plantillas de mail',tar:'Tarifas 2026',cfg:'Configuración'};
+  const titles={dashboard:'Dashboard',pipeline:'Pipeline de admisiones',entrevistas:'Entrevistas',post:'Postulantes',bajas:'Desistieron',bajasesc:'Bajas de alumnos',ocupacion:'Ocupación del colegio',vac:'Vacantes por curso',emails:'Plantillas de mail',tar:'Tarifas 2026',cfg:'Configuración'};
   document.getElementById('tb-t').textContent=titles[v]||v;
   if(v==='dashboard') renderDashboard();
   if(v==='pipeline') renderPipeline();
@@ -1435,6 +1466,7 @@ function showV(v){
   if(v==='post') renderTable();
   if(v==='bajas') renderBajas();
   if(v==='bajasesc') renderBajasEsc();
+  if(v==='ocupacion') renderOcupacion();
   if(v==='vac') renderVac();
   if(v==='emails') renderEmails();
   if(v==='tar') renderTar();
@@ -1700,6 +1732,14 @@ function openDetalle(id){
     <div style="margin-top:12px;background:#EBF7D4;border:1px solid #6AB04C;border-radius:10px;padding:13px 15px">
       <div style="font-size:11px;font-weight:600;color:#3A6A0A;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">✓ Matriculado</div>
       <div style="font-size:12.5px;color:#2D5208;margin-bottom:10px">El proceso de admisión está completo. Administración recibió los datos del estudiante automáticamente.</div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+        <label style="font-size:12px;color:#3A6A0A;font-weight:500">Sección asignada:</label>
+        <select id="sec-sel-${id}" class="fsel2" style="min-width:150px" onchange="asignarSeccion(${id},this.value)">
+          <option value="">— Sin asignar —</option>
+          ${(PIPELINE_TO_SECTIONS[p.curso]||SCHOOL_CURSOS).map(s=>`<option value="${s}" ${p.seccion===s?'selected':''}>${s}</option>`).join('')}
+        </select>
+        ${p.seccion?`<span style="font-size:11px;color:#3A6A0A;background:rgba(106,176,76,.15);padding:2px 8px;border-radius:5px">✓ ${p.seccion}</span>`:`<span style="font-size:11px;color:#9A6A0A">Asignar para reflejar en Ocupación</span>`}
+      </div>
       <button class="btn btn-sm btn-out" onclick="enviarMailAdministracion(DB.postulantes.find(x=>x.id===${id}),true)">📋 Reenviar ficha a Administración</button>
     </div>`:''}
     ${p.estado==='rechazado_eoe'?`
@@ -3340,12 +3380,13 @@ function renderBajasEsc(){
 }
 
 function abrirModalBajaEsc(){
-  const cursoOpts=CURSOS.map(c=>`<option value="${c}">${c}</option>`).join('');
+  const grps=[{lbl:'Inicial (Kindergarten)',cursos:SCHOOL_CURSOS.filter(c=>SCHOOL_NIVEL(c)==='Inicial')},{lbl:'Elementary (Primaria)',cursos:SCHOOL_CURSOS.filter(c=>SCHOOL_NIVEL(c)==='Elementary')},{lbl:'High School (Secundaria)',cursos:SCHOOL_CURSOS.filter(c=>SCHOOL_NIVEL(c)==='High School')}];
+  const cursoOpts=grps.map(g=>`<optgroup label="${g.lbl}">${g.cursos.map(c=>`<option value="${c}">${c}</option>`).join('')}</optgroup>`).join('');
   document.getElementById('mt').textContent='Registrar baja de alumno';
   document.getElementById('mb').innerHTML=`
     <div style="display:grid;gap:12px;padding:4px 0">
       <div class="fg"><label class="flabel">Nombre del alumno</label><input class="fi" id="be-alumno" placeholder="Nombre completo"></div>
-      <div class="fg"><label class="flabel">Curso</label><select class="fsel" id="be-curso"><option value="">Seleccionar curso</option>${cursoOpts}</select></div>
+      <div class="fg"><label class="flabel">Sección / Curso</label><select class="fsel" id="be-curso"><option value="">Seleccionar sección</option>${cursoOpts}</select></div>
       <div class="fg"><label class="flabel">Fecha de baja</label><input class="fi" id="be-fecha" type="date" value="${today()}"></div>
       <div class="fg"><label class="flabel">Motivo de la baja</label><textarea class="fi" id="be-motivo" rows="4" placeholder="Describir el motivo..." style="resize:vertical"></textarea></div>
     </div>`;
@@ -3362,7 +3403,7 @@ function guardarBajaEsc(){
   const motivo=(document.getElementById('be-motivo')?.value||'').trim();
   if(!alumno){ toast('Ingresá el nombre del alumno','err'); return; }
   if(!curso){ toast('Seleccioná el curso','err'); return; }
-  const nivel=NIVEL(curso);
+  const nivel=SCHOOL_NIVEL(curso)||NIVEL(curso);
   const id=Date.now();
   DB.bajasEscolares=DB.bajasEscolares||[];
   DB.bajasEscolares.push({id,alumno,curso,nivel,fecha,motivo});
@@ -3580,6 +3621,263 @@ loadDB();
 // Inicializar bloqueos en cache local
 calBloqueos = DB.bloqueos||[];
 
+// ═══════════════════════════
+// OCUPACIÓN
+// ═══════════════════════════
+let _ocTab = 'resumen';
+
+function ocTab(t){
+  _ocTab = t;
+  ['resumen','inicial','elementary','highschool','movimientos'].forEach(id=>{
+    const b=document.getElementById('oc-tab-'+id);
+    if(!b) return;
+    if(id===t){ b.style.background='var(--gr)'; b.style.color='#fff'; b.classList.remove('btn-out'); }
+    else { b.style.background=''; b.style.color=''; b.classList.add('btn-out'); }
+  });
+  renderOcupacionBody();
+}
+
+function ocData(){
+  // Computa stats por sección
+  const mat = DB.postulantes.filter(p=>p.estado==='matriculado');
+  return SCHOOL_CURSOS.map(sc=>{
+    const od = {...(OC_DEFAULT[sc]||{base:0,cap:27}), ...(DB.ocupacion[sc]||{})};
+    const nuevos = mat.filter(p=>p.seccion===sc).length;
+    const bajas  = (DB.bajasEscolares||[]).filter(b=>b.curso===sc).length;
+    const actual = od.base + nuevos - bajas;
+    const disp   = od.cap - actual;
+    const pct    = od.cap>0 ? actual/od.cap : 0;
+    return {sc, nivel:SCHOOL_NIVEL(sc), base:od.base, cap:od.cap, nuevos, bajas, actual, disp, pct};
+  });
+}
+
+function pctColor(p){
+  if(p>=1)    return '#DC2626';
+  if(p>=0.93) return '#D97706';
+  if(p>=0.75) return '#16A34A';
+  return '#6B7280';
+}
+function pctBar(p){
+  const pct=Math.min(100,Math.round(p*100));
+  const c=pctColor(p);
+  return `<div style="height:6px;background:#F0F0F0;border-radius:3px;margin-top:5px;overflow:hidden"><div style="width:${pct}%;height:100%;background:${c};border-radius:3px;transition:width .4s"></div></div>`;
+}
+
+function renderOcupacion(){
+  if(!DB.ocupacion||!Object.keys(DB.ocupacion).length) DB.ocupacion={...OC_DEFAULT};
+  renderOcupacionCards();
+  ocTab(_ocTab);
+}
+
+function renderOcupacionCards(){
+  const all = ocData();
+  const totalAlumnos = all.reduce((s,r)=>s+r.actual,0);
+  const totalCap     = all.reduce((s,r)=>s+r.cap,0);
+  const totalNuevos  = all.reduce((s,r)=>s+r.nuevos,0);
+  const totalBajas   = all.reduce((s,r)=>s+r.bajas,0);
+  const pctGen       = totalCap>0 ? totalAlumnos/totalCap : 0;
+  const sinSeccion   = DB.postulantes.filter(p=>p.estado==='matriculado'&&!p.seccion).length;
+
+  const cards = [
+    {lbl:'Total alumnos',val:totalAlumnos,sub:`de ${totalCap} capacidad`,col:'#3B82F6'},
+    {lbl:'Ocupación general',val:Math.round(pctGen*100)+'%',sub:`${totalCap-totalAlumnos} vacantes disponibles`,col:pctColor(pctGen)},
+    {lbl:'Nuevos matriculados',val:totalNuevos,sub:`via sistema de admisiones`,col:'#16A34A'},
+    {lbl:'Bajas 2026',val:totalBajas,sub:'alumnos que dejaron el colegio',col:'#EF4444'},
+    {lbl:'Sin sección asig.',val:sinSeccion,sub:'matriculados pendientes de asignar',col:sinSeccion>0?'#D97706':'#6B7280'},
+  ];
+  document.getElementById('oc-cards').innerHTML = cards.map(c=>`
+    <div class="stc" style="cursor:default;border-left:3px solid ${c.col}">
+      <div class="stc-lbl">${c.lbl}</div>
+      <div class="stc-val" style="color:${c.col}">${c.val}</div>
+      <div class="stc-sub">${c.sub}</div>
+    </div>`).join('');
+}
+
+function renderOcupacionBody(){
+  const all = ocData();
+  const body = document.getElementById('oc-body');
+  if(!body) return;
+
+  if(_ocTab==='movimientos'){ body.innerHTML=renderMovimientos(); return; }
+  if(_ocTab==='resumen'){
+    body.innerHTML = renderOcNiveles(all); return;
+  }
+  const filterMap={inicial:'Inicial',elementary:'Elementary',highschool:'High School'};
+  const niv=filterMap[_ocTab]||'';
+  const rows=all.filter(r=>r.nivel===niv);
+  body.innerHTML=`<div class="cbox">${renderOcTable(rows,true)}</div>`;
+}
+
+function renderOcNiveles(all){
+  const niveles=['Inicial','Elementary','High School'];
+  return niveles.map(n=>{
+    const rows=all.filter(r=>r.nivel===n);
+    const totA=rows.reduce((s,r)=>s+r.actual,0);
+    const totC=rows.reduce((s,r)=>s+r.cap,0);
+    const totN=rows.reduce((s,r)=>s+r.nuevos,0);
+    const totB=rows.reduce((s,r)=>s+r.bajas,0);
+    const totD=totC-totA;
+    const pctT=totC>0?totA/totC:0;
+    return `<div class="cbox" style="margin-bottom:16px">
+      <div class="cbox-h">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <div class="cbox-t">${n}</div>
+          <span style="font-size:12px;color:var(--tx3)">${totA} alumnos · ${totD} disponibles · <strong style="color:${pctColor(pctT)}">${Math.round(pctT*100)}%</strong></span>
+        </div>
+        <div style="display:flex;gap:6px">
+          <span style="font-size:11px;color:var(--tx3);background:var(--cr);padding:3px 8px;border-radius:5px">+${totN} nuevos</span>
+          <span style="font-size:11px;color:var(--tx3);background:var(--cr);padding:3px 8px;border-radius:5px">−${totB} bajas</span>
+        </div>
+      </div>
+      ${renderOcTable(rows,false)}
+    </div>`;
+  }).join('');
+}
+
+function renderOcTable(rows, withEdit){
+  if(!rows.length) return '<p style="color:var(--tx3);padding:12px">Sin datos.</p>';
+  return `<table>
+    <thead><tr>
+      <th>Sección</th><th>Base</th><th>+Nuevos</th><th>−Bajas</th><th>Total</th><th>Cap.</th><th>Disponibles</th><th>Ocupación</th>${withEdit?'<th></th>':''}
+    </tr></thead>
+    <tbody>${rows.map(r=>`<tr>
+      <td><strong>${r.sc}</strong></td>
+      <td>${r.base}</td>
+      <td style="color:#16A34A;font-weight:500">${r.nuevos>0?'+'+r.nuevos:'—'}</td>
+      <td style="color:#EF4444;font-weight:500">${r.bajas>0?'−'+r.bajas:'—'}</td>
+      <td><strong>${r.actual}</strong></td>
+      <td style="color:var(--tx3)">${r.cap}</td>
+      <td style="color:${r.disp<0?'#DC2626':r.disp===0?'#D97706':'var(--td)'}"><strong>${r.disp<0?r.disp:r.disp===0?'Completo':'+'+r.disp}</strong></td>
+      <td style="min-width:100px">
+        <span style="font-size:13px;font-weight:600;color:${pctColor(r.pct)}">${Math.round(r.pct*100)}%</span>
+        ${pctBar(r.pct)}
+      </td>
+      ${withEdit?`<td><button class="btn btn-sm btn-out" onclick="editarCursoOcupacion('${r.sc}')">Editar</button></td>`:''}
+    </tr>`).join('')}</tbody>
+  </table>`;
+}
+
+function renderMovimientos(){
+  const mat = DB.postulantes.filter(p=>p.estado==='matriculado'&&p.seccion);
+  const bajas = DB.bajasEscolares||[];
+
+  // Agrupar por mes
+  const meses={};
+  mat.forEach(p=>{
+    const h=p.hist&&p.hist.find(x=>x.e==='matriculado');
+    const fecha=h?h.f:p.ultAccion||today();
+    const mes=fecha.slice(0,7);
+    if(!meses[mes]) meses[mes]={altas:[],bajas:[]};
+    meses[mes].altas.push({alumno:p.alumno,seccion:p.seccion,curso:p.curso});
+  });
+  bajas.forEach(b=>{
+    const mes=(b.fecha||today()).slice(0,7);
+    if(!meses[mes]) meses[mes]={altas:[],bajas:[]};
+    meses[mes].bajas.push({alumno:b.alumno,curso:b.curso});
+  });
+
+  const allMat = DB.postulantes.filter(p=>p.estado==='matriculado'&&!p.seccion);
+
+  const mesesOrdenados=Object.keys(meses).sort().reverse();
+  if(!mesesOrdenados.length&&!allMat.length){
+    return '<div class="cbox"><p style="color:var(--tx3);padding:12px">Sin movimientos registrados en 2026.</p></div>';
+  }
+
+  const fmtMes=m=>{const[y,mo]=m.split('-');const ns=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];return (ns[parseInt(mo)-1]||mo)+' '+y;};
+
+  let html='';
+
+  if(allMat.length){
+    html+=`<div class="cbox" style="margin-bottom:14px;border:1px solid #FDE68A;background:#FFFBEB">
+      <div class="cbox-h"><div class="cbox-t" style="color:#92400E">⚠ Matriculados sin sección asignada (${allMat.length})</div></div>
+      <table><thead><tr><th>Alumno</th><th>Curso (pipeline)</th><th>Ciclo</th><th></th></tr></thead>
+      <tbody>${allMat.map(p=>`<tr>
+        <td><strong>${p.alumno}</strong></td>
+        <td>${p.curso||'—'}</td>
+        <td>${p.anio||'—'}</td>
+        <td><button class="btn btn-sm btn-out" onclick="openDetalle(${p.id})">Asignar sección</button></td>
+      </tr>`).join('')}</tbody></table>
+    </div>`;
+  }
+
+  html+=mesesOrdenados.map(mes=>{
+    const d=meses[mes];
+    return `<div class="cbox" style="margin-bottom:14px">
+      <div class="cbox-h">
+        <div class="cbox-t">${fmtMes(mes)}</div>
+        <div style="display:flex;gap:8px">
+          ${d.altas.length?`<span style="font-size:11.5px;color:#16A34A;background:#DCFCE7;padding:3px 10px;border-radius:5px">+${d.altas.length} alta${d.altas.length!==1?'s':''}</span>`:''}
+          ${d.bajas.length?`<span style="font-size:11.5px;color:#EF4444;background:#FEE2E2;padding:3px 10px;border-radius:5px">−${d.bajas.length} baja${d.bajas.length!==1?'s':''}</span>`:''}
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        ${d.altas.length?`<div>
+          <div style="font-size:11px;font-weight:600;color:#16A34A;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Altas (matriculados via sistema)</div>
+          ${d.altas.map(a=>`<div style="padding:6px 0;border-bottom:1px solid var(--bd);font-size:13px"><strong>${a.alumno}</strong><br><span style="color:var(--tx3);font-size:11.5px">${a.seccion}</span></div>`).join('')}
+        </div>`:'<div></div>'}
+        ${d.bajas.length?`<div>
+          <div style="font-size:11px;font-weight:600;color:#EF4444;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Bajas de alumnos</div>
+          ${d.bajas.map(b=>`<div style="padding:6px 0;border-bottom:1px solid var(--bd);font-size:13px"><strong>${b.alumno}</strong><br><span style="color:var(--tx3);font-size:11.5px">${b.curso}</span></div>`).join('')}
+        </div>`:'<div></div>'}
+      </div>
+    </div>`;
+  }).join('');
+
+  return html;
+}
+
+function asignarSeccion(id, seccion){
+  const p=DB.postulantes.find(x=>x.id===id); if(!p) return;
+  p.seccion=seccion||null;
+  saveDB();
+  renderOcupacionCards();
+  toast(seccion?`Sección "${seccion}" asignada a ${p.alumno}`:'Sección removida','ok');
+}
+
+function editarCursoOcupacion(sc){
+  const od={...(OC_DEFAULT[sc]||{base:0,cap:27}),...(DB.ocupacion[sc]||{})};
+  document.getElementById('mt').textContent='Editar datos de sección';
+  document.getElementById('mb').innerHTML=`
+    <div style="margin-bottom:14px;padding:10px 14px;background:var(--cr);border-radius:8px">
+      <div style="font-size:15px;font-weight:600;color:var(--td)">${sc}</div>
+      <div style="font-size:12px;color:var(--tx3)">${SCHOOL_NIVEL(sc)}</div>
+    </div>
+    <div style="display:grid;gap:12px;padding:4px 0">
+      <div class="fg">
+        <label class="flabel">Matrícula base (alumnos ya inscriptos al inicio del ciclo)</label>
+        <input class="fi" id="oc-base" type="number" min="0" value="${od.base}" placeholder="0">
+        <small style="color:var(--tx3);font-size:11px">Número de alumnos de este grupo que ya venían inscriptos antes de este sistema</small>
+      </div>
+      <div class="fg">
+        <label class="flabel">Capacidad máxima (vacantes totales)</label>
+        <input class="fi" id="oc-cap" type="number" min="1" value="${od.cap}" placeholder="27">
+      </div>
+    </div>`;
+  document.getElementById('mf').innerHTML=`
+    <button class="btn btn-out" onclick="closeM()">Cancelar</button>
+    <button class="btn btn-pri" onclick="guardarCursoOcupacion('${sc}')">Guardar</button>`;
+  openM();
+}
+
+function guardarCursoOcupacion(sc){
+  const base=parseInt(document.getElementById('oc-base')?.value)||0;
+  const cap=parseInt(document.getElementById('oc-cap')?.value)||27;
+  if(!DB.ocupacion) DB.ocupacion={};
+  DB.ocupacion[sc]={base,cap};
+  saveDB();
+  closeM();
+  renderOcupacion();
+  toast(`Sección ${sc} actualizada`,'ok');
+}
+
+function exportOcupacionCSV(){
+  const all=ocData();
+  const cols=['Sección','Nivel','Base','Nuevos (sistema)','Bajas','Total actual','Capacidad','Disponibles','% Ocupación'];
+  const rows=all.map(r=>[r.sc,r.nivel,r.base,r.nuevos,r.bajas,r.actual,r.cap,r.disp,Math.round(r.pct*100)+'%']);
+  const csv=cols.join(',')+'\n'+rows.map(r=>r.map(v=>'"'+String(v||'').replace(/"/g,'""')+'"').join(',')).join('\n');
+  const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,'+encodeURIComponent('﻿'+csv);
+  a.download='ocupacion_austin_'+today()+'.csv'; a.click();
+}
 
 </script>
 </body>
