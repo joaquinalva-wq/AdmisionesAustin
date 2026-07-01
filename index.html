@@ -1048,7 +1048,8 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
             <div class="cfgrow"><div><div class="cfglbl">Nombre del remitente</div><div class="cfgsub">Aparece en el campo "De:" de cada mail</div></div><input class="cfgi" id="cfg-nom" value="Admisiones Austin EBS"></div>
             <div class="cfgrow"><div><div class="cfglbl">Email de admisiones</div><div class="cfgsub">Dirección desde la que se envían los correos</div></div><input class="cfgi" id="cfg-em" value="admisiones@austinebs-ah.edu.ar"></div>
             <div class="cfgrow"><div><div class="cfglbl">Link Google Drive (brochure)</div><div class="cfgsub">Para que las familias descarguen información</div></div><input class="cfgi" id="cfg-drv" value="https://drive.google.com/drive/folders/1c0vFf1MWUcSC8-lqBjBCGDQ-hbXxGQDA"></div>
-            <div class="cfgrow"><div><div class="cfglbl">Email Dirección General</div><div class="cfgsub">Recibe la notificación cuando EOE/Inglés aprueba un caso</div></div><input class="cfgi" id="cfg-dg" placeholder="direccion@austinebs-ah.edu.ar"></div>
+            <div class="cfgrow"><div><div class="cfglbl">Email Administración</div><div class="cfgsub">Recibe la ficha completa cuando un estudiante queda matriculado</div></div><input class="cfgi" id="cfg-admin-email" placeholder="adm@austinebs-ah.edu.ar"></div>
+            <div class="cfgrow"><div><div class="cfglbl">Email Dirección General</div><div class="cfgsub">Recibe la notificación cuando EOE/Inglés aprueba un caso</div></div><input class="cfgi" id="cfg-dg" placeholder="alejandra.luna@austinebs-ah.edu.ar"></div>
             <div class="cfgrow" style="background:linear-gradient(135deg,#EBF7D4,#D4F0A8);border-radius:10px;padding:10px 14px;margin-top:6px">
               <div><div class="cfglbl" style="color:#3A6A0A">🔑 URL del Apps Script (Google Sheets)</div><div class="cfgsub" style="color:#5A8A1A">Necesario para mails automáticos y calendario en tiempo real. Ver instructivo.</div></div>
               <input class="cfgi" id="cfg-apps" placeholder="https://script.google.com/macros/s/..." style="background:#fff">
@@ -1220,7 +1221,7 @@ let DB = {
     seguimiento_entrevista:{subj:'¿Cómo fue la entrevista? — Austin EBS',body:'Hola {{padre}},\n\nFue un placer recibirlos en la entrevista. Esperamos que {{alumno}} y ustedes hayan quedado tan contentos como nosotros.\n\nSi desean continuar con el proceso de admisión, por favor respondé este mail confirmando tu interés. Con eso podremos avanzar con los pasos de reserva de vacante.\n\nSi por algún motivo decidieron no continuar, también podés avisarnos por este medio — lo entendemos perfectamente y siempre será bienvenida la familia si desean retomar en el futuro.\n\nEsperamos tu respuesta.\n\nUn afectuoso saludo,\nAdmisiones – Austin EBS'},
     no_asistio:{subj:'¡Que lástima! Podemos reprogramar tu entrevista — Austin EBS',body:'Hola {{padre}},\n\nLamentamos que no hayas podido llegar a la entrevista que tenías agendada. ¡Nos hubiera encantado conocerlos!\n\nSi querés reprogramarla, respondé este mail y coordinamos un nuevo horario con gusto. También podés volver a completar el formulario de postulación para elegir una nueva fecha.\n\nEsperamos poder conocerlos pronto.\n\nUn afectuoso saludo,\nAdmisiones – Austin EBS'}
   },
-  config:{nombre:'Admisiones Austin EBS',email:'admisiones@austinebs-ah.edu.ar',calendar:'https://calendar.app.google/WrfYGGSiRH3smkxL8',drive:'https://drive.google.com/drive/folders/1c0vFf1MWUcSC8-lqBjBCGDQ-hbXxGQDA',appsScriptUrl:'https://script.google.com/macros/s/AKfycbzK82ibenmWqIdWQAWb4x5Wy6gXRFrg8ASGhW-DvNOwt-Eo7GzY2alnFhLaUYIcy8bBUg/exec',},
+  config:{nombre:'Admisiones Austin EBS',email:'admisiones@austinebs-ah.edu.ar',calendar:'https://calendar.app.google/WrfYGGSiRH3smkxL8',drive:'https://drive.google.com/drive/folders/1c0vFf1MWUcSC8-lqBjBCGDQ-hbXxGQDA',appsScriptUrl:'https://script.google.com/macros/s/AKfycbzK82ibenmWqIdWQAWb4x5Wy6gXRFrg8ASGhW-DvNOwt-Eo7GzY2alnFhLaUYIcy8bBUg/exec',emailAdmin:'adm@austinebs-ah.edu.ar',emailDG:'alejandra.luna@austinebs-ah.edu.ar',eoeApiUrl:'https://eoe-austin.netlify.app/',},
   pendingNotif:[],
   bajasEscolares:[],
   ocupacion:{}
@@ -1386,8 +1387,11 @@ function loadDB(){
     else DB.ocupacion={...OC_DEFAULT};
   } catch(e){}
   if(!DB.ocupacion||!Object.keys(DB.ocupacion).length) DB.ocupacion={...OC_DEFAULT};
-  // Safety net: nunca dejar appsScriptUrl vacío — el mail automático depende de esto
+  // Safety net: nunca sobreescribir con vacío — valores críticos del sistema
   if(!DB.config.appsScriptUrl) DB.config.appsScriptUrl='https://script.google.com/macros/s/AKfycbzK82ibenmWqIdWQAWb4x5Wy6gXRFrg8ASGhW-DvNOwt-Eo7GzY2alnFhLaUYIcy8bBUg/exec';
+  if(!DB.config.emailAdmin) DB.config.emailAdmin='adm@austinebs-ah.edu.ar';
+  if(!DB.config.emailDG) DB.config.emailDG='alejandra.luna@austinebs-ah.edu.ar';
+  if(!DB.config.eoeApiUrl) DB.config.eoeApiUrl='https://eoe-austin.netlify.app/';
 }
 function resetDB(){
   if(!confirm('¿Borrar TODOS los postulantes y datos de la nube? Esta acción no se puede deshacer.')) return;
@@ -1478,7 +1482,22 @@ function showV(v){
   if(v==='tar') renderTar();
   if(v==='cfg') renderCfg();
 }
-function renderPanel(){ checkPendienteDG(); renderDashboard(); updateSidebarBadges(); }
+function runMigrations(){
+  if(DB.config.mig_contactado_v1) return;
+  let changed=0;
+  DB.postulantes.forEach(p=>{
+    if(p.estado==='citado'||p.estado==='postulado'){
+      p.estado='contactado';
+      p.ultAccion=today();
+      p.hist=p.hist||[];
+      p.hist.push({e:'contactado',f:today(),auto:true,nota:'migración jul-2026'});
+      changed++;
+    }
+  });
+  DB.config.mig_contactado_v1=true;
+  if(changed>0){ saveDB(); toast(`✓ ${changed} postulantes actualizados a Contactado`,'ok'); }
+}
+function renderPanel(){ runMigrations(); checkPendienteDG(); renderDashboard(); updateSidebarBadges(); }
 
 // ═══════════════════════════
 // HELPERS
@@ -2266,6 +2285,7 @@ function renderCfg(){
   document.getElementById('cfg-apps').value=DB.config.appsScriptUrl||'';
   const eoeEl=document.getElementById('cfg-eoe'); if(eoeEl) eoeEl.value=DB.config.eoeApiUrl||'';
   const dgEl=document.getElementById('cfg-dg'); if(dgEl) dgEl.value=DB.config.emailDG||'';
+  const adminEmEl=document.getElementById('cfg-admin-email'); if(adminEmEl) adminEmEl.value=DB.config.emailAdmin||'';
   const pwEl=document.getElementById('cfg-pw'); if(pwEl) pwEl.value='';
   setTimeout(updateEjsBadge,50);
 }
@@ -2276,6 +2296,7 @@ function saveCfg(){
   DB.config.appsScriptUrl=(document.getElementById('cfg-apps').value||'').trim();
   const eoeInp=document.getElementById('cfg-eoe'); if(eoeInp) DB.config.eoeApiUrl=eoeInp.value.trim();
   const dgInp=document.getElementById('cfg-dg'); if(dgInp) DB.config.emailDG=dgInp.value.trim();
+  const adminEmInp=document.getElementById('cfg-admin-email'); if(adminEmInp) DB.config.emailAdmin=adminEmInp.value.trim();
   const pwInp=document.getElementById('cfg-pw');
   if(pwInp&&pwInp.value.trim()){
     hashPw(pwInp.value.trim()).then(h=>{if(h){DB.config.password=h;saveDB();}});
@@ -2569,6 +2590,7 @@ function submitPost(){
   // Use first postulante for the confirmation mail/slot API call
   const p0=DB.postulantes.find(p=>p.id===createdIds[0]);
   if(!sinEntrevista && p0 && calSlotSeleccionado && DB.config.appsScriptUrl){
+    // Reservar el turno en Google Sheets
     apiCall('reservarTurno',{
       alumnoId:p0.id,
       alumno:p0.alumno, padre, email,
@@ -2577,13 +2599,11 @@ function submitPost(){
       hora:calSlotSeleccionado.hora,
       familyNote
     }).then(res=>{
-      if(res.ok){
-        p0.hist[p0.hist.length-1].mailOk=true;
-        saveDB();
-        calTurnosReservados.push({fecha:calSlotSeleccionado.fecha, hora:calSlotSeleccionado.hora});
-      }
+      if(res.ok) calTurnosReservados.push({fecha:calSlotSeleccionado.fecha, hora:calSlotSeleccionado.hora});
     }).catch(()=>{});
-  } else if(p0){
+  }
+  // Siempre enviar el mail de confirmación a la familia vía sendMail (independiente de reservarTurno)
+  if(p0){
     const estadoMail = sinEntrevista ? 'contactado' : 'citado';
     enviarMail(p0, estadoMail, (ok)=>{ if(ok){ p0.hist[p0.hist.length-1].mailOk=true; saveDB(); } });
   }
@@ -3271,7 +3291,7 @@ function enviarMailDG(p){
 // MAIL A ADMINISTRACIÓN (al matricular)
 // ═══════════════════════════
 function enviarMailAdministracion(p, manual=false){
-  const adminEmail='administracion@austinebs-ah.edu.ar';
+  const adminEmail=DB.config.emailAdmin||'adm@austinebs-ah.edu.ar';
   const subj=`NUEVO MATRICULADO: ${p.alumno} — ${p.curso} ${p.anio}`;
   const histTxt=(p.hist||[]).map(h=>`  · ${fDate(h.f)} → ${EL[h.e]||h.e}${h.mailOk?' (mail ✓)':''}`).join('\n');
   const notasTxt=(p.notas||[]).map(n=>`  · ${n.f||''}: ${n.txt||''}`).join('\n')||'  —';
