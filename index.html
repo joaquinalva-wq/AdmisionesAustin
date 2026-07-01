@@ -1375,13 +1375,19 @@ function loadDB(){
     if(d.vacantes) DB.vacantes={...DB.vacantes,...d.vacantes};
     if(d.tarifas) DB.tarifas={...DB.tarifas,...d.tarifas};
     if(d.emails) DB.emails={...DB.emails,...d.emails};
-    if(d.config) DB.config={...DB.config,...d.config};
+    if(d.config){
+      const merged={...DB.config};
+      for(const k of Object.keys(d.config)){ const v=d.config[k]; if(v!==''&&v!==null&&v!==undefined) merged[k]=v; }
+      DB.config=merged;
+    }
     if(d.pendingNotif) DB.pendingNotif=d.pendingNotif;
     if(d.bajasEscolares) DB.bajasEscolares=d.bajasEscolares;
     if(d.ocupacion) DB.ocupacion={...OC_DEFAULT,...d.ocupacion};
     else DB.ocupacion={...OC_DEFAULT};
   } catch(e){}
   if(!DB.ocupacion||!Object.keys(DB.ocupacion).length) DB.ocupacion={...OC_DEFAULT};
+  // Safety net: nunca dejar appsScriptUrl vacío — el mail automático depende de esto
+  if(!DB.config.appsScriptUrl) DB.config.appsScriptUrl='https://script.google.com/macros/s/AKfycbzK82ibenmWqIdWQAWb4x5Wy6gXRFrg8ASGhW-DvNOwt-Eo7GzY2alnFhLaUYIcy8bBUg/exec';
 }
 function resetDB(){
   if(!confirm('¿Borrar TODOS los postulantes y datos de la nube? Esta acción no se puede deshacer.')) return;
