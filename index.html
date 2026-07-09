@@ -400,12 +400,13 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
 .bg-de{background:#F0F0EE;color:#555552}
 .bg-nq{background:#F0F0EE;color:#555552}
 .bg-co{background:#DCF0F5;color:#1A5F70}
+.bg-nu{background:#DCFCE7;color:#14532D}
 .bg-eoe{background:#F0EBF9;color:#6B21A8}
 .bg-dg{background:#FEF3C7;color:#92400E}
 .bg-reoe{background:#FEE2E2;color:#991B1B}
 .ph-n{background:#EBF7D4}.ph-ci{background:#FEF0E6}.ph-en{background:#E8F2F8}
 .ph-po{background:#E4EDF3}.ph-ma{background:#D4E4EE}.ph-es{background:#FEF5E6}.ph-de{background:#F0F0EE}
-.ph-co{background:#DCF0F5}.ph-eoe{background:#F0EBF9}.ph-dg{background:#FEF3C7}.ph-reoe{background:#FEE2E2}
+.ph-co{background:#DCF0F5}.ph-eoe{background:#F0EBF9}.ph-dg{background:#FEF3C7}.ph-reoe{background:#FEE2E2}.ph-nu{background:#DCFCE7}
 
 .pill{background:var(--cr2);color:var(--tl);font-size:10px;padding:2px 7px;border-radius:12px;font-weight:600}
 
@@ -990,6 +991,7 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
                 <option value="pendiente_dg">Pend. Dir. General</option>
                 <option value="rechazado_eoe">Rechazado EOE</option>
                 <option value="matriculado">Matriculado</option>
+                <option value="nuevo">Nuevo alumno</option>
                 <option value="lista de espera">Lista de espera</option>
                 <option value="desiste">Desiste</option>
                 <option value="no_queremos">No incorporado</option>
@@ -1167,11 +1169,11 @@ let estudianteIdx = 0;
 let sinEntrevista = false;
 let estudiantesData = []; // [{n,ap,nac,dni,curso,nivel,jornada,anio,escuela,hermano,como}]
 const SCREENS = ['s-portal','s-postulacion','s-login','s-panel'];
-const ESTADOS = ['contactado','citado','entrevistado','postulado','eoe_ingles','pendiente_dg','matriculado','lista de espera','rechazado_eoe','desiste','no_queremos'];
-const EL = {nueva:'Nueva consulta',contactado:'Contactado',citado:'Citado entrevista',entrevistado:'Entrevistado',postulado:'Postulado',eoe_ingles:'EOE / Inglés',pendiente_dg:'Pend. Dir. General',rechazado_eoe:'Rechazado EOE',matriculado:'Matriculado','lista de espera':'Lista de espera',desiste:'Desiste',no_queremos:'No incorporado'};
-const ECLS = {nueva:'bg-n',contactado:'bg-co',citado:'bg-ci',entrevistado:'bg-en',postulado:'bg-po',eoe_ingles:'bg-eoe',pendiente_dg:'bg-dg',rechazado_eoe:'bg-reoe',matriculado:'bg-ma','lista de espera':'bg-es',desiste:'bg-de',no_queremos:'bg-de'};
-const EPCLS = {nueva:'ph-n',contactado:'ph-co',citado:'ph-ci',entrevistado:'ph-en',postulado:'ph-po',eoe_ingles:'ph-eoe',pendiente_dg:'ph-dg',rechazado_eoe:'ph-reoe',matriculado:'ph-ma','lista de espera':'ph-es',desiste:'ph-de',no_queremos:'ph-de'};
-const ECOL = {nueva:'var(--cn)',contactado:'#1A7A8E',citado:'var(--cc)',entrevistado:'var(--ce)',postulado:'var(--cp)',eoe_ingles:'#7B52AB',pendiente_dg:'#B45309',rechazado_eoe:'#DC2626',matriculado:'var(--cm)','lista de espera':'var(--cs)',desiste:'var(--cd)',no_queremos:'var(--cd)'};
+const ESTADOS = ['contactado','citado','entrevistado','postulado','eoe_ingles','pendiente_dg','matriculado','nuevo','lista de espera','rechazado_eoe','desiste','no_queremos'];
+const EL = {nueva:'Nueva consulta',contactado:'Contactado',citado:'Citado entrevista',entrevistado:'Entrevistado',postulado:'Postulado',eoe_ingles:'EOE / Inglés',pendiente_dg:'Pend. Dir. General',rechazado_eoe:'Rechazado EOE',matriculado:'Matriculado',nuevo:'Nuevo alumno','lista de espera':'Lista de espera',desiste:'Desiste',no_queremos:'No incorporado'};
+const ECLS = {nueva:'bg-n',contactado:'bg-co',citado:'bg-ci',entrevistado:'bg-en',postulado:'bg-po',eoe_ingles:'bg-eoe',pendiente_dg:'bg-dg',rechazado_eoe:'bg-reoe',matriculado:'bg-ma',nuevo:'bg-nu','lista de espera':'bg-es',desiste:'bg-de',no_queremos:'bg-de'};
+const EPCLS = {nueva:'ph-n',contactado:'ph-co',citado:'ph-ci',entrevistado:'ph-en',postulado:'ph-po',eoe_ingles:'ph-eoe',pendiente_dg:'ph-dg',rechazado_eoe:'ph-reoe',matriculado:'ph-ma',nuevo:'ph-nu','lista de espera':'ph-es',desiste:'ph-de',no_queremos:'ph-de'};
+const ECOL = {nueva:'var(--cn)',contactado:'#1A7A8E',citado:'var(--cc)',entrevistado:'var(--ce)',postulado:'var(--cp)',eoe_ingles:'#7B52AB',pendiente_dg:'#B45309',rechazado_eoe:'#DC2626',matriculado:'var(--cm)',nuevo:'#166534','lista de espera':'var(--cs)',desiste:'var(--cd)',no_queremos:'var(--cd)'};
 const CURSOS = ['K2 (Puppies)','K3 (Koalas/Dolphins)','K4 (Foxes/Monkeys)','K5 (Bears/Hippos)','1er año Elementary','2do año Elementary','3er año Elementary','4to año Elementary','5to año Elementary','6to año Elementary','1er año High School','2do año High School','3er año High School','4to año High School','5to año High School','6to año High School'];
 const NIVEL = c => !c ? '' : c.startsWith('K') ? 'Kindergarten' : c.includes('Elementary') ? 'Elementary' : 'High School';
 
@@ -1219,7 +1221,10 @@ let DB = {
     desiste_recontacto:{subj:'Austin EBS — Seguimos pensando en ustedes',body:'Hola {{padre}},\n\nHace un tiempo estuvieron en contacto con Austin Eco Bilingual School evaluando la incorporación de {{alumno}} y queremos ponernos en contacto nuevamente.\n\nSi el proceso de búsqueda escolar sigue abierto, nos encantaría retomar la conversación y acompañarlos. Estamos a disposición para responder cualquier consulta.\n\nSaludos cordiales,\nLaura Unamuno\nAdmisiones – Austin EBS'},
     no_queremos:{subj:'Proceso de admisión — Austin EBS',body:'Hola {{padre}},\n\nQueremos agradecerles sinceramente el tiempo y la confianza depositada en Austin Eco Bilingual School durante este proceso.\n\nLuego de evaluar con mucho cuidado las posibilidades de incorporación para el ciclo lectivo, lamentablemente no contamos con las vacantes necesarias para incorporar a {{alumno}} en esta ocasión.\n\nLes deseamos lo mejor en este proceso de encontrar la escuela que mejor acompañe su búsqueda, y esperamos que encuentren pronto el lugar ideal.\n\nQuedamos a disposición por cualquier consulta.\n\nUn afectuoso saludo,\nLaura Unamuno\nAdmisiones – Austin EBS'},
     seguimiento_entrevista:{subj:'¿Cómo fue la entrevista? — Austin EBS',body:'Hola {{padre}},\n\nFue un placer recibirlos en la entrevista. Esperamos que {{alumno}} y ustedes hayan quedado tan contentos como nosotros.\n\nSi desean continuar con el proceso de admisión, por favor respondé este mail confirmando tu interés. Con eso podremos avanzar con los pasos de reserva de vacante.\n\nSi por algún motivo decidieron no continuar, también podés avisarnos por este medio — lo entendemos perfectamente y siempre será bienvenida la familia si desean retomar en el futuro.\n\nEsperamos tu respuesta.\n\nUn afectuoso saludo,\nAdmisiones – Austin EBS'},
-    no_asistio:{subj:'¡Que lástima! Podemos reprogramar tu entrevista — Austin EBS',body:'Hola {{padre}},\n\nLamentamos que no hayas podido llegar a la entrevista que tenías agendada. ¡Nos hubiera encantado conocerlos!\n\nSi querés reprogramarla, respondé este mail y coordinamos un nuevo horario con gusto. También podés volver a completar el formulario de postulación para elegir una nueva fecha.\n\nEsperamos poder conocerlos pronto.\n\nUn afectuoso saludo,\nAdmisiones – Austin EBS'}
+    no_asistio:{subj:'¡Que lástima! Podemos reprogramar tu entrevista — Austin EBS',body:'Hola {{padre}},\n\nLamentamos que no hayas podido llegar a la entrevista que tenías agendada. ¡Nos hubiera encantado conocerlos!\n\nSi querés reprogramarla, respondé este mail y coordinamos un nuevo horario con gusto. También podés volver a completar el formulario de postulación para elegir una nueva fecha.\n\nEsperamos poder conocerlos pronto.\n\nUn afectuoso saludo,\nAdmisiones – Austin EBS'},
+    nuevo:{subj:'¡Bienvenidos a Austin EBS! Información de inicio',body:'Hola {{padre}},\n\n¡Estamos muy emocionados de darles la bienvenida oficial a Austin Eco Bilingual School! {{alumno}} ya forma parte de nuestra comunidad.\n\nA continuación les compartimos información importante para el inicio del ciclo:\n\n▸ UNIFORMES\nLos uniformes pueden adquirirse en [completar nombre y dirección de la tienda]. Te recomendamos gestionarlo con anticipación para asegurarte de tener todo a tiempo.\n\n▸ REDES SOCIALES\nSeguinos para estar al tanto de todas las novedades:\n• Instagram: @austinebs\n• Facebook: Austin Eco Bilingual School\n\n▸ SISTEMAS DEL COLEGIO — HANDING Y ACADEU\nEn los próximos días recibirán el alta en los sistemas Handing y Acadeu con sus accesos. Si pasados algunos días no recibieron la información, por favor contactarse a admisiones@austinebs-ah.edu.ar indicando el nombre de {{alumno}}.\n\n¡Los esperamos con mucho entusiasmo!\n\nAdmisiones – Austin EBS'},
+    admin_matriculado:{subj:'NUEVO MATRICULADO: {{alumno}} — {{curso}} {{anio}}',body:'Estimado equipo de Administración,\n\nEl siguiente estudiante completó el proceso de admisión y se encuentra MATRICULADO. Por favor proceder con el alta, cobro de matrícula y solicitud de documentación.\n\n══ DATOS DEL ESTUDIANTE ══\nNombre: {{alumno}}\nNivel: {{nivel}}\nCurso: {{curso}}\nJornada: {{jornada}}\nCiclo lectivo: {{anio}}\nHermano/a Austin: {{hermano}}\nColegio anterior: {{colegio}}\n\n══ DATOS DE LA FAMILIA ══\nPadre / Madre / Tutor: {{padre}}\nEmail: {{email}}\nTeléfono: {{tel}}\n\n══ APROBACIONES ══\nAdmisiones: ✓\nEOE / Inglés: ✓\nDirección General: ✓\n\nSistema de Admisiones – Austin EBS'},
+    dg_notif:{subj:'EOE aprobó a {{alumno}} — pendiente confirmación DG',body:'Estimada Dirección General,\n\nEOE e Inglés dieron el visto bueno para el ingreso de {{alumno}} ({{curso}}, ciclo {{anio}}).\nAdmisiones confirmó la vacante.\n\nPor favor confirmar el ingreso antes del plazo indicado.\nSi no hay respuesta en 48hs, el sistema procederá automáticamente con la matrícula.\n\nDatos:\n- Nombre: {{alumno}}\n- Nivel: {{nivel}} — {{curso}}\n- Ciclo: {{anio}}\n- Familia: {{padre}}\n- Email: {{email}}\n- Teléfono: {{tel}}\n\nSaludos,\nSistema de Admisiones – Austin EBS'}
   },
   config:{nombre:'Admisiones Austin EBS',email:'admisiones@austinebs-ah.edu.ar',calendar:'https://calendar.app.google/WrfYGGSiRH3smkxL8',drive:'https://drive.google.com/drive/folders/1c0vFf1MWUcSC8-lqBjBCGDQ-hbXxGQDA',appsScriptUrl:'https://script.google.com/macros/s/AKfycbzK82ibenmWqIdWQAWb4x5Wy6gXRFrg8ASGhW-DvNOwt-Eo7GzY2alnFhLaUYIcy8bBUg/exec',emailAdmin:'adm@austinebs-ah.edu.ar',emailDG:'alejandra.luna@austinebs-ah.edu.ar',eoeApiUrl:'https://eoe-austin.netlify.app/',},
   pendingNotif:[],
@@ -1632,7 +1637,7 @@ function dismissN(id){ DB.pendingNotif=DB.pendingNotif.filter(x=>x!==id); render
 function renderPipeline(){
   const anioF=document.getElementById('pipeline-anio')?.value||'';
   const nivF=document.getElementById('pipeline-niv')?.value||'';
-  const ACTIVE=['contactado','citado','entrevistado','postulado','eoe_ingles','pendiente_dg'];
+  const ACTIVE=['contactado','citado','entrevistado','postulado','eoe_ingles','pendiente_dg','matriculado','nuevo'];
   let total=0;
   document.getElementById('pcols').innerHTML=ESTADOS.map(e=>{
     const ps=DB.postulantes.filter(p=>
@@ -1755,17 +1760,33 @@ function openDetalle(id){
     </div>`:''}
     ${p.estado==='matriculado'?`
     <div style="margin-top:12px;background:#EBF7D4;border:1px solid #6AB04C;border-radius:10px;padding:13px 15px">
-      <div style="font-size:11px;font-weight:600;color:#3A6A0A;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">✓ Matriculado</div>
-      <div style="font-size:12.5px;color:#2D5208;margin-bottom:10px">El proceso de admisión está completo. Administración recibió los datos del estudiante automáticamente.</div>
+      <div style="font-size:11px;font-weight:600;color:#3A6A0A;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">✓ Matriculado — pendiente confirmación Administración</div>
+      <div style="font-size:12.5px;color:#2D5208;margin-bottom:10px">Administración recibió la ficha. Cuando confirmen el pago e ingreso, pasá manualmente a <strong>Nuevo alumno</strong>.</div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
-        <label style="font-size:12px;color:#3A6A0A;font-weight:500">Sección asignada:</label>
+        <label style="font-size:12px;color:#3A6A0A;font-weight:500">Pre-asignar sección:</label>
         <select id="sec-sel-${id}" class="fsel2" style="min-width:150px" onchange="asignarSeccion(${id},this.value)">
           <option value="">— Sin asignar —</option>
           ${(PIPELINE_TO_SECTIONS[p.curso]||SCHOOL_CURSOS).map(s=>`<option value="${s}" ${p.seccion===s?'selected':''}>${s}</option>`).join('')}
         </select>
-        ${p.seccion?`<span style="font-size:11px;color:#3A6A0A;background:rgba(106,176,76,.15);padding:2px 8px;border-radius:5px">✓ ${p.seccion}</span>`:`<span style="font-size:11px;color:#9A6A0A">Asignar para reflejar en Ocupación</span>`}
+        ${p.seccion?`<span style="font-size:11px;color:#3A6A0A;background:rgba(106,176,76,.15);padding:2px 8px;border-radius:5px">✓ ${p.seccion}</span>`:`<span style="font-size:11px;color:#9A6A0A">Sección opcional en esta etapa</span>`}
       </div>
       <button class="btn btn-sm btn-out" onclick="enviarMailAdministracion(DB.postulantes.find(x=>x.id===${id}),true)">📋 Reenviar ficha a Administración</button>
+    </div>`:''}
+    ${p.estado==='nuevo'?`
+    <div style="margin-top:12px;background:#DCFCE7;border:1px solid #86EFAC;border-radius:10px;padding:13px 15px">
+      <div style="font-size:11px;font-weight:600;color:#14532D;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">🎉 Nuevo alumno — Alta confirmada</div>
+      <div style="font-size:12.5px;color:#166534;margin-bottom:10px">Pago e ingreso confirmados por Administración. Mail de onboarding enviado a la familia. Alta registrada en EOE.</div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+        <label style="font-size:12px;color:#14532D;font-weight:500">Sección asignada:</label>
+        <select id="sec-sel-${id}" class="fsel2" style="min-width:150px" onchange="asignarSeccion(${id},this.value)">
+          <option value="">— Sin asignar —</option>
+          ${(PIPELINE_TO_SECTIONS[p.curso]||SCHOOL_CURSOS).map(s=>`<option value="${s}" ${p.seccion===s?'selected':''}>${s}</option>`).join('')}
+        </select>
+        ${p.seccion?`<span style="font-size:11px;color:#14532D;background:rgba(134,239,172,.3);padding:2px 8px;border-radius:5px">✓ ${p.seccion}</span>`:`<span style="font-size:11px;color:#D97706;font-weight:600">⚠ Asignar sección para que aparezca en Ocupación</span>`}
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-sm btn-out" onclick="enviarMailAdministracion(DB.postulantes.find(x=>x.id===${id}),true)">📋 Reenviar ficha a Administración</button>
+      </div>
     </div>`:''}
     ${p.estado==='rechazado_eoe'?`
     <div style="margin-top:12px;background:#FEE2E2;border:1px solid #FCA5A5;border-radius:10px;padding:13px 15px">
@@ -1883,8 +1904,12 @@ function prevMail(id){
 }
 
 function fillV(text,p){
+  const hermanoTxt = p.hermano==='si'?'SÍ — verificar beneficio':'No';
   return text
-    .replace(/{{alumno}}/g,p.alumno).replace(/{{padre}}/g,p.padre).replace(/{{curso}}/g,p.curso)
+    .replace(/{{alumno}}/g,p.alumno||'').replace(/{{padre}}/g,p.padre||'').replace(/{{curso}}/g,p.curso||'')
+    .replace(/{{nivel}}/g,p.nivel||'').replace(/{{anio}}/g,String(p.anio||'')).replace(/{{jornada}}/g,p.jornada||'—')
+    .replace(/{{email}}/g,p.email||'').replace(/{{tel}}/g,p.tel||'—').replace(/{{colegio}}/g,p.colegio||'—')
+    .replace(/{{hermano}}/g,hermanoTxt)
     .replace(/{{link_calendario}}/g,'').replace(/{{link_drive}}/g,DB.config.drive)
     .replace(/{{link_tarifas}}/g,DB.config.drive);
 }
@@ -1921,8 +1946,11 @@ function changeE(id){
 
   // Acciones especiales por estado
   if(newEst==='matriculado'){
-    sincronizarConEOE(p);
     enviarMailAdministracion(p);
+  }
+  if(newEst==='nuevo'){
+    sincronizarConEOE(p); // alta real en EOE recién al confirmar ingreso
+    renderOcupacionCards();
   }
   if(newEst==='eoe_ingles'){
     sincronizarConEOEEvaluacion(p);
@@ -2075,7 +2103,7 @@ function renderVac(){
   document.getElementById('vacgrid').innerHTML=CURSOS.map(c=>{
     const v=DB.vacantes[c]||{t:20,u:0};
     // Derivar matriculados del dato real para mantener sincronía con Ocupación
-    const matCount=DB.postulantes.filter(p=>p.estado==='matriculado'&&p.curso===c).length;
+    const matCount=DB.postulantes.filter(p=>(p.estado==='matriculado'||p.estado==='nuevo')&&p.curso===c).length;
     const pct=Math.min(100,Math.round(matCount/v.t*100));
     const fc=pct>=100?'full':pct>=80?'warn':'';
     const key=c.replace(/[\s()\/]/g,'_');
@@ -2100,8 +2128,8 @@ function saveVac(){
 // EMAIL TEMPLATES
 // ═══════════════════════════
 function renderEmails(){
-  const allTpls=[...ESTADOS,'desiste_recontacto'].filter(e=>!['no_queremos','seguimiento_entrevista','rechazado_eoe','pendiente_dg'].includes(e));
-  const labels={...EL,desiste_recontacto:'Re-contacto a desistidos'};
+  const allTpls=[...ESTADOS,'desiste_recontacto','admin_matriculado','dg_notif'].filter(e=>!['no_queremos','seguimiento_entrevista','rechazado_eoe','pendiente_dg'].includes(e));
+  const labels={...EL,desiste_recontacto:'Re-contacto a desistidos',admin_matriculado:'Notif. Administración (matriculado)',dg_notif:'Notif. Dirección General (EOE aprueba)'};
   document.getElementById('email-tpls').innerHTML=allTpls.map(e=>`
     <div class="etcard">
       <div class="eth">
@@ -3237,12 +3265,11 @@ function confirmarDG(id){
   p.hist.push({e:'matriculado',f:today(),mailOk:false});
   ajustarVacante(p.curso,prevEst,'matriculado');
   saveDB();
-  sincronizarConEOE(p);
   enviarMailAdministracion(p);
   enviarMailAdmin(p,'matriculado',(ok,mode)=>{
     if(ok){ p.hist[p.hist.length-1].mailOk=true; saveDB(); }
-    if(ok&&mode==='mailto') toast('Bienvenida enviada · Abriendo correo...','info');
-    else if(ok) toast('✓ Matriculado · Mail de bienvenida enviado','ok');
+    if(ok&&mode==='mailto') toast('Matriculado · Abriendo correo...','info');
+    else if(ok) toast('✓ Matriculado · Ficha enviada a Administración','ok');
     else toast('Matriculado · Configurá el Apps Script para envío automático','info');
   });
   closeM(); renderDashboard();
@@ -3263,7 +3290,6 @@ function checkPendienteDG(){
       p.hist=p.hist||[];
       p.hist.push({e:'matriculado',f:today(),mailOk:false,auto:true});
       ajustarVacante(p.curso,prevEst,'matriculado');
-      sincronizarConEOE(p);
       enviarMailAdministracion(p);
       enviarMailAdmin(p,'matriculado',(ok)=>{ if(ok){ p.hist[p.hist.length-1].mailOk=true; saveDB(); } });
       changed=true;
@@ -3277,9 +3303,9 @@ function checkPendienteDG(){
 // ═══════════════════════════
 function enviarMailDG(p){
   const dgEmail=DB.config.emailDG||'alejandra.luna@austinebs-ah.edu.ar';
-  const subj=`EOE aprobó a ${p.alumno} — pendiente confirmación DG`;
-  const dl=p.dgDeadline?fDateFull(p.dgDeadline):'48hs desde ahora';
-  const body=`Estimada Dirección General,\n\nEOE e Inglés dieron el visto bueno para el ingreso de ${p.alumno} (${p.curso}, ciclo ${p.anio}).\nAdmisiones confirmó la vacante.\n\nPor favor confirmar el ingreso antes del ${dl}.\nSi no hay respuesta en 48hs, el sistema procederá automáticamente con la matrícula.\n\nDatos:\n- Nombre: ${p.alumno}\n- Nivel: ${p.nivel} — ${p.curso}\n- Ciclo: ${p.anio}\n- Familia: ${p.padre}\n- Email: ${p.email}\n- Teléfono: ${p.tel||'—'}\n\nSaludos,\nSistema de Admisiones – Austin EBS`;
+  const tmpl=DB.emails.dg_notif;
+  const subj=tmpl?fillV(tmpl.subj,p):`EOE aprobó a ${p.alumno} — pendiente confirmación DG`;
+  const body=tmpl?fillV(tmpl.body,p):`EOE aprobó a ${p.alumno} (${p.curso}, ciclo ${p.anio}). Familia: ${p.padre} · ${p.email}`;
   if(DB.config.appsScriptUrl){
     apiCall('sendMail',{to:dgEmail,subject:subj,body}).then(()=>{});
   } else {
@@ -3292,10 +3318,9 @@ function enviarMailDG(p){
 // ═══════════════════════════
 function enviarMailAdministracion(p, manual=false){
   const adminEmail=DB.config.emailAdmin||'adm@austinebs-ah.edu.ar';
-  const subj=`NUEVO MATRICULADO: ${p.alumno} — ${p.curso} ${p.anio}`;
-  const histTxt=(p.hist||[]).map(h=>`  · ${fDate(h.f)} → ${EL[h.e]||h.e}${h.mailOk?' (mail ✓)':''}`).join('\n');
-  const notasTxt=(p.notas||[]).map(n=>`  · ${n.f||''}: ${n.txt||''}`).join('\n')||'  —';
-  const body=`Estimado equipo de Administración,\n\nEl siguiente estudiante completó el proceso de admisión y se encuentra MATRICULADO. Por favor proceder con el alta, cobro de matrícula y solicitud de documentación.\n\n══ DATOS DEL ESTUDIANTE ══\nNombre: ${p.alumno}\nNivel: ${p.nivel}\nCurso: ${p.curso}\nJornada: ${p.jornada||'—'}\nCiclo lectivo: ${p.anio}\nHermano/a Austin: ${p.hermano==='si'?'SÍ — verificar beneficio':'No'}\nColegio anterior: ${p.colegio||'—'}\nFecha de postulación: ${fDate(p.fecha)}\n\n══ DATOS DE LA FAMILIA ══\nPadre / Madre / Tutor: ${p.padre}\nEmail: ${p.email}\nTeléfono: ${p.tel||'—'}\n\n══ APROBACIONES ══\nAdmisiones: ✓\nEOE / Inglés: ✓\nDirección General: ✓\n\n══ NOTAS DEL PROCESO ══\n${notasTxt}\n\n══ HISTORIAL DE ESTADOS ══\n${histTxt}\n\nSistema de Admisiones – Austin EBS`;
+  const tmpl=DB.emails.admin_matriculado;
+  const subj=tmpl?fillV(tmpl.subj,p):`NUEVO MATRICULADO: ${p.alumno} — ${p.curso} ${p.anio}`;
+  const body=tmpl?fillV(tmpl.body,p):`Matriculado: ${p.alumno} · ${p.curso} · Ciclo ${p.anio}\nFamilia: ${p.padre} · ${p.email} · ${p.tel||'—'}`;
   if(DB.config.appsScriptUrl){
     apiCall('sendMail',{to:adminEmail,subject:subj,body}).then(()=>{});
   } else {
@@ -3672,8 +3697,8 @@ function ocTab(t){
 }
 
 function ocData(){
-  // Computa stats por sección
-  const mat = DB.postulantes.filter(p=>p.estado==='matriculado');
+  // Computa stats por sección — solo cuentan alumnos en estado "nuevo" (alta confirmada)
+  const mat = DB.postulantes.filter(p=>p.estado==='nuevo');
   return SCHOOL_CURSOS.map(sc=>{
     const od = {...(OC_DEFAULT[sc]||{base:0,cap:27}), ...(DB.ocupacion[sc]||{})};
     const nuevos = mat.filter(p=>p.seccion===sc).length;
@@ -3710,14 +3735,14 @@ function renderOcupacionCards(){
   const totalNuevos  = all.reduce((s,r)=>s+r.nuevos,0);
   const totalBajas   = all.reduce((s,r)=>s+r.bajas,0);
   const pctGen       = totalCap>0 ? totalAlumnos/totalCap : 0;
-  const sinSeccion   = DB.postulantes.filter(p=>p.estado==='matriculado'&&!p.seccion).length;
+  const sinSeccion   = DB.postulantes.filter(p=>p.estado==='nuevo'&&!p.seccion).length;
 
   const cards = [
     {lbl:'Total alumnos',val:totalAlumnos,sub:`de ${totalCap} capacidad`,col:'#3B82F6'},
     {lbl:'Ocupación general',val:Math.round(pctGen*100)+'%',sub:`${totalCap-totalAlumnos} vacantes disponibles`,col:pctColor(pctGen)},
-    {lbl:'Nuevos matriculados',val:totalNuevos,sub:`via sistema de admisiones`,col:'#16A34A'},
+    {lbl:'Nuevos alumnos',val:totalNuevos,sub:`dados de alta via admisiones`,col:'#16A34A'},
     {lbl:'Bajas 2026',val:totalBajas,sub:'alumnos que dejaron el colegio',col:'#EF4444'},
-    {lbl:'Sin sección asig.',val:sinSeccion,sub:'matriculados pendientes de asignar',col:sinSeccion>0?'#D97706':'#6B7280'},
+    {lbl:'Sin sección asig.',val:sinSeccion,sub:'nuevos pendientes de asignar sección',col:sinSeccion>0?'#D97706':'#6B7280'},
   ];
   document.getElementById('oc-cards').innerHTML = cards.map(c=>`
     <div class="stc" style="cursor:default;border-left:3px solid ${c.col}">
@@ -3792,17 +3817,17 @@ function renderOcTable(rows, withEdit){
 }
 
 function renderMovimientos(){
-  const mat = DB.postulantes.filter(p=>p.estado==='matriculado'&&p.seccion);
+  const mat = DB.postulantes.filter(p=>p.estado==='nuevo'&&p.seccion);
   const bajas = DB.bajasEscolares||[];
 
   // Agrupar por mes
   const meses={};
   mat.forEach(p=>{
-    const h=p.hist&&p.hist.find(x=>x.e==='matriculado');
+    const h=p.hist&&(p.hist.find(x=>x.e==='nuevo')||p.hist.find(x=>x.e==='matriculado'));
     const fecha=h?h.f:p.ultAccion||today();
     const mes=fecha.slice(0,7);
     if(!meses[mes]) meses[mes]={altas:[],bajas:[]};
-    meses[mes].altas.push({alumno:p.alumno,seccion:p.seccion,curso:p.curso});
+    meses[mes].altas.push({alumno:p.alumno,seccion:p.seccion,curso:p.curso,anio:p.anio});
   });
   bajas.forEach(b=>{
     const mes=(b.fecha||today()).slice(0,7);
@@ -3810,7 +3835,7 @@ function renderMovimientos(){
     meses[mes].bajas.push({alumno:b.alumno,curso:b.curso});
   });
 
-  const allMat = DB.postulantes.filter(p=>p.estado==='matriculado'&&!p.seccion);
+  const allMat = DB.postulantes.filter(p=>p.estado==='nuevo'&&!p.seccion);
 
   const mesesOrdenados=Object.keys(meses).sort().reverse();
   if(!mesesOrdenados.length&&!allMat.length){
