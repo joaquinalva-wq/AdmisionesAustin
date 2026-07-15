@@ -1130,14 +1130,26 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
 
       <!-- OCUPACIÓN -->
       <div id="view-ocupacion" class="view">
-        <div class="ph"><h1>Ocupación del colegio</h1><p>Matrícula actual, vacantes disponibles y movimientos por sección — Ciclo 2026</p></div>
+        <div class="ph" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px">
+          <div>
+            <h1>Ocupación del colegio</h1>
+            <p id="oc-ph-sub">Matrícula real, vacantes y movimientos por sección</p>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+            <label style="font-size:12px;color:var(--tx3);font-weight:600">Ciclo</label>
+            <select id="oc-ciclo-sel" class="fsel" style="font-size:13px;padding:5px 10px;min-width:80px" onchange="setOcCiclo(this.value)">
+              <option value="2025">2025</option>
+              <option value="2026" selected>2026</option>
+              <option value="2027">2027</option>
+            </select>
+          </div>
+        </div>
         <div class="stats" id="oc-cards"></div>
         <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
           <button class="btn btn-sm" id="oc-tab-resumen" onclick="ocTab('resumen')" style="background:var(--gr);color:#fff;border:none">Resumen</button>
-          <button class="btn btn-sm btn-out" id="oc-tab-inicial" onclick="ocTab('inicial')">Inicial</button>
-          <button class="btn btn-sm btn-out" id="oc-tab-elementary" onclick="ocTab('elementary')">Elementary</button>
-          <button class="btn btn-sm btn-out" id="oc-tab-highschool" onclick="ocTab('highschool')">High School</button>
-          <button class="btn btn-sm btn-out" id="oc-tab-movimientos" onclick="ocTab('movimientos')">Movimientos 2026</button>
+          <button class="btn btn-sm btn-out" id="oc-tab-padron" onclick="ocTab('padron')">Padrón</button>
+          <button class="btn btn-sm btn-out" id="oc-tab-movimientos" onclick="ocTab('movimientos')">Movimientos</button>
+          <button class="btn btn-sm btn-out" id="oc-tab-remat" onclick="ocTab('remat')">Re-Matrícula</button>
           <div style="flex:1"></div>
           <button class="btn btn-csv btn-sm" onclick="exportOcupacionCSV()">Exportar CSV</button>
         </div>
@@ -1229,7 +1241,9 @@ let DB = {
   config:{nombre:'Admisiones Austin EBS',email:'admisiones@austinebs-ah.edu.ar',calendar:'https://calendar.app.google/WrfYGGSiRH3smkxL8',drive:'https://drive.google.com/drive/folders/1c0vFf1MWUcSC8-lqBjBCGDQ-hbXxGQDA',appsScriptUrl:'https://script.google.com/macros/s/AKfycbzK82ibenmWqIdWQAWb4x5Wy6gXRFrg8ASGhW-DvNOwt-Eo7GzY2alnFhLaUYIcy8bBUg/exec',emailAdmin:'adm@austinebs-ah.edu.ar',emailDG:'alejandra.luna@austinebs-ah.edu.ar',eoeApiUrl:'https://eoe-austin.netlify.app/',},
   pendingNotif:[],
   bajasEscolares:[],
-  ocupacion:{}
+  ocupacion:{},
+  padron:[],
+  reMatricula:{}
 };
 
 // ═══════════════════════════
@@ -1276,6 +1290,8 @@ async function fsSave(){
     pendingNotif: DB.pendingNotif,
     bajasEscolares: DB.bajasEscolares||[],
     ocupacion: DB.ocupacion||{},
+    padron: DB.padron||[],
+    reMatricula: DB.reMatricula||{},
     ts: Date.now()
   });
   try{
@@ -1329,6 +1345,8 @@ async function syncFromCloud(){
     if(remote.bajasEscolares) DB.bajasEscolares = remote.bajasEscolares;
     if(remote.ocupacion) DB.ocupacion = {...OC_DEFAULT,...remote.ocupacion};
     else if(!DB.ocupacion||!Object.keys(DB.ocupacion).length) DB.ocupacion={...OC_DEFAULT};
+    if(remote.padron) DB.padron = remote.padron;
+    if(remote.reMatricula) DB.reMatricula = remote.reMatricula;
     saveLocalOnly();
     renderPanel();
     updateSyncStatus('synced');
@@ -1348,7 +1366,7 @@ function saveLocalOnly(){
     const ts = Date.now();
     localStorage.setItem('austin_ebs_v2', JSON.stringify({
       nextId:DB.nextId, postulantes:DB.postulantes, vacantes:DB.vacantes,
-      tarifas:DB.tarifas, emails:DB.emails, config:DB.config, pendingNotif:DB.pendingNotif, bajasEscolares:DB.bajasEscolares||[], ocupacion:DB.ocupacion||{}
+      tarifas:DB.tarifas, emails:DB.emails, config:DB.config, pendingNotif:DB.pendingNotif, bajasEscolares:DB.bajasEscolares||[], ocupacion:DB.ocupacion||{}, padron:DB.padron||[], reMatricula:DB.reMatricula||{}
     }));
     localStorage.setItem('austin_ebs_ts', String(ts));
   } catch(e){}
@@ -1390,6 +1408,8 @@ function loadDB(){
     if(d.bajasEscolares) DB.bajasEscolares=d.bajasEscolares;
     if(d.ocupacion) DB.ocupacion={...OC_DEFAULT,...d.ocupacion};
     else DB.ocupacion={...OC_DEFAULT};
+    if(d.padron) DB.padron=d.padron;
+    if(d.reMatricula) DB.reMatricula=d.reMatricula;
   } catch(e){}
   if(!DB.ocupacion||!Object.keys(DB.ocupacion).length) DB.ocupacion={...OC_DEFAULT};
   // Safety net: nunca sobreescribir con vacío — valores críticos del sistema
@@ -1950,6 +1970,7 @@ function changeE(id){
   }
   if(newEst==='nuevo'){
     sincronizarConEOE(p); // alta real en EOE recién al confirmar ingreso
+    crearAlumnoPadron(p); // registra en el padrón escolar
     renderOcupacionCards();
   }
   if(newEst==='eoe_ingles'){
@@ -3684,10 +3705,18 @@ calBloqueos = DB.bloqueos||[];
 // OCUPACIÓN
 // ═══════════════════════════
 let _ocTab = 'resumen';
+let _ocCiclo = new Date().getFullYear();
+
+function setOcCiclo(val){
+  _ocCiclo = parseInt(val)||new Date().getFullYear();
+  const sel=document.getElementById('oc-ciclo-sel');
+  if(sel) sel.value=String(_ocCiclo);
+  renderOcupacion();
+}
 
 function ocTab(t){
   _ocTab = t;
-  ['resumen','inicial','elementary','highschool','movimientos'].forEach(id=>{
+  ['resumen','padron','movimientos','remat'].forEach(id=>{
     const b=document.getElementById('oc-tab-'+id);
     if(!b) return;
     if(id===t){ b.style.background='var(--gr)'; b.style.color='#fff'; b.classList.remove('btn-out'); }
@@ -3696,17 +3725,69 @@ function ocTab(t){
   renderOcupacionBody();
 }
 
+// Normalize Excel section names → SCHOOL_CURSOS
+function normalizarCurso(raw){
+  if(!raw) return '';
+  const r=raw.trim();
+  // Direct match
+  if(SCHOOL_CURSOS.includes(r)) return r;
+  const lo=r.toLowerCase().replace(/[°º]/g,'').replace(/\s+/g,' ').trim();
+  // Sala animal names
+  const animals={'puppies':'S2 · Puppies','dolphins':'S3 · Dolphins','koalas':'S3 · Koalas','foxes':'S4 · Foxes','monkeys':'S4 · Monkeys','bears':'S5 · Bears','hippos':'S5 · Hippos'};
+  for(const [k,v] of Object.entries(animals)) if(lo.includes(k)) return v;
+  // Sala de N
+  const sdm=lo.match(/sala de (\d)/);
+  if(sdm){ const n=sdm[1]; const mp={'2':'S2 · Puppies','3':'S3 · Dolphins','4':'S4 · Foxes','5':'S5 · Bears'}; return mp[n]||''; }
+  // "Nro [A|B] Prim" / "Nro A Sec" patterns
+  const pm=lo.match(/^(\d)\s*(?:er|do|ro|to|°|º)?\s*([ab])\s*(prim|np|elementary)/i);
+  if(pm) return `${pm[1]}° ${pm[2].toUpperCase()} Prim`;
+  const sm=lo.match(/^(\d)\s*(?:er|do|ro|to|s|°|º)?\s*([ab])\s*(sec|ns|high|secundar)/i);
+  if(sm) return `${sm[1]}° ${sm[2].toUpperCase()} Sec`;
+  // Excel "3º A Prim" style
+  const ex=r.replace('º','°').replace('Prim','Prim').replace('Sec','Sec');
+  if(SCHOOL_CURSOS.includes(ex)) return ex;
+  return r; // return as-is, user can fix
+}
+
+function normalizarNivel(raw){
+  if(!raw) return '';
+  const lo=(raw||'').toLowerCase();
+  if(lo.includes('inicial')||lo.includes('kinder')||lo.includes('sala')) return 'Inicial';
+  if(lo.includes('prim')||lo.includes('elementary')) return 'Elementary';
+  if(lo.includes('sec')||lo.includes('high')||lo.includes('secundar')) return 'High School';
+  return raw;
+}
+
 function ocData(){
-  // Computa stats por sección — solo cuentan alumnos en estado "nuevo" (alta confirmada)
-  const mat = DB.postulantes.filter(p=>p.estado==='nuevo');
+  const ciclo = _ocCiclo;
+  const padronCiclo = (DB.padron||[]).filter(a=>a.ciclo===ciclo);
+  const usePadron = padronCiclo.length > 0;
+
   return SCHOOL_CURSOS.map(sc=>{
     const od = {...(OC_DEFAULT[sc]||{base:0,cap:27}), ...(DB.ocupacion[sc]||{})};
-    const nuevos = mat.filter(p=>p.seccion===sc).length;
-    const bajas  = (DB.bajasEscolares||[]).filter(b=>b.curso===sc).length;
-    const actual = od.base + nuevos - bajas;
-    const disp   = od.cap - actual;
-    const pct    = od.cap>0 ? actual/od.cap : 0;
-    return {sc, nivel:SCHOOL_NIVEL(sc), base:od.base, cap:od.cap, nuevos, bajas, actual, disp, pct};
+    let actual, nuevos, bajas;
+    if(usePadron){
+      const enSec = padronCiclo.filter(a=>a.curso===sc);
+      bajas   = enSec.filter(a=>a.estado==='baja').length;
+      // alumnos del padron activos en esta sección
+      const padronActivos = enSec.filter(a=>a.estado==='activo').length;
+      // postulantes "nuevo" de admisiones aún no registrados en padrón
+      const nuevosSinPadron = DB.postulantes.filter(p=>
+        p.estado==='nuevo' && p.seccion===sc && (p.anio===ciclo||!p.anio) &&
+        !(DB.padron||[]).some(a=>a.admisionId===String(p.id))
+      ).length;
+      actual  = padronActivos + nuevosSinPadron;
+      nuevos  = enSec.filter(a=>a.admisionId).length + nuevosSinPadron;
+    } else {
+      // Legacy: OC_DEFAULT base + altas desde admisiones − bajas manuales
+      const mat = DB.postulantes.filter(p=>p.estado==='nuevo'&&(p.anio===ciclo||ciclo===new Date().getFullYear()));
+      nuevos  = mat.filter(p=>p.seccion===sc).length;
+      bajas   = (DB.bajasEscolares||[]).filter(b=>b.curso===sc).length;
+      actual  = od.base + nuevos - bajas;
+    }
+    const disp = od.cap - actual;
+    const pct  = od.cap>0 ? actual/od.cap : 0;
+    return {sc, nivel:SCHOOL_NIVEL(sc), base:od.base, cap:od.cap, nuevos, bajas, actual, disp, pct, usePadron};
   });
 }
 
@@ -3724,27 +3805,42 @@ function pctBar(p){
 
 function renderOcupacion(){
   if(!DB.ocupacion||!Object.keys(DB.ocupacion).length) DB.ocupacion={...OC_DEFAULT};
+  // Update ciclo selector
+  const sel=document.getElementById('oc-ciclo-sel');
+  if(sel) sel.value=String(_ocCiclo);
+  // Update subtitle
+  const sub=document.getElementById('oc-ph-sub');
+  const padronCnt=(DB.padron||[]).filter(a=>a.ciclo===_ocCiclo).length;
+  if(sub) sub.textContent=padronCnt>0
+    ? `Padrón ${_ocCiclo}: ${padronCnt} alumnos registrados`
+    : `Ciclo ${_ocCiclo} · Modo base (importá el padrón para datos reales)`;
   renderOcupacionCards();
   ocTab(_ocTab);
 }
 
 function renderOcupacionCards(){
   const all = ocData();
+  const ciclo = _ocCiclo;
   const totalAlumnos = all.reduce((s,r)=>s+r.actual,0);
   const totalCap     = all.reduce((s,r)=>s+r.cap,0);
   const totalNuevos  = all.reduce((s,r)=>s+r.nuevos,0);
   const totalBajas   = all.reduce((s,r)=>s+r.bajas,0);
   const pctGen       = totalCap>0 ? totalAlumnos/totalCap : 0;
-  const sinSeccion   = DB.postulantes.filter(p=>p.estado==='nuevo'&&!p.seccion).length;
+  const sinSeccion   = DB.postulantes.filter(p=>p.estado==='nuevo'&&!p.seccion&&(p.anio===ciclo||!p.anio)&&
+    !(DB.padron||[]).some(a=>a.admisionId===String(p.id))).length;
+  const padronCnt    = (DB.padron||[]).filter(a=>a.ciclo===ciclo).length;
 
   const cards = [
-    {lbl:'Total alumnos',val:totalAlumnos,sub:`de ${totalCap} capacidad`,col:'#3B82F6'},
-    {lbl:'Ocupación general',val:Math.round(pctGen*100)+'%',sub:`${totalCap-totalAlumnos} vacantes disponibles`,col:pctColor(pctGen)},
-    {lbl:'Nuevos alumnos',val:totalNuevos,sub:`dados de alta via admisiones`,col:'#16A34A'},
-    {lbl:'Bajas 2026',val:totalBajas,sub:'alumnos que dejaron el colegio',col:'#EF4444'},
-    {lbl:'Sin sección asig.',val:sinSeccion,sub:'nuevos pendientes de asignar sección',col:sinSeccion>0?'#D97706':'#6B7280'},
+    {lbl:'Alumnos '+ciclo,val:totalAlumnos,sub:`de ${totalCap} capacidad total`,col:'#3B82F6'},
+    {lbl:'Ocupación',val:Math.round(pctGen*100)+'%',sub:`${Math.max(0,totalCap-totalAlumnos)} vacantes disponibles`,col:pctColor(pctGen)},
+    {lbl:'Altas '+ciclo,val:totalNuevos,sub:'ingresaron via admisiones',col:'#16A34A'},
+    {lbl:'Bajas '+ciclo,val:totalBajas,sub:'dejaron el colegio',col:'#EF4444'},
+    padronCnt>0
+      ? {lbl:'Padrón cargado',val:padronCnt,sub:'alumnos en el padrón',col:'#8B5CF6'}
+      : {lbl:'Sin sección asig.',val:sinSeccion,sub:'nuevos sin sección',col:sinSeccion>0?'#D97706':'#6B7280'},
   ];
-  document.getElementById('oc-cards').innerHTML = cards.map(c=>`
+  const el=document.getElementById('oc-cards');
+  if(el) el.innerHTML = cards.map(c=>`
     <div class="stc" style="cursor:default;border-left:3px solid ${c.col}">
       <div class="stc-lbl">${c.lbl}</div>
       <div class="stc-val" style="color:${c.col}">${c.val}</div>
@@ -3756,15 +3852,32 @@ function renderOcupacionBody(){
   const all = ocData();
   const body = document.getElementById('oc-body');
   if(!body) return;
-
   if(_ocTab==='movimientos'){ body.innerHTML=renderMovimientos(); return; }
-  if(_ocTab==='resumen'){
-    body.innerHTML = renderOcNiveles(all); return;
-  }
-  const filterMap={inicial:'Inicial',elementary:'Elementary',highschool:'High School'};
-  const niv=filterMap[_ocTab]||'';
-  const rows=all.filter(r=>r.nivel===niv);
-  body.innerHTML=`<div class="cbox">${renderOcTable(rows,true)}</div>`;
+  if(_ocTab==='padron'){ body.innerHTML=renderPadron(); attachPadronEvents(); return; }
+  if(_ocTab==='remat'){ body.innerHTML=renderReMatricula(); attachRematEvents(); return; }
+  // resumen: tabla por nivel con filas por sección
+  const niveles=['Inicial','Elementary','High School'];
+  body.innerHTML=niveles.map(n=>{
+    const rows=all.filter(r=>r.nivel===n);
+    const totA=rows.reduce((s,r)=>s+r.actual,0);
+    const totC=rows.reduce((s,r)=>s+r.cap,0);
+    const totN=rows.reduce((s,r)=>s+r.nuevos,0);
+    const totB=rows.reduce((s,r)=>s+r.bajas,0);
+    const pctT=totC>0?totA/totC:0;
+    return `<div class="cbox" style="margin-bottom:16px">
+      <div class="cbox-h">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <div class="cbox-t">${n}</div>
+          <span style="font-size:12px;color:var(--tx3)">${totA} alumnos · ${totC-totA} disponibles · <strong style="color:${pctColor(pctT)}">${Math.round(pctT*100)}%</strong></span>
+        </div>
+        <div style="display:flex;gap:6px">
+          <span style="font-size:11px;color:var(--tx3);background:var(--cr);padding:3px 8px;border-radius:5px">+${totN} altas</span>
+          <span style="font-size:11px;color:var(--tx3);background:var(--cr);padding:3px 8px;border-radius:5px">−${totB} bajas</span>
+        </div>
+      </div>
+      ${renderOcTable(rows,true)}
+    </div>`;
+  }).join('');
 }
 
 function renderOcNiveles(all){
@@ -3815,6 +3928,366 @@ function renderOcTable(rows, withEdit){
     </tr>`).join('')}</tbody>
   </table>`;
 }
+
+// ─── PADRÓN ───────────────────────────────────────────
+function renderPadron(){
+  const ciclo=_ocCiclo;
+  const padron=(DB.padron||[]).filter(a=>a.ciclo===ciclo);
+  const usePadron=padron.length>0;
+
+  const grps=[
+    {lbl:'Inicial (Kindergarten)',lvl:'Inicial'},
+    {lbl:'Elementary (Primaria)',lvl:'Elementary'},
+    {lbl:'High School (Secundaria)',lvl:'High School'},
+  ];
+
+  const activos=padron.filter(a=>a.estado==='activo').length;
+  const bajas=padron.filter(a=>a.estado==='baja').length;
+
+  let html=`<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
+    <input class="fi" id="padron-q" placeholder="Buscar alumno..." style="max-width:240px;padding:7px 12px" oninput="filtrarPadron()">
+    <select class="fsel" id="padron-f-nivel" style="font-size:13px" onchange="filtrarPadron()">
+      <option value="">Todos los niveles</option>
+      <option value="Inicial">Inicial</option>
+      <option value="Elementary">Elementary</option>
+      <option value="High School">High School</option>
+    </select>
+    <select class="fsel" id="padron-f-estado" style="font-size:13px" onchange="filtrarPadron()">
+      <option value="">Activos + bajas</option>
+      <option value="activo">Solo activos</option>
+      <option value="baja">Solo bajas</option>
+    </select>
+    <div style="flex:1"></div>
+    <span style="font-size:12px;color:var(--tx3)">${activos} activos · ${bajas} bajas</span>
+    <button class="btn btn-sm btn-out" onclick="abrirModalAgregarAlumno()">+ Agregar</button>
+    <button class="btn btn-sm" style="background:#7C3AED;color:#fff;border:none" onclick="importarPadronModal()">⬆ Importar Excel</button>
+    ${!usePadron?`<button class="btn btn-sm btn-out" onclick="abrirModalBajaEsc()" style="color:#EF4444">Registrar baja manual</button>`:''}
+  </div>
+  <div id="padron-tabla"></div>`;
+  return html;
+}
+
+function filtrarPadron(){
+  const q=(document.getElementById('padron-q')?.value||'').toLowerCase();
+  const fNivel=document.getElementById('padron-f-nivel')?.value||'';
+  const fEst=document.getElementById('padron-f-estado')?.value||'';
+  const ciclo=_ocCiclo;
+  let lista=(DB.padron||[]).filter(a=>a.ciclo===ciclo);
+  if(fNivel) lista=lista.filter(a=>a.nivel===fNivel);
+  if(fEst) lista=lista.filter(a=>a.estado===fEst);
+  if(q) lista=lista.filter(a=>(a.nombre||'').toLowerCase().includes(q)||(a.curso||'').toLowerCase().includes(q));
+  lista=lista.sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||''));
+
+  const tb=document.getElementById('padron-tabla');
+  if(!tb) return;
+  if(!lista.length){
+    tb.innerHTML=`<div class="cbox"><p style="color:var(--tx3);padding:12px">Sin resultados.</p></div>`;
+    return;
+  }
+  // Group by section
+  const bySec={};
+  lista.forEach(a=>{ const k=a.curso||'Sin sección'; if(!bySec[k]) bySec[k]=[]; bySec[k].push(a); });
+  tb.innerHTML=Object.entries(bySec).map(([sec,alumnos])=>`
+    <div class="cbox" style="margin-bottom:12px">
+      <div class="cbox-h">
+        <div class="cbox-t">${sec}</div>
+        <span style="font-size:12px;color:var(--tx3)">${alumnos.filter(a=>a.estado==='activo').length} activos${alumnos.some(a=>a.estado==='baja')?` · ${alumnos.filter(a=>a.estado==='baja').length} baja`+( alumnos.filter(a=>a.estado==='baja').length!==1?'s':''):''}</span>
+      </div>
+      <table><thead><tr><th>Nombre</th><th>Nivel</th><th>Estado</th><th>Fecha alta</th><th></th></tr></thead>
+      <tbody>${alumnos.map(a=>`<tr style="${a.estado==='baja'?'opacity:.6':''}">
+        <td><strong>${a.nombre||'—'}</strong>${a.admisionId?` <span style="font-size:10px;color:#7C3AED;background:#EDE9FE;padding:1px 5px;border-radius:3px">Adm</span>`:''}</td>
+        <td style="color:var(--tx3);font-size:12px">${a.nivel||'—'}</td>
+        <td>${a.estado==='activo'
+          ?`<span style="color:#16A34A;font-size:12px;font-weight:600">● Activo</span>`
+          :`<span style="color:#EF4444;font-size:12px">● Baja</span> <span style="color:var(--tx3);font-size:11px">${a.motivoBaja||''}</span>`}</td>
+        <td style="color:var(--tx3);font-size:12px">${fDateFull(a.fechaAlta)||'—'}</td>
+        <td>${a.estado==='activo'
+          ?`<button class="btn btn-sm btn-out" style="color:#EF4444" onclick="registrarBajaPadronModal('${a.id}')">Baja</button>`
+          :`<button class="btn btn-sm btn-out" style="font-size:11px" onclick="reactivarAlumnoPadron('${a.id}')">Reactivar</button>`}
+        </td>
+      </tr>`).join('')}</tbody></table>
+    </div>`).join('');
+}
+
+function attachPadronEvents(){ filtrarPadron(); }
+
+function abrirModalAgregarAlumno(){
+  const grps=[{lbl:'Inicial',cur:SCHOOL_CURSOS.filter(c=>SCHOOL_NIVEL(c)==='Inicial')},{lbl:'Elementary',cur:SCHOOL_CURSOS.filter(c=>SCHOOL_NIVEL(c)==='Elementary')},{lbl:'High School',cur:SCHOOL_CURSOS.filter(c=>SCHOOL_NIVEL(c)==='High School')}];
+  const opts=grps.map(g=>`<optgroup label="${g.lbl}">${g.cur.map(c=>`<option value="${c}">${c}</option>`).join('')}</optgroup>`).join('');
+  document.getElementById('mt').textContent='Agregar alumno al padrón';
+  document.getElementById('mb').innerHTML=`
+    <div style="display:grid;gap:12px;padding:4px 0">
+      <div class="fg"><label class="flabel">Nombre completo</label><input class="fi" id="pa-nombre" placeholder="APELLIDO, Nombre"></div>
+      <div class="fg"><label class="flabel">Sección</label><select class="fsel" id="pa-curso"><option value="">Seleccionar sección</option>${opts}</select></div>
+      <div class="fg"><label class="flabel">Ciclo lectivo</label><input class="fi" id="pa-ciclo" type="number" value="${_ocCiclo}" min="2020" max="2030"></div>
+      <div class="fg"><label class="flabel">Fecha de alta</label><input class="fi" id="pa-fecha" type="date" value="${today()}"></div>
+      <div class="fg"><label class="flabel">Observaciones</label><input class="fi" id="pa-obs" placeholder="Opcional"></div>
+    </div>`;
+  document.getElementById('mf').innerHTML=`<button class="btn btn-out" onclick="closeM()">Cancelar</button><button class="btn btn-pri" onclick="guardarAlumnoPadron()">Agregar</button>`;
+  openM();
+}
+
+function guardarAlumnoPadron(){
+  const nombre=(document.getElementById('pa-nombre')?.value||'').trim();
+  const curso=document.getElementById('pa-curso')?.value||'';
+  const ciclo=parseInt(document.getElementById('pa-ciclo')?.value)||_ocCiclo;
+  const fechaAlta=document.getElementById('pa-fecha')?.value||today();
+  const obs=(document.getElementById('pa-obs')?.value||'').trim();
+  if(!nombre){ toast('Ingresá el nombre del alumno','err'); return; }
+  if(!curso){ toast('Seleccioná la sección','err'); return; }
+  const nivel=normalizarNivel(SCHOOL_NIVEL(curso));
+  const id='pa_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
+  DB.padron=DB.padron||[];
+  DB.padron.push({id,nombre,nivel,curso,ciclo,estado:'activo',fechaAlta,fechaBaja:null,motivoBaja:null,notaBaja:obs,admisionId:null});
+  saveDB(); closeM(); renderOcupacion(); ocTab('padron'); toast('Alumno agregado al padrón','ok');
+}
+
+function registrarBajaPadronModal(id){
+  const a=(DB.padron||[]).find(x=>x.id===id); if(!a) return;
+  document.getElementById('mt').textContent='Registrar baja';
+  document.getElementById('mb').innerHTML=`
+    <div style="margin-bottom:12px;padding:10px 14px;background:var(--cr);border-radius:8px">
+      <div style="font-size:15px;font-weight:600">${a.nombre}</div>
+      <div style="font-size:12px;color:var(--tx3)">${a.curso} · ${a.nivel} · Ciclo ${a.ciclo}</div>
+    </div>
+    <div style="display:grid;gap:12px;padding:4px 0">
+      <div class="fg"><label class="flabel">Fecha de baja</label><input class="fi" id="pbaja-fecha" type="date" value="${today()}"></div>
+      <div class="fg"><label class="flabel">Motivo</label>
+        <select class="fsel" id="pbaja-motivo">
+          <option value="familiar">Familiar / personal</option>
+          <option value="academico">Académico</option>
+          <option value="morosidad">Morosidad</option>
+          <option value="distancia">Distancia / mudanza</option>
+          <option value="otro">Otro</option>
+        </select>
+      </div>
+      <div class="fg"><label class="flabel">Nota adicional</label><textarea class="fi" id="pbaja-nota" rows="3" placeholder="Opcional..." style="resize:vertical"></textarea></div>
+    </div>`;
+  document.getElementById('mf').innerHTML=`
+    <button class="btn btn-out" onclick="closeM()">Cancelar</button>
+    <button class="btn btn-pri" style="background:#EF4444;border-color:#EF4444" onclick="guardarBajaPadron('${id}')">Confirmar baja</button>`;
+  openM();
+}
+
+function guardarBajaPadron(id){
+  const a=(DB.padron||[]).find(x=>x.id===id); if(!a) return;
+  a.estado='baja';
+  a.fechaBaja=document.getElementById('pbaja-fecha')?.value||today();
+  a.motivoBaja=document.getElementById('pbaja-motivo')?.value||'otro';
+  a.notaBaja=(document.getElementById('pbaja-nota')?.value||'').trim();
+  saveDB(); closeM(); renderOcupacion(); ocTab('padron'); toast('Baja registrada','ok');
+}
+
+function reactivarAlumnoPadron(id){
+  const a=(DB.padron||[]).find(x=>x.id===id); if(!a) return;
+  if(!confirm(`¿Reactivar a ${a.nombre}?`)) return;
+  a.estado='activo'; a.fechaBaja=null; a.motivoBaja=null;
+  saveDB(); renderOcupacion(); ocTab('padron'); toast('Alumno reactivado','ok');
+}
+
+function crearAlumnoPadron(p){
+  DB.padron=DB.padron||[];
+  if(DB.padron.some(a=>a.admisionId===String(p.id))) return;
+  const curso=p.seccion||'';
+  const nivel=curso?normalizarNivel(SCHOOL_NIVEL(curso)):normalizarNivel(p.nivel)||'';
+  const ciclo=p.anio||new Date().getFullYear();
+  const id='pa_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
+  DB.padron.push({id,nombre:p.alumno||'',nivel,curso,ciclo,estado:'activo',fechaAlta:today(),fechaBaja:null,motivoBaja:null,notaBaja:'',admisionId:String(p.id)});
+}
+
+// ─── IMPORTAR PADRÓN ────────────────────────────────
+function importarPadronModal(){
+  document.getElementById('mt').textContent='Importar padrón desde Excel / Google Sheets';
+  document.getElementById('mb').innerHTML=`
+    <div style="background:var(--cr);border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:13px;color:var(--tx3)">
+      <strong style="color:var(--td)">Cómo importar:</strong><br>
+      En Google Sheets o Excel, seleccioná las columnas en este orden y copiá (Ctrl+C):<br>
+      <code style="background:var(--bd);padding:2px 6px;border-radius:3px;font-size:12px">NOMBRE Y APELLIDO &nbsp; NIVEL &nbsp; CURSO/SECCIÓN &nbsp; ESTADO (opcional)</code><br>
+      Luego pegá acá abajo. Una fila por alumno, columnas separadas por tab.
+    </div>
+    <div class="fg"><label class="flabel">Pegá los datos aquí</label>
+      <textarea class="fi" id="import-txt" rows="10" placeholder="GARCIA, Juan&#9;Primaria&#9;3º A Prim&#9;Alumno 2026&#10;LOPEZ, Maria&#9;Inicial&#9;Foxes&#9;Alumno 2026" style="resize:vertical;font-family:monospace;font-size:12px"></textarea>
+    </div>
+    <div class="fg">
+      <label class="flabel">Ciclo lectivo para importar</label>
+      <input class="fi" id="import-ciclo" type="number" value="${_ocCiclo}" min="2020" max="2030" style="max-width:100px">
+    </div>
+    <div id="import-preview" style="margin-top:8px;font-size:12px;color:var(--tx3)"></div>`;
+  document.getElementById('mb').querySelector('#import-txt').addEventListener('input', previsualizarImport);
+  document.getElementById('mf').innerHTML=`
+    <button class="btn btn-out" onclick="closeM()">Cancelar</button>
+    <button class="btn btn-pri" style="background:#7C3AED;border-color:#7C3AED" onclick="ejecutarImport()">Importar</button>`;
+  openM();
+}
+
+function previsualizarImport(){
+  const txt=document.getElementById('import-txt')?.value||'';
+  const {rows,errores}=parsePadronCSV(txt,_ocCiclo);
+  const prev=document.getElementById('import-preview');
+  if(!prev) return;
+  if(!txt.trim()){ prev.innerHTML=''; return; }
+  prev.innerHTML=`<strong style="color:var(--td)">${rows.length} alumnos detectados</strong>${errores.length?` · <span style="color:#D97706">${errores.length} filas con problemas</span>`:''}`;
+}
+
+function parsePadronCSV(txt, ciclo){
+  const rows=[], errores=[];
+  const lines=txt.trim().split('\n').filter(l=>l.trim());
+  lines.forEach((line,i)=>{
+    const cols=line.split('\t');
+    if(cols.length<2){ errores.push(`Fila ${i+1}: menos de 2 columnas`); return; }
+    const nombre=(cols[0]||'').trim();
+    const nivelRaw=(cols[1]||'').trim();
+    const cursoRaw=(cols[2]||cols[1]||'').trim();
+    const estadoRaw=(cols[3]||'').trim().toLowerCase();
+    if(!nombre||nombre.toLowerCase()==='nombre y apellido'||nombre.toLowerCase()==='nombre') return; // skip headers
+    const nivel=normalizarNivel(nivelRaw);
+    const curso=normalizarCurso(cursoRaw);
+    const estado=estadoRaw.includes('baja')?'baja':'activo';
+    rows.push({nombre,nivel,curso,ciclo:parseInt(ciclo)||_ocCiclo,estado,fechaAlta:today(),fechaBaja:null,motivoBaja:estado==='baja'?'otro':null,notaBaja:'',admisionId:null});
+  });
+  return {rows,errores};
+}
+
+function ejecutarImport(){
+  const txt=document.getElementById('import-txt')?.value||'';
+  const ciclo=parseInt(document.getElementById('import-ciclo')?.value)||_ocCiclo;
+  const {rows,errores}=parsePadronCSV(txt,ciclo);
+  if(!rows.length){ toast('Sin datos válidos para importar','err'); return; }
+  DB.padron=DB.padron||[];
+  // Remove existing entries for this ciclo that are not from admisiones before re-importing
+  const sinImportar=DB.padron.filter(a=>!(a.ciclo===ciclo&&!a.admisionId));
+  DB.padron=sinImportar;
+  // Add imported rows with unique IDs
+  rows.forEach((r,i)=>{
+    r.id='pa_imp_'+ciclo+'_'+Date.now()+'_'+i;
+    DB.padron.push(r);
+  });
+  saveDB(); closeM();
+  _ocCiclo=ciclo;
+  const sel=document.getElementById('oc-ciclo-sel'); if(sel) sel.value=String(ciclo);
+  renderOcupacion(); ocTab('padron');
+  toast(`✓ ${rows.length} alumnos importados al padrón ${ciclo}`+(errores.length?` (${errores.length} filas ignoradas)`:''),'ok');
+}
+
+// ─── RE-MATRÍCULA ────────────────────────────────────
+const REMAT_ESTADOS={re_matricula:{lbl:'Re-matricula',col:'#16A34A',bg:'#DCFCE7'},no_sabe:{lbl:'No sabe',col:'#D97706',bg:'#FEF3C7'},baja:{lbl:'Baja',col:'#EF4444',bg:'#FEE2E2'},postulado:{lbl:'Postulado',col:'#7C3AED',bg:'#EDE9FE'}};
+
+function renderReMatricula(){
+  const ciclo=_ocCiclo;
+  const siguienteCiclo=ciclo+1;
+  const padron=(DB.padron||[]).filter(a=>a.ciclo===ciclo&&a.estado==='activo');
+  if(!padron.length){
+    return `<div class="cbox"><p style="color:var(--tx3);padding:14px">Importá el padrón ${ciclo} primero para gestionar la re-matrícula ${siguienteCiclo}.</p></div>`;
+  }
+
+  // Stats
+  const total=padron.length;
+  const getEst=id=>(DB.reMatricula||{})[id+'_'+siguienteCiclo]?.estado||'';
+  const cntRM=padron.filter(a=>getEst(a.id)==='re_matricula').length;
+  const cntNS=padron.filter(a=>getEst(a.id)==='no_sabe').length;
+  const cntB=padron.filter(a=>getEst(a.id)==='baja').length;
+  const cntSin=padron.filter(a=>!getEst(a.id)).length;
+
+  let html=`
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+      <div class="stc" style="cursor:default;border-left:3px solid #16A34A;min-width:120px">
+        <div class="stc-lbl">Re-matriculan</div>
+        <div class="stc-val" style="color:#16A34A">${cntRM}</div>
+        <div class="stc-sub">de ${total} activos</div>
+      </div>
+      <div class="stc" style="cursor:default;border-left:3px solid #D97706;min-width:120px">
+        <div class="stc-lbl">No saben</div>
+        <div class="stc-val" style="color:#D97706">${cntNS}</div>
+        <div class="stc-sub">pendientes de decisión</div>
+      </div>
+      <div class="stc" style="cursor:default;border-left:3px solid #EF4444;min-width:120px">
+        <div class="stc-lbl">No continúan</div>
+        <div class="stc-val" style="color:#EF4444">${cntB}</div>
+        <div class="stc-sub">bajas para ${siguienteCiclo}</div>
+      </div>
+      <div class="stc" style="cursor:default;border-left:3px solid #6B7280;min-width:120px">
+        <div class="stc-lbl">Sin definir</div>
+        <div class="stc-val" style="color:#6B7280">${cntSin}</div>
+        <div class="stc-sub">no registrado aún</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
+      <input class="fi" id="remat-q" placeholder="Buscar alumno..." style="max-width:220px;padding:7px 12px" oninput="filtrarRemat()">
+      <select class="fsel" id="remat-f-nivel" style="font-size:13px" onchange="filtrarRemat()">
+        <option value="">Todos los niveles</option>
+        <option value="Inicial">Inicial</option>
+        <option value="Elementary">Elementary</option>
+        <option value="High School">High School</option>
+      </select>
+      <select class="fsel" id="remat-f-est" style="font-size:13px" onchange="filtrarRemat()">
+        <option value="">Todos los estados</option>
+        <option value="re_matricula">Re-matricula</option>
+        <option value="no_sabe">No sabe</option>
+        <option value="baja">Baja</option>
+        <option value="">Sin definir</option>
+      </select>
+    </div>
+    <div id="remat-tabla"></div>`;
+  return html;
+}
+
+function filtrarRemat(){
+  const ciclo=_ocCiclo, siguiente=ciclo+1;
+  const q=(document.getElementById('remat-q')?.value||'').toLowerCase();
+  const fNivel=document.getElementById('remat-f-nivel')?.value||'';
+  const getEst=id=>(DB.reMatricula||{})[id+'_'+siguiente]?.estado||'';
+  let lista=(DB.padron||[]).filter(a=>a.ciclo===ciclo&&a.estado==='activo');
+  if(fNivel) lista=lista.filter(a=>a.nivel===fNivel);
+  if(q) lista=lista.filter(a=>(a.nombre||'').toLowerCase().includes(q));
+  lista=lista.sort((a,b)=>(a.curso+a.nombre).localeCompare(b.curso+b.nombre));
+  const tb=document.getElementById('remat-tabla'); if(!tb) return;
+
+  const bySec={};
+  lista.forEach(a=>{ const k=a.curso||'Sin sección'; if(!bySec[k]) bySec[k]=[]; bySec[k].push(a); });
+
+  tb.innerHTML=Object.entries(bySec).map(([sec,alumnos])=>`
+    <div class="cbox" style="margin-bottom:12px">
+      <div class="cbox-h">
+        <div class="cbox-t">${sec}</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          ${Object.entries(REMAT_ESTADOS).map(([k,v])=>{
+            const cnt=alumnos.filter(a=>getEst(a.id)===k).length;
+            return cnt?`<span style="font-size:11px;padding:2px 8px;border-radius:5px;background:${v.bg};color:${v.col}">${cnt} ${v.lbl}</span>`:'';
+          }).join('')}
+        </div>
+      </div>
+      <table><thead><tr><th>Nombre</th><th>Re-matrícula ${siguiente}</th></tr></thead>
+      <tbody>${alumnos.map(a=>{
+        const est=getEst(a.id);
+        return `<tr>
+          <td><strong>${a.nombre}</strong></td>
+          <td>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              ${Object.entries(REMAT_ESTADOS).map(([k,v])=>`
+                <button class="btn btn-sm" style="${est===k?`background:${v.col};color:#fff;border-color:${v.col}`:`background:transparent;color:${v.col};border:1px solid ${v.col}`}" onclick="setRemat('${a.id}','${k}')">
+                  ${v.lbl}
+                </button>`).join('')}
+              ${est?`<button class="btn btn-sm btn-out" style="color:var(--tx3)" onclick="setRemat('${a.id}','')">Limpiar</button>`:''}
+            </div>
+          </td>
+        </tr>`;
+      }).join('')}</tbody></table>
+    </div>`).join('');
+}
+
+function setRemat(alumnoId, estado){
+  const ciclo=_ocCiclo, siguiente=ciclo+1;
+  const key=alumnoId+'_'+siguiente;
+  DB.reMatricula=DB.reMatricula||{};
+  if(!estado){ delete DB.reMatricula[key]; }
+  else { DB.reMatricula[key]={estado,fecha:today(),obs:''}; }
+  saveDB();
+  const body=document.getElementById('oc-body');
+  if(body){ body.innerHTML=renderReMatricula(); attachRematEvents(); }
+  else filtrarRemat();
+}
+
+function attachRematEvents(){ filtrarRemat(); }
 
 function renderMovimientos(){
   const mat = DB.postulantes.filter(p=>p.estado==='nuevo'&&p.seccion);
