@@ -3824,7 +3824,11 @@ function renderOcupacionCards(){
   const totalAlumnos = all.reduce((s,r)=>s+r.actual,0);
   const totalCap     = all.reduce((s,r)=>s+r.cap,0);
   const totalNuevos  = all.reduce((s,r)=>s+r.nuevos,0);
-  const totalBajas   = all.reduce((s,r)=>s+r.bajas,0);
+  // Count bajas directly from padron (includes students with empty section)
+  const padronBajasTotal = (DB.padron||[]).filter(a=>a.ciclo===ciclo&&a.estado==='baja').length;
+  const totalBajas = padronBajasTotal > 0
+    ? padronBajasTotal
+    : all.reduce((s,r)=>s+r.bajas,0) + (DB.bajasEscolares||[]).length;
   const pctGen       = totalCap>0 ? totalAlumnos/totalCap : 0;
   const sinSeccion   = DB.postulantes.filter(p=>p.estado==='nuevo'&&!p.seccion&&(p.anio===ciclo||!p.anio)&&
     !(DB.padron||[]).some(a=>a.admisionId===String(p.id))).length;
@@ -4290,8 +4294,11 @@ function setRemat(alumnoId, estado){
 function attachRematEvents(){ filtrarRemat(); }
 
 function renderMovimientos(){
-  const mat = DB.postulantes.filter(p=>p.estado==='nuevo'&&p.seccion);
-  const bajas = DB.bajasEscolares||[];
+  const ciclo = _ocCiclo;
+  const mat = DB.postulantes.filter(p=>p.estado==='nuevo'&&p.seccion&&(p.anio===ciclo||!p.anio));
+  // Bajas: padron entries for this ciclo with estado='baja', plus legacy bajasEscolares
+  const padronBajas = (DB.padron||[]).filter(a=>a.ciclo===ciclo&&a.estado==='baja');
+  const legacyBajas = (DB.bajasEscolares||[]);
 
   // Agrupar por mes
   const meses={};
@@ -4302,17 +4309,22 @@ function renderMovimientos(){
     if(!meses[mes]) meses[mes]={altas:[],bajas:[]};
     meses[mes].altas.push({alumno:p.alumno,seccion:p.seccion,curso:p.curso,anio:p.anio});
   });
-  bajas.forEach(b=>{
+  padronBajas.forEach(b=>{
+    const mes=(b.fechaBaja||b.fechaAlta||'2026-01').slice(0,7);
+    if(!meses[mes]) meses[mes]={altas:[],bajas:[]};
+    meses[mes].bajas.push({alumno:b.nombre,curso:b.curso,motivo:b.motivoBaja});
+  });
+  legacyBajas.forEach(b=>{
     const mes=(b.fecha||today()).slice(0,7);
     if(!meses[mes]) meses[mes]={altas:[],bajas:[]};
     meses[mes].bajas.push({alumno:b.alumno,curso:b.curso});
   });
 
-  const allMat = DB.postulantes.filter(p=>p.estado==='nuevo'&&!p.seccion);
+  const allMat = DB.postulantes.filter(p=>p.estado==='nuevo'&&!p.seccion&&(p.anio===ciclo||!p.anio));
 
   const mesesOrdenados=Object.keys(meses).sort().reverse();
   if(!mesesOrdenados.length&&!allMat.length){
-    return '<div class="cbox"><p style="color:var(--tx3);padding:12px">Sin movimientos registrados en 2026.</p></div>';
+    return `<div class="cbox"><p style="color:var(--tx3);padding:12px">Sin movimientos registrados en ${ciclo}.</p></div>`;
   }
 
   const fmtMes=m=>{const[y,mo]=m.split('-');const ns=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];return (ns[parseInt(mo)-1]||mo)+' '+y;};
