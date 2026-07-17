@@ -1287,6 +1287,20 @@ async function fsGet(){
 }
 
 async function fsSave(){
+  // If local padron is empty, preserve whatever Firestore has (avoid wiping it from other sessions)
+  let padronToSave = DB.padron||[];
+  let rematToSave  = DB.reMatricula||{};
+  if(padronToSave.length === 0 || Object.keys(rematToSave).length === 0){
+    try{
+      const remote = await fsGet();
+      if(remote){
+        if(padronToSave.length === 0 && remote.padron && remote.padron.length > 0)
+          padronToSave = remote.padron;
+        if(Object.keys(rematToSave).length === 0 && remote.reMatricula && Object.keys(remote.reMatricula).length > 0)
+          rematToSave = remote.reMatricula;
+      }
+    }catch(e){}
+  }
   const payload = JSON.stringify({
     nextId: DB.nextId,
     postulantes: DB.postulantes,
@@ -1297,8 +1311,8 @@ async function fsSave(){
     pendingNotif: DB.pendingNotif,
     bajasEscolares: DB.bajasEscolares||[],
     ocupacion: DB.ocupacion||{},
-    padron: DB.padron||[],
-    reMatricula: DB.reMatricula||{},
+    padron: padronToSave,
+    reMatricula: rematToSave,
     ts: Date.now()
   });
   try{
@@ -1352,8 +1366,10 @@ async function syncFromCloud(){
     if(remote.bajasEscolares) DB.bajasEscolares = remote.bajasEscolares;
     if(remote.ocupacion) DB.ocupacion = {...OC_DEFAULT,...remote.ocupacion};
     else if(!DB.ocupacion||!Object.keys(DB.ocupacion).length) DB.ocupacion={...OC_DEFAULT};
-    if(remote.padron) DB.padron = remote.padron;
-    if(remote.reMatricula) DB.reMatricula = remote.reMatricula;
+    // Only overwrite local padron/reMatricula if remote has more data (prevent empty remote wiping local state)
+    if(remote.padron && remote.padron.length > (DB.padron||[]).length) DB.padron = remote.padron;
+    else if(remote.padron && remote.padron.length > 0 && (DB.padron||[]).length === 0) DB.padron = remote.padron;
+    if(remote.reMatricula && Object.keys(remote.reMatricula).length >= Object.keys(DB.reMatricula||{}).length) DB.reMatricula = remote.reMatricula;
     saveLocalOnly();
     renderPanel();
     updateSyncStatus('synced');
