@@ -1157,6 +1157,8 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
           <button class="btn btn-sm btn-out" id="oc-tab-padron" onclick="ocTab('padron')">Padrón</button>
           <button class="btn btn-sm btn-out" id="oc-tab-movimientos" onclick="ocTab('movimientos')">Movimientos</button>
           <button class="btn btn-sm btn-out" id="oc-tab-remat" onclick="ocTab('remat')">Re-Matrícula</button>
+          <button class="btn btn-sm btn-out" id="oc-tab-descuentos" onclick="ocTab('descuentos')">Descuentos</button>
+          <button class="btn btn-sm btn-out" id="oc-tab-morosos" onclick="ocTab('morosos')">Morosos</button>
           <div style="flex:1"></div>
           <button class="btn btn-csv btn-sm" onclick="exportOcupacionCSV()">Exportar CSV</button>
         </div>
@@ -1200,6 +1202,25 @@ const NIVEL = c => !c ? '' : c.startsWith('K') ? 'Kindergarten' : c.includes('El
 const SCHOOL_CURSOS = ['S2 · Puppies','S3 · Dolphins','S3 · Koalas','S4 · Foxes','S4 · Monkeys','S5 · Bears','S5 · Hippos','1° A Prim','1° B Prim','2° A Prim','2° B Prim','3° A Prim','3° B Prim','4° A Prim','4° B Prim','5° A Prim','5° B Prim','6° A Prim','6° B Prim','1° A Sec','1° B Sec','2° A Sec','2° B Sec','3° A Sec','3° B Sec','4° A Sec','4° B Sec','5° A Sec','5° B Sec','6° A Sec','6° B Sec'];
 const SCHOOL_NIVEL = sc => sc.includes(' Sec') ? 'High School' : sc.includes(' Prim') ? 'Elementary' : 'Inicial';
 const PIPELINE_TO_SECTIONS = {'K2 (Puppies)':['S2 · Puppies'],'K3 (Koalas/Dolphins)':['S3 · Dolphins','S3 · Koalas'],'K4 (Foxes/Monkeys)':['S4 · Foxes','S4 · Monkeys'],'K5 (Bears/Hippos)':['S5 · Bears','S5 · Hippos'],'1er año Elementary':['1° A Prim','1° B Prim'],'2do año Elementary':['2° A Prim','2° B Prim'],'3er año Elementary':['3° A Prim','3° B Prim'],'4to año Elementary':['4° A Prim','4° B Prim'],'5to año Elementary':['5° A Prim','5° B Prim'],'6to año Elementary':['6° A Prim','6° B Prim'],'1er año High School':['1° A Sec','1° B Sec'],'2do año High School':['2° A Sec','2° B Sec'],'3er año High School':['3° A Sec','3° B Sec'],'4to año High School':['4° A Sec','4° B Sec'],'5to año High School':['5° A Sec','5° B Sec'],'6to año High School':['6° A Sec','6° B Sec']};
+// Maps each section to the next year section (null = graduates)
+const SECTION_ADVANCE = {
+  'S2 · Puppies':'S3 · Dolphins',
+  'S3 · Dolphins':'S4 · Foxes','S3 · Koalas':'S4 · Monkeys',
+  'S4 · Foxes':'S5 · Bears','S4 · Monkeys':'S5 · Hippos',
+  'S5 · Bears':'1° A Prim','S5 · Hippos':'1° B Prim',
+  '1° A Prim':'2° A Prim','1° B Prim':'2° B Prim',
+  '2° A Prim':'3° A Prim','2° B Prim':'3° B Prim',
+  '3° A Prim':'4° A Prim','3° B Prim':'4° B Prim',
+  '4° A Prim':'5° A Prim','4° B Prim':'5° B Prim',
+  '5° A Prim':'6° A Prim','5° B Prim':'6° B Prim',
+  '6° A Prim':'1° A Sec','6° B Prim':'1° B Sec',
+  '1° A Sec':'2° A Sec','1° B Sec':'2° B Sec',
+  '2° A Sec':'3° A Sec','2° B Sec':'3° B Sec',
+  '3° A Sec':'4° A Sec','3° B Sec':'4° B Sec',
+  '4° A Sec':'5° A Sec','4° B Sec':'5° B Sec',
+  '5° A Sec':'6° A Sec','5° B Sec':'6° B Sec',
+  '6° A Sec':null,'6° B Sec':null
+};
 const OC_DEFAULT = {'S2 · Puppies':{base:25,cap:25},'S3 · Dolphins':{base:18,cap:25},'S3 · Koalas':{base:17,cap:25},'S4 · Foxes':{base:19,cap:25},'S4 · Monkeys':{base:16,cap:25},'S5 · Bears':{base:21,cap:25},'S5 · Hippos':{base:22,cap:25},'1° A Prim':{base:26,cap:27},'1° B Prim':{base:26,cap:27},'2° A Prim':{base:27,cap:27},'2° B Prim':{base:27,cap:27},'3° A Prim':{base:27,cap:27},'3° B Prim':{base:27,cap:27},'4° A Prim':{base:26,cap:27},'4° B Prim':{base:28,cap:27},'5° A Prim':{base:22,cap:27},'5° B Prim':{base:19,cap:27},'6° A Prim':{base:22,cap:27},'6° B Prim':{base:25,cap:27},'1° A Sec':{base:27,cap:27},'1° B Sec':{base:27,cap:27},'2° A Sec':{base:17,cap:27},'2° B Sec':{base:15,cap:27},'3° A Sec':{base:22,cap:27},'3° B Sec':{base:26,cap:27},'4° A Sec':{base:25,cap:27},'4° B Sec':{base:26,cap:27},'5° A Sec':{base:18,cap:27},'5° B Sec':{base:22,cap:27},'6° A Sec':{base:20,cap:27},'6° B Sec':{base:20,cap:27}};
 
 const DEFAULT_PW_HASH = '91cbed8dc52bfd459bfdb4acea9f131df6e919fedff279fe86ec788830c0cc82';
@@ -1250,7 +1271,9 @@ let DB = {
   bajasEscolares:[],
   ocupacion:{},
   padron:[],
-  reMatricula:{}
+  reMatricula:{},
+  descuentos:{},
+  morosos:[]
 };
 
 // ═══════════════════════════
@@ -1313,6 +1336,8 @@ async function fsSave(){
     ocupacion: DB.ocupacion||{},
     padron: padronToSave,
     reMatricula: rematToSave,
+    descuentos: DB.descuentos||{},
+    morosos: DB.morosos||[],
     ts: Date.now()
   });
   try{
@@ -1370,6 +1395,8 @@ async function syncFromCloud(){
     if(remote.padron && remote.padron.length > (DB.padron||[]).length) DB.padron = remote.padron;
     else if(remote.padron && remote.padron.length > 0 && (DB.padron||[]).length === 0) DB.padron = remote.padron;
     if(remote.reMatricula && Object.keys(remote.reMatricula).length >= Object.keys(DB.reMatricula||{}).length) DB.reMatricula = remote.reMatricula;
+    if(remote.descuentos) DB.descuentos = remote.descuentos;
+    if(remote.morosos) DB.morosos = remote.morosos;
     saveLocalOnly();
     renderPanel();
     updateSyncStatus('synced');
@@ -1389,7 +1416,7 @@ function saveLocalOnly(){
     const ts = Date.now();
     localStorage.setItem('austin_ebs_v2', JSON.stringify({
       nextId:DB.nextId, postulantes:DB.postulantes, vacantes:DB.vacantes,
-      tarifas:DB.tarifas, emails:DB.emails, config:DB.config, pendingNotif:DB.pendingNotif, bajasEscolares:DB.bajasEscolares||[], ocupacion:DB.ocupacion||{}, padron:DB.padron||[], reMatricula:DB.reMatricula||{}
+      tarifas:DB.tarifas, emails:DB.emails, config:DB.config, pendingNotif:DB.pendingNotif, bajasEscolares:DB.bajasEscolares||[], ocupacion:DB.ocupacion||{}, padron:DB.padron||[], reMatricula:DB.reMatricula||{}, descuentos:DB.descuentos||{}, morosos:DB.morosos||[]
     }));
     localStorage.setItem('austin_ebs_ts', String(ts));
   } catch(e){}
@@ -1433,6 +1460,8 @@ function loadDB(){
     else DB.ocupacion={...OC_DEFAULT};
     if(d.padron) DB.padron=d.padron;
     if(d.reMatricula) DB.reMatricula=d.reMatricula;
+    if(d.descuentos) DB.descuentos=d.descuentos;
+    if(d.morosos) DB.morosos=d.morosos;
   } catch(e){}
   if(!DB.ocupacion||!Object.keys(DB.ocupacion).length) DB.ocupacion={...OC_DEFAULT};
   // Safety net: nunca sobreescribir con vacío — valores críticos del sistema
@@ -2147,6 +2176,7 @@ function abrirMailto_(email,subj,body){
 // VACANTES
 // ═══════════════════════════
 function renderVac(){
+  syncVacantesFromOcupacion();
   document.getElementById('vacgrid').innerHTML=CURSOS.map(c=>{
     const v=DB.vacantes[c]||{t:20,u:0};
     // Derivar matriculados del dato real para mantener sincronía con Ocupación
@@ -3758,7 +3788,7 @@ function setOcCiclo(val){
 
 function ocTab(t){
   _ocTab = t;
-  ['resumen','padron','movimientos','remat'].forEach(id=>{
+  ['resumen','padron','movimientos','remat','descuentos','morosos'].forEach(id=>{
     const b=document.getElementById('oc-tab-'+id);
     if(!b) return;
     if(id===t){ b.style.background='var(--gr)'; b.style.color='#fff'; b.classList.remove('btn-out'); }
@@ -3902,6 +3932,8 @@ function renderOcupacionBody(){
   if(_ocTab==='movimientos'){ body.innerHTML=renderMovimientos(); return; }
   if(_ocTab==='padron'){ body.innerHTML=renderPadron(); attachPadronEvents(); return; }
   if(_ocTab==='remat'){ body.innerHTML=renderReMatricula(); attachRematEvents(); return; }
+  if(_ocTab==='descuentos'){ body.innerHTML=renderDescuentos(); attachDescuentosEvents(); return; }
+  if(_ocTab==='morosos'){ body.innerHTML=renderMorosos(); return; }
   // resumen: cards de sección agrupadas por nivel
   const niveles=['Inicial','Elementary','High School'];
   body.innerHTML=niveles.map(n=>{
@@ -4008,8 +4040,10 @@ function renderPadron(){
   const activos=padron.filter(a=>a.estado==='activo').length;
   const bajas=padron.filter(a=>a.estado==='baja').length;
 
+  const sigCiclo=ciclo+1;
+  const yaTieneSig=(DB.padron||[]).some(a=>a.ciclo===sigCiclo&&a.estado==='activo');
   let html=`<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
-    <input class="fi" id="padron-q" placeholder="Buscar alumno..." style="max-width:240px;padding:7px 12px" oninput="filtrarPadron()">
+    <input class="fi" id="padron-q" placeholder="Buscar alumno..." style="max-width:220px;padding:7px 12px" oninput="filtrarPadron()">
     <select class="fsel" id="padron-f-nivel" style="font-size:13px" onchange="filtrarPadron()">
       <option value="">Todos los niveles</option>
       <option value="Inicial">Inicial</option>
@@ -4024,8 +4058,8 @@ function renderPadron(){
     <div style="flex:1"></div>
     <span style="font-size:12px;color:var(--tx3)">${activos} activos · ${bajas} bajas</span>
     <button class="btn btn-sm btn-out" onclick="abrirModalAgregarAlumno()">+ Agregar</button>
-    <button class="btn btn-sm" style="background:#7C3AED;color:#fff;border:none" onclick="importarPadronModal()">⬆ Importar Excel</button>
-    ${!usePadron?`<button class="btn btn-sm btn-out" onclick="abrirModalBajaEsc()" style="color:#EF4444">Registrar baja manual</button>`:''}
+    <button class="btn btn-sm" style="background:#7C3AED;color:#fff;border:none" onclick="importarPadronModal()">⬆ Importar</button>
+    ${usePadron?`<button class="btn btn-sm" style="background:#2C4A5E;color:#fff;border:none" onclick="pasarAlAnoSiguienteModal()" title="Generar padrón ${sigCiclo} avanzando secciones">→ Pasar a ${sigCiclo}</button>`:''}
   </div>
   <div id="padron-tabla"></div>`;
   return html;
@@ -4065,9 +4099,11 @@ function filtrarPadron(){
           ?`<span style="color:#16A34A;font-size:12px;font-weight:600">● Activo</span>`
           :`<span style="color:#EF4444;font-size:12px">● Baja</span> <span style="color:var(--tx3);font-size:11px">${a.motivoBaja||''}</span>`}</td>
         <td style="color:var(--tx3);font-size:12px">${fDateFull(a.fechaAlta)||'—'}</td>
-        <td>${a.estado==='activo'
-          ?`<button class="btn btn-sm btn-out" style="color:#EF4444" onclick="registrarBajaPadronModal('${a.id}')">Baja</button>`
-          :`<button class="btn btn-sm btn-out" style="font-size:11px" onclick="reactivarAlumnoPadron('${a.id}')">Reactivar</button>`}
+        <td style="display:flex;gap:4px;flex-wrap:wrap">
+          ${a.estado==='activo'
+            ?`<button class="btn btn-sm btn-out" onclick="moverSeccionModal('${a.id}')" title="Cambiar de sección">Mover</button>
+              <button class="btn btn-sm btn-out" style="color:#EF4444" onclick="registrarBajaPadronModal('${a.id}')">Baja</button>`
+            :`<button class="btn btn-sm btn-out" style="font-size:11px" onclick="reactivarAlumnoPadron('${a.id}')">Reactivar</button>`}
         </td>
       </tr>`).join('')}</tbody></table>
     </div>`).join('');
@@ -4284,14 +4320,6 @@ function renderReMatricula(){
         <button class="btn btn-sm btn-out" onclick="exportarRematPDF('all')">↓ PDF — Lista completa</button>
       </div>
     </div>
-    <div id="remat-accion-bar" style="display:none;align-items:center;gap:8px;padding:8px 12px;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;margin-bottom:10px;flex-wrap:wrap">
-      <span class="remat-sel-cnt" style="font-size:13px;font-weight:600;color:#1D4ED8">0 seleccionados</span>
-      <span style="font-size:12px;color:#3B82F6">Marcar como:</span>
-      <button class="btn btn-sm" style="background:#16A34A;color:#fff;border-color:#16A34A" onclick="aplicarRematBulk('re_matricula')">✓ Re-matriculan</button>
-      <button class="btn btn-sm" style="background:#D97706;color:#fff;border-color:#D97706" onclick="aplicarRematBulk('no_sabe')">? No saben</button>
-      <button class="btn btn-sm" style="background:#EF4444;color:#fff;border-color:#EF4444" onclick="aplicarRematBulk('baja')">✗ No continúan</button>
-      <button class="btn btn-sm btn-out" style="margin-left:auto" onclick="_rematSelected.clear();updateRematAccionBar();filtrarRemat()">Cancelar</button>
-    </div>
     <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
       <input class="fi" id="remat-q" placeholder="Buscar alumno..." style="max-width:220px;padding:7px 12px" oninput="filtrarRemat()">
       <select class="fsel" id="remat-f-nivel" style="font-size:13px" onchange="filtrarRemat()">
@@ -4322,7 +4350,6 @@ function filtrarRemat(){
   if(fEst) lista=lista.filter(a=>_getRematEst(a.id,sig)===fEst);
   lista=lista.sort((a,b)=>(a.curso+a.nombre).localeCompare(b.curso+b.nombre));
   const tb=document.getElementById('remat-tabla'); if(!tb) return;
-  updateRematAccionBar();
 
   const bySec={};
   lista.forEach(a=>{ const k=a.curso||'Sin sección'; if(!bySec[k]) bySec[k]=[]; bySec[k].push(a); });
@@ -4349,16 +4376,15 @@ function filtrarRemat(){
         </div>
       </div>
       <table><thead><tr>
-        <th style="width:24px"><input type="checkbox" id="chk-sec-${sec.replace(/[^a-z0-9]/gi,'_')}" onchange="toggleRematSeccion('${sec}',this.checked)" title="Seleccionar sección"></th>
         <th>Nombre</th>
         <th style="width:220px;text-align:center">Re-matrícula ${sig}</th>
+        <th style="width:200px">Nota interna</th>
       </tr></thead>
       <tbody>${alumnos.map(a=>{
         const est=_getRematEst(a.id,sig);
-        const isDefault=!(DB.reMatricula||{})[a.id+'_'+sig]; // unset = default re-mat
+        const obs=((DB.reMatricula||{})[a.id+'_'+sig]?.obs||'').replace(/"/g,'&quot;');
         return `<tr style="${est==='baja'?'background:#FFF5F5':est==='no_sabe'?'background:#FFFBEB':''}">
-          <td><input type="checkbox" ${_rematSelected.has(a.id)?'checked':''} onchange="toggleRematItem('${a.id}',this.checked)"></td>
-          <td><strong>${a.nombre}</strong>${isDefault?'':''}</td>
+          <td><strong>${a.nombre}</strong></td>
           <td style="text-align:center">
             <div style="display:inline-flex;gap:4px;border:1px solid var(--bd);border-radius:6px;overflow:hidden">
               <button onclick="setRemat('${a.id}','re_matricula')" title="Re-matricula" style="padding:5px 10px;border:none;cursor:pointer;font-size:13px;font-weight:700;background:${est==='re_matricula'?'#16A34A':'var(--cr)'};color:${est==='re_matricula'?'#fff':'#16A34A'}">✓</button>
@@ -4366,6 +4392,7 @@ function filtrarRemat(){
               <button onclick="setRemat('${a.id}','baja')" title="No continúa" style="padding:5px 10px;border:none;cursor:pointer;font-size:13px;font-weight:700;background:${est==='baja'?'#EF4444':'var(--cr)'};color:${est==='baja'?'#fff':'#EF4444'}">✗</button>
             </div>
           </td>
+          <td><input class="fi" value="${obs}" placeholder="Nota interna..." style="font-size:12px;padding:4px 8px;width:100%;box-sizing:border-box" onblur="setRematObs('${a.id}',this.value)"></td>
         </tr>`;
       }).join('')}</tbody></table>
     </div>`;
@@ -4435,13 +4462,30 @@ function setRemat(alumnoId, estado){
   const ciclo=_ocCiclo, sig=ciclo+1;
   const key=alumnoId+'_'+sig;
   DB.reMatricula=DB.reMatricula||{};
-  if(estado==='re_matricula'){ delete DB.reMatricula[key]; } // default = re_matricula, no need to store
-  else { DB.reMatricula[key]={estado,fecha:today(),obs:''}; }
+  const obsExistente=DB.reMatricula[key]?.obs||'';
+  if(estado==='re_matricula'&&!obsExistente){ delete DB.reMatricula[key]; }
+  else if(estado==='re_matricula'&&obsExistente){ DB.reMatricula[key]={estado,fecha:today(),obs:obsExistente}; }
+  else { DB.reMatricula[key]={estado,fecha:today(),obs:obsExistente}; }
   saveDB();
   filtrarRemat();
 }
 
-function attachRematEvents(){ _rematSelected.clear(); filtrarRemat(); }
+function setRematObs(alumnoId, obs){
+  const ciclo=_ocCiclo, sig=ciclo+1;
+  const key=alumnoId+'_'+sig;
+  DB.reMatricula=DB.reMatricula||{};
+  const cur=DB.reMatricula[key];
+  if(obs.trim()){
+    if(cur) cur.obs=obs.trim();
+    else DB.reMatricula[key]={estado:'re_matricula',fecha:today(),obs:obs.trim()};
+  } else if(cur){
+    cur.obs='';
+    if(cur.estado==='re_matricula') delete DB.reMatricula[key];
+  }
+  saveDB();
+}
+
+function attachRematEvents(){ filtrarRemat(); }
 
 // ─── PDF RE-MATRÍCULA ────────────────────────────────
 function exportarRematPDF(tipo){
@@ -4456,11 +4500,10 @@ function exportarRematPDF(tipo){
   const bySec={};
   lista.forEach(a=>{ const k=a.curso||'Sin sección'; if(!bySec[k]) bySec[k]=[]; bySec[k].push(a); });
 
-  const logoSvg=`<div style="display:inline-grid;grid-template-columns:1fr 1fr;gap:3px;width:44px;height:44px;transform:rotate(-3deg);vertical-align:middle;margin-right:12px">
-    <div style="border-radius:4px;background:#E8621A;display:flex;align-items:center;justify-content:center"><span style="color:#fff;font-family:Georgia,serif;font-size:11px;font-weight:700">A</span></div>
-    <div style="border-radius:4px;background:#7CB518;display:flex;align-items:center;justify-content:center"><span style="color:#fff;font-family:Georgia,serif;font-size:11px;font-weight:700">E</span></div>
-    <div style="border-radius:4px;background:#7CB518;display:flex;align-items:center;justify-content:center"><span style="color:#fff;font-family:Georgia,serif;font-size:11px;font-weight:700">B</span></div>
-    <div style="border-radius:4px;background:#5A8BA8;display:flex;align-items:center;justify-content:center"><span style="color:#fff;font-family:Georgia,serif;font-size:11px;font-weight:700">S</span></div>
+  const logoSvg=`<div style="display:flex;align-items:center;gap:10px;margin-right:4px">
+    <div style="width:48px;height:48px;background:linear-gradient(135deg,#2C4A5E 0%,#1a3347 100%);border-radius:10px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(44,74,94,.25)">
+      <span style="color:#fff;font-family:Georgia,serif;font-size:18px;font-weight:900;letter-spacing:-1px">A</span>
+    </div>
   </div>`;
 
   const seccionesHTML=Object.entries(bySec).map(([sec,alumnos])=>`
@@ -4493,33 +4536,43 @@ function exportarRematPDF(tipo){
   const html=`<!DOCTYPE html><html><head><meta charset="utf-8">
   <title>Re-matriculación ${sig} — Austin EBS</title>
   <style>
-    body{font-family:-apple-system,Arial,sans-serif;margin:0;padding:32px 40px;color:#1a1a1a;background:#fff}
-    @page{size:A4 portrait;margin:20mm 15mm}
-    @media print{body{padding:0}.no-print{display:none}}
-    h1{margin:0;font-size:22px;color:#2C4A5E}
-    .subtitle{color:#666;font-size:13px;margin-top:4px}
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;padding:36px 44px;color:#111;background:#fff;font-size:13px}
+    @page{size:A4 portrait;margin:15mm 12mm}
+    @media print{body{padding:0}.no-print{display:none!important}}
+    table{width:100%;border-collapse:collapse}
+    th{background:#F4F6F8;font-size:11px;font-weight:700;color:#444;padding:7px 12px;text-align:left;border-bottom:2px solid #DDE3EA}
+    td{padding:7px 12px;font-size:12.5px;border-bottom:1px solid #EAECEF}
+    tr:last-child td{border-bottom:none}
+    tr:nth-child(even) td{background:#FAFBFC}
   </style></head><body>
-  <div style="display:flex;align-items:center;margin-bottom:6px">
-    ${logoSvg}
-    <div>
-      <div style="font-size:12px;color:#888;font-weight:600;letter-spacing:.08em;text-transform:uppercase">Austin Eco Bilingual School</div>
-      <h1>Re-matriculación ${sig}</h1>
+  <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:18px;border-bottom:3px solid #2C4A5E;margin-bottom:20px">
+    <div style="display:flex;align-items:center;gap:14px">
+      ${logoSvg}
+      <div>
+        <div style="font-size:11px;color:#888;font-weight:700;letter-spacing:.1em;text-transform:uppercase">Austin Eco Bilingual School</div>
+        <div style="font-size:22px;font-weight:800;color:#2C4A5E;line-height:1.15;margin-top:2px">Re-matriculación ${sig}</div>
+      </div>
+    </div>
+    <div style="text-align:right">
+      <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.06em">Generado</div>
+      <div style="font-size:12px;color:#444;margin-top:2px">${new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'long',year:'numeric'})}</div>
     </div>
   </div>
-  <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#F0F4F0;border-radius:8px;margin-bottom:24px">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:#EDF2F7;border-radius:8px;margin-bottom:24px;border-left:4px solid #2C4A5E">
     <div>
       <span style="font-weight:700;color:#2C4A5E;font-size:14px">${titulo}</span>
-      <span style="color:#666;font-size:12px;margin-left:10px">Ciclo lectivo ${ciclo} → ${sig}</span>
+      <span style="color:#666;font-size:12px;margin-left:12px">Ciclo ${ciclo} → ${sig}</span>
     </div>
-    <div style="font-size:13px;font-weight:600;color:#2C4A5E">${lista.length} alumno${lista.length!==1?'s':''}</div>
+    <div style="font-size:14px;font-weight:800;color:#2C4A5E">${lista.length} alumno${lista.length!==1?'s':''}</div>
   </div>
   ${seccionesHTML}
-  <div style="margin-top:30px;padding-top:14px;border-top:1px solid #ddd;font-size:10px;color:#999;display:flex;justify-content:space-between">
-    <span>Generado ${new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'long',year:'numeric'})}</span>
-    <span>Sistema de Admisiones — Austin EBS</span>
+  <div style="margin-top:32px;padding-top:12px;border-top:1px solid #DDE3EA;display:flex;justify-content:space-between;font-size:10px;color:#999">
+    <span>Austin Eco Bilingual School — Sistema de Admisiones</span>
+    <span>Ciclo lectivo ${ciclo} → ${sig}</span>
   </div>
-  <div class="no-print" style="margin-top:20px;text-align:center">
-    <button onclick="window.print()" style="background:#2C4A5E;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;cursor:pointer">🖨 Imprimir / Guardar PDF</button>
+  <div class="no-print" style="margin-top:24px;text-align:center;padding:16px;background:#F4F6F8;border-radius:10px">
+    <button onclick="window.print()" style="background:#2C4A5E;color:#fff;border:none;padding:11px 28px;border-radius:8px;font-size:14px;cursor:pointer;font-weight:600">Imprimir / Guardar PDF</button>
     <div style="margin-top:8px;font-size:12px;color:#666">En el diálogo de impresión elegí "Guardar como PDF"</div>
   </div>
 </body></html>`;
@@ -4531,93 +4584,208 @@ function exportarRematPDF(tipo){
 }
 
 // ─── PADRÓN MULTI-AÑO ──────────────────────────────
+function pasarAlAnoSiguienteModal(){
+  const ciclo=_ocCiclo, sig=ciclo+1;
+  const padronAct=(DB.padron||[]).filter(a=>a.ciclo===ciclo&&a.estado==='activo');
+  if(!padronAct.length){ toast(`No hay padrón activo en ${ciclo}`,'err'); return; }
+  const egresados=padronAct.filter(a=>SECTION_ADVANCE[a.curso]===null).length;
+  const avanzan=padronAct.filter(a=>SECTION_ADVANCE[a.curso]!==undefined&&SECTION_ADVANCE[a.curso]!==null).length;
+  const sinMapeo=padronAct.filter(a=>!Object.prototype.hasOwnProperty.call(SECTION_ADVANCE,a.curso)).length;
+  const bajas=padronAct.filter(a=>(DB.reMatricula||{})[a.id+'_'+sig]?.estado==='baja').length;
+  const noSaben=padronAct.filter(a=>(DB.reMatricula||{})[a.id+'_'+sig]?.estado==='no_sabe').length;
+  const nuevosS3=DB.postulantes.filter(p=>(p.estado==='nuevo'||p.estado==='matriculado')&&p.anio===sig&&p.curso&&p.curso.startsWith('K')).length;
+  document.getElementById('mt').textContent=`Pasar padrón ${ciclo} → ${sig}`;
+  document.getElementById('mb').innerHTML=`
+    <div style="background:var(--cr);border-radius:10px;padding:14px;margin-bottom:14px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><div style="color:var(--tx3);font-size:11px;font-weight:600;text-transform:uppercase">Activos en ${ciclo}</div><div style="font-size:26px;font-weight:800;color:var(--td)">${padronAct.length}</div></div>
+        <div><div style="color:var(--tx3);font-size:11px;font-weight:600;text-transform:uppercase">Pasan a ${sig}</div><div style="font-size:26px;font-weight:800;color:#16A34A">${avanzan-bajas}</div></div>
+        <div><div style="color:var(--tx3);font-size:11px;font-weight:600;text-transform:uppercase">Egresan (6° Sec)</div><div style="font-size:26px;font-weight:800;color:#7C3AED">${egresados}</div></div>
+        <div><div style="color:var(--tx3);font-size:11px;font-weight:600;text-transform:uppercase">No re-matriculan</div><div style="font-size:26px;font-weight:800;color:#EF4444">${bajas}</div></div>
+        ${nuevosS3?`<div style="grid-column:1/-1"><div style="color:var(--tx3);font-size:11px;font-weight:600;text-transform:uppercase">Nuevos de admisiones (Inicial ${sig})</div><div style="font-size:26px;font-weight:800;color:#3B82F6">+${nuevosS3}</div></div>`:''}
+      </div>
+    </div>
+    ${sinMapeo?`<div style="background:#FEF3C7;border:1px solid #FDE68A;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:12px;color:#92400E">⚠ ${sinMapeo} alumno${sinMapeo!==1?'s tienen':'tiene'} sección no reconocida y quedarán en la sección actual. Verificá manualmente después del pase.</div>`:''}
+    ${noSaben?`<div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:12px;color:#1D4ED8">ℹ ${noSaben} marcado${noSaben!==1?'s':''} como "No saben aún" — se incluirán en ${sig}.</div>`:''}
+    <div style="font-size:13px;color:var(--tx3)">Se generará el padrón <strong>${sig}</strong> con cada alumno avanzado a su sección correspondiente. Las secciones quedan editables manualmente.</div>`;
+  document.getElementById('mf').innerHTML=`
+    <button class="btn btn-out" onclick="closeM()">Cancelar</button>
+    <button class="btn btn-pri" onclick="generarPadronDesdeRemat(${sig});closeM()">Confirmar → Generar padrón ${sig}</button>`;
+  openM();
+}
+
+function moverSeccionModal(alumnoId){
+  const a=(DB.padron||[]).find(x=>x.id===alumnoId);
+  if(!a) return;
+  const grps=[
+    {lbl:'Inicial',cur:SCHOOL_CURSOS.filter(c=>SCHOOL_NIVEL(c)==='Inicial')},
+    {lbl:'Elementary',cur:SCHOOL_CURSOS.filter(c=>SCHOOL_NIVEL(c)==='Elementary')},
+    {lbl:'High School',cur:SCHOOL_CURSOS.filter(c=>SCHOOL_NIVEL(c)==='High School')}
+  ];
+  const opts=grps.map(g=>`<optgroup label="${g.lbl}">${g.cur.map(c=>`<option value="${c}"${c===a.curso?' selected':''}>${c}</option>`).join('')}</optgroup>`).join('');
+  document.getElementById('mt').textContent='Mover alumno de sección';
+  document.getElementById('mb').innerHTML=`
+    <div style="padding:10px 14px;background:var(--cr);border-radius:8px;margin-bottom:14px">
+      <div style="font-size:15px;font-weight:600">${a.nombre}</div>
+      <div style="font-size:12px;color:var(--tx3)">Ciclo ${a.ciclo} · Sección actual: <strong>${a.curso||'Sin sección'}</strong></div>
+    </div>
+    <div class="fg"><label class="flabel">Nueva sección</label>
+      <select class="fsel" id="mover-curso" style="width:100%">${opts}</select>
+    </div>`;
+  document.getElementById('mf').innerHTML=`
+    <button class="btn btn-out" onclick="closeM()">Cancelar</button>
+    <button class="btn btn-pri" onclick="ejecutarMoverSeccion('${alumnoId}')">Mover</button>`;
+  openM();
+}
+
+function ejecutarMoverSeccion(alumnoId){
+  const a=(DB.padron||[]).find(x=>x.id===alumnoId);
+  const nuevaCurso=document.getElementById('mover-curso')?.value;
+  if(!a||!nuevaCurso) return;
+  const ant=a.curso;
+  if(ant===nuevaCurso){ closeM(); return; }
+  a.curso=nuevaCurso;
+  a.nivel=SCHOOL_NIVEL(nuevaCurso);
+  saveDB(); closeM(); renderOcupacion(); ocTab('padron');
+  toast(`${a.nombre} → ${nuevaCurso}`,'ok');
+}
+
 function generarPadronDesdeRemat(cicloNuevo){
   const cicloAnt=cicloNuevo-1;
   const padronAnt=(DB.padron||[]).filter(a=>a.ciclo===cicloAnt&&a.estado==='activo');
   if(!padronAnt.length){ toast(`No hay padrón ${cicloAnt} como base`,'err'); return; }
-  // Excluir los que tienen baja en re-matrícula
   const remat=DB.reMatricula||{};
+  // Continúan: no marcados como baja, y no son egresados (6°Sec)
   const continuan=padronAnt.filter(a=>{
     const est=remat[a.id+'_'+cicloNuevo]?.estado;
-    return !est||est==='re_matricula'; // unset o re_matricula = continúan
+    const continua=est!=='baja';
+    const esEgresado=SECTION_ADVANCE[a.curso]===null;
+    return continua&&!esEgresado;
   });
-  if(!continuan.length){ toast('Sin alumnos para generar padrón','err'); return; }
   DB.padron=DB.padron||[];
-  // Remover entradas no-admisiones del nuevo ciclo si existen
   DB.padron=DB.padron.filter(a=>!(a.ciclo===cicloNuevo&&!a.admisionId));
-  // Generar nuevas entradas copiando del año anterior
+  const ts=Date.now();
+  // Carry forward descuentos to new padron ids
+  const descCarry={};
   continuan.forEach((a,i)=>{
+    const nuevaCurso=Object.prototype.hasOwnProperty.call(SECTION_ADVANCE,a.curso)
+      ? (SECTION_ADVANCE[a.curso]||a.curso) : a.curso;
+    const nuevaNivel=SCHOOL_NIVEL(nuevaCurso);
+    const newId='pa_gen_'+cicloNuevo+'_'+ts+'_'+i;
     DB.padron.push({
-      id:'pa_gen_'+cicloNuevo+'_'+Date.now()+'_'+i,
-      nombre:a.nombre, nivel:a.nivel, curso:a.curso,
+      id:newId, nombre:a.nombre, nivel:nuevaNivel, curso:nuevaCurso,
       ciclo:cicloNuevo, estado:'activo',
       fechaAlta:today(), fechaBaja:null, motivoBaja:null, notaBaja:'',
       admisionId:a.admisionId||null
     });
+    if((DB.descuentos||{})[a.id]) descCarry[newId]=DB.descuentos[a.id];
   });
+  // Merge carried descuentos
+  if(Object.keys(descCarry).length){
+    DB.descuentos=DB.descuentos||{};
+    Object.assign(DB.descuentos,descCarry);
+  }
+  // Add new Inicial students from admissions pipeline for cicloNuevo
+  const nuevosPipeline=DB.postulantes.filter(p=>{
+    const esRelevante=(p.estado==='nuevo'||p.estado==='matriculado')&&p.anio===cicloNuevo;
+    const yaEnPadron=(DB.padron||[]).some(a=>a.admisionId===String(p.id)&&a.ciclo===cicloNuevo);
+    const esInicial=(p.curso||'').startsWith('K');
+    return esRelevante&&!yaEnPadron&&esInicial;
+  });
+  nuevosPipeline.forEach((p,i)=>{
+    const seccion=p.seccion||(PIPELINE_TO_SECTIONS[p.curso]||[])[0]||'';
+    const nivel=seccion?SCHOOL_NIVEL(seccion):'Inicial';
+    DB.padron.push({
+      id:'pa_new_'+cicloNuevo+'_'+ts+'_'+i,
+      nombre:p.alumno||'',nivel,curso:seccion,ciclo:cicloNuevo,estado:'activo',
+      fechaAlta:today(),fechaBaja:null,motivoBaja:null,notaBaja:'',
+      admisionId:String(p.id)
+    });
+  });
+  const egresados=padronAnt.filter(a=>SECTION_ADVANCE[a.curso]===null).length;
   saveDB();
   _ocCiclo=cicloNuevo;
   const sel=document.getElementById('oc-ciclo-sel'); if(sel) sel.value=String(cicloNuevo);
   renderOcupacion(); ocTab('padron');
-  toast(`Padrón ${cicloNuevo} generado con ${continuan.length} alumnos`,'ok');
+  toast(`Padrón ${cicloNuevo}: ${continuan.length} alumnos${egresados?' · '+egresados+' egresaron':''}${nuevosPipeline.length?' · +'+nuevosPipeline.length+' nuevos de admisiones':''}`,'ok');
 }
 
 function renderMovimientos(){
-  const ciclo = _ocCiclo;
-  const mat = DB.postulantes.filter(p=>p.estado==='nuevo'&&p.seccion&&(p.anio===ciclo||!p.anio));
-  // Bajas: padron entries for this ciclo con estado='baja', plus legacy bajasEscolares
-  const padronBajas = (DB.padron||[]).filter(a=>a.ciclo===ciclo&&a.estado==='baja');
-  const legacyBajas = (DB.bajasEscolares||[]);
-  // Header con botón "Registrar Baja"
-  const headerBaja = `<div style="display:flex;justify-content:flex-end;margin-bottom:14px">
-    <button class="btn btn-pri" style="background:#EF4444;border-color:#EF4444" onclick="abrirModalBajaDesdeListado()">− Registrar baja de alumno</button>
-  </div>`;
+  const ciclo=_ocCiclo;
+  setTimeout(filtrarMovimientos,0);
+  return `<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
+    <select class="fsel" id="mov-f-tipo" style="font-size:13px" onchange="filtrarMovimientos()">
+      <option value="">Altas y bajas</option>
+      <option value="altas">Solo altas</option>
+      <option value="bajas">Solo bajas</option>
+    </select>
+    <select class="fsel" id="mov-f-nivel" style="font-size:13px" onchange="filtrarMovimientos()">
+      <option value="">Todos los niveles</option>
+      <option value="Inicial">Inicial</option>
+      <option value="Elementary">Elementary</option>
+      <option value="High School">High School</option>
+    </select>
+    <input class="fi" id="mov-f-mes" type="month" style="padding:7px 12px;font-size:13px" title="Filtrar por mes" oninput="filtrarMovimientos()">
+    <div style="flex:1"></div>
+    <button class="btn btn-pri" style="background:#EF4444;border-color:#EF4444" onclick="abrirModalBajaDesdeListado()">− Registrar baja</button>
+  </div>
+  <div id="mov-body"></div>`;
+}
 
-  // Agrupar por mes
-  const meses={};
-  mat.forEach(p=>{
-    const h=p.hist&&(p.hist.find(x=>x.e==='nuevo')||p.hist.find(x=>x.e==='matriculado'));
-    const fecha=h?h.f:p.ultAccion||today();
-    const mes=fecha.slice(0,7);
-    if(!meses[mes]) meses[mes]={altas:[],bajas:[]};
-    meses[mes].altas.push({alumno:p.alumno,seccion:p.seccion,curso:p.curso,anio:p.anio});
-  });
-  padronBajas.forEach(b=>{
-    const mes=(b.fechaBaja||b.fechaAlta||'2026-01').slice(0,7);
-    if(!meses[mes]) meses[mes]={altas:[],bajas:[]};
-    meses[mes].bajas.push({alumno:b.nombre,curso:b.curso,motivo:b.motivoBaja});
-  });
-  legacyBajas.forEach(b=>{
-    const mes=(b.fecha||today()).slice(0,7);
-    if(!meses[mes]) meses[mes]={altas:[],bajas:[]};
-    meses[mes].bajas.push({alumno:b.alumno,curso:b.curso});
-  });
-
-  const allMat = DB.postulantes.filter(p=>p.estado==='nuevo'&&!p.seccion&&(p.anio===ciclo||!p.anio));
-
-  const mesesOrdenados=Object.keys(meses).sort().reverse();
-  if(!mesesOrdenados.length&&!allMat.length){
-    return headerBaja+`<div class="cbox"><p style="color:var(--tx3);padding:12px">Sin movimientos registrados en ${ciclo}.</p></div>`;
-  }
-
+function filtrarMovimientos(){
+  const ciclo=_ocCiclo;
+  const fTipo=document.getElementById('mov-f-tipo')?.value||'';
+  const fNivel=document.getElementById('mov-f-nivel')?.value||'';
+  const fMes=document.getElementById('mov-f-mes')?.value||'';
+  const body=document.getElementById('mov-body'); if(!body) return;
   const fmtMes=m=>{const[y,mo]=m.split('-');const ns=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];return (ns[parseInt(mo)-1]||mo)+' '+y;};
 
-  let html=headerBaja;
-
-  if(allMat.length){
-    html+=`<div class="cbox" style="margin-bottom:14px;border:1px solid #FDE68A;background:#FFFBEB">
-      <div class="cbox-h"><div class="cbox-t" style="color:#92400E">⚠ Matriculados sin sección asignada (${allMat.length})</div></div>
-      <table><thead><tr><th>Alumno</th><th>Curso (pipeline)</th><th>Ciclo</th><th></th></tr></thead>
-      <tbody>${allMat.map(p=>`<tr>
-        <td><strong>${p.alumno}</strong></td>
-        <td>${p.curso||'—'}</td>
-        <td>${p.anio||'—'}</td>
-        <td><button class="btn btn-sm btn-out" onclick="openDetalle(${p.id})">Asignar sección</button></td>
-      </tr>`).join('')}</tbody></table>
-    </div>`;
+  const meses={};
+  if(fTipo!=='bajas'){
+    DB.postulantes.filter(p=>p.estado==='nuevo'&&p.seccion&&(p.anio===ciclo||!p.anio)).forEach(p=>{
+      if(fNivel&&SCHOOL_NIVEL(p.seccion||'')!==fNivel) return;
+      const h=p.hist&&(p.hist.find(x=>x.e==='nuevo')||p.hist.find(x=>x.e==='matriculado'));
+      const fecha=h?h.f:p.ultAccion||today();
+      const mes=fecha.slice(0,7);
+      if(fMes&&mes!==fMes) return;
+      if(!meses[mes]) meses[mes]={altas:[],bajas:[]};
+      meses[mes].altas.push({alumno:p.alumno,seccion:p.seccion,nivel:SCHOOL_NIVEL(p.seccion||'')});
+    });
   }
+  if(fTipo!=='altas'){
+    (DB.padron||[]).filter(a=>a.ciclo===ciclo&&a.estado==='baja').forEach(b=>{
+      if(fNivel&&SCHOOL_NIVEL(b.curso||'')!==fNivel) return;
+      const mes=(b.fechaBaja||b.fechaAlta||today()).slice(0,7);
+      if(fMes&&mes!==fMes) return;
+      if(!meses[mes]) meses[mes]={altas:[],bajas:[]};
+      meses[mes].bajas.push({alumno:b.nombre,curso:b.curso,motivo:b.motivoBaja});
+    });
+    (DB.bajasEscolares||[]).forEach(b=>{
+      if(fNivel&&SCHOOL_NIVEL(b.curso||'')!==fNivel) return;
+      const mes=(b.fecha||today()).slice(0,7);
+      if(fMes&&mes!==fMes) return;
+      if(!meses[mes]) meses[mes]={altas:[],bajas:[]};
+      meses[mes].bajas.push({alumno:b.alumno,curso:b.curso});
+    });
+  }
+  const sinSeccion=DB.postulantes.filter(p=>p.estado==='nuevo'&&!p.seccion&&(p.anio===ciclo||!p.anio));
+  const mesesOrd=Object.keys(meses).sort().reverse();
 
-  html+=mesesOrdenados.map(mes=>{
+  let html='';
+  if(sinSeccion.length&&fTipo!=='bajas'&&!fMes){
+    html+=`<div class="cbox" style="margin-bottom:14px;border:1px solid #FDE68A;background:#FFFBEB">
+      <div class="cbox-h"><div class="cbox-t" style="color:#92400E">⚠ Matriculados sin sección (${sinSeccion.length})</div></div>
+      <table><thead><tr><th>Alumno</th><th>Curso pipeline</th><th>Ciclo</th><th></th></tr></thead>
+      <tbody>${sinSeccion.map(p=>`<tr>
+        <td><strong>${p.alumno}</strong></td><td>${p.curso||'—'}</td><td>${p.anio||'—'}</td>
+        <td><button class="btn btn-sm btn-out" onclick="openDetalle(${p.id})">Asignar</button></td>
+      </tr>`).join('')}</tbody></table></div>`;
+  }
+  if(!mesesOrd.length&&!html){
+    body.innerHTML=`<div class="cbox"><p style="color:var(--tx3);padding:12px">Sin movimientos con los filtros aplicados en ${ciclo}.</p></div>`;
+    return;
+  }
+  html+=mesesOrd.map(mes=>{
     const d=meses[mes];
     return `<div class="cbox" style="margin-bottom:14px">
       <div class="cbox-h">
@@ -4629,18 +4797,319 @@ function renderMovimientos(){
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
         ${d.altas.length?`<div>
-          <div style="font-size:11px;font-weight:600;color:#16A34A;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Altas (matriculados via sistema)</div>
-          ${d.altas.map(a=>`<div style="padding:6px 0;border-bottom:1px solid var(--bd);font-size:13px"><strong>${a.alumno}</strong><br><span style="color:var(--tx3);font-size:11.5px">${a.seccion}</span></div>`).join('')}
+          <div style="font-size:11px;font-weight:600;color:#16A34A;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Altas vía admisiones</div>
+          ${d.altas.map(a=>`<div style="padding:6px 0;border-bottom:1px solid var(--bd);font-size:13px"><strong>${a.alumno}</strong><br><span style="color:var(--tx3);font-size:11.5px">${a.seccion}${a.nivel?' · '+a.nivel:''}</span></div>`).join('')}
         </div>`:'<div></div>'}
         ${d.bajas.length?`<div>
           <div style="font-size:11px;font-weight:600;color:#EF4444;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Bajas de alumnos</div>
-          ${d.bajas.map(b=>`<div style="padding:6px 0;border-bottom:1px solid var(--bd);font-size:13px"><strong>${b.alumno}</strong><br><span style="color:var(--tx3);font-size:11.5px">${b.curso}</span></div>`).join('')}
+          ${d.bajas.map(b=>`<div style="padding:6px 0;border-bottom:1px solid var(--bd);font-size:13px"><strong>${b.alumno}</strong><br><span style="color:var(--tx3);font-size:11.5px">${b.curso||'—'}${b.motivo?' · '+b.motivo:''}</span></div>`).join('')}
         </div>`:'<div></div>'}
       </div>
     </div>`;
   }).join('');
+  body.innerHTML=html||`<div class="cbox"><p style="color:var(--tx3);padding:12px">Sin movimientos con los filtros aplicados.</p></div>`;
+}
 
-  return html;
+// ─── DESCUENTOS / BECAS ──────────────────────────────
+function renderDescuentos(){
+  setTimeout(filtrarDescuentos,0);
+  return `<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
+    <input class="fi" id="desc-q" placeholder="Buscar alumno..." style="max-width:240px;padding:7px 12px" oninput="filtrarDescuentos()">
+    <div style="flex:1"></div>
+    <button class="btn btn-sm btn-pri" onclick="abrirModalAgregarDescuento()">+ Agregar descuento / beca</button>
+  </div>
+  <div id="desc-tabla"></div>`;
+}
+
+function filtrarDescuentos(){
+  const q=(document.getElementById('desc-q')?.value||'').toLowerCase();
+  const ciclo=_ocCiclo;
+  const desc=DB.descuentos||{};
+  let lista=(DB.padron||[]).filter(a=>a.ciclo===ciclo&&a.estado==='activo'&&desc[a.id]);
+  if(q) lista=lista.filter(a=>(a.nombre||'').toLowerCase().includes(q)||(a.curso||'').toLowerCase().includes(q));
+  lista.sort((a,b)=>a.curso.localeCompare(b.curso)||a.nombre.localeCompare(b.nombre));
+  const tb=document.getElementById('desc-tabla'); if(!tb) return;
+  if(!lista.length){
+    tb.innerHTML=`<div class="cbox"><p style="color:var(--tx3);padding:14px">Sin descuentos en ciclo ${ciclo}. Usá el botón "+" para agregar.</p></div>`;
+    return;
+  }
+  tb.innerHTML=`<div class="cbox">
+    <div class="cbox-h"><div class="cbox-t">Descuentos y Becas — Ciclo ${ciclo}</div><span style="font-size:12px;color:var(--tx3)">${lista.length} alumno${lista.length!==1?'s':''}</span></div>
+    <table><thead><tr><th>Alumno</th><th>Sección</th><th style="text-align:center">Tipo</th><th style="text-align:center">%</th><th>Observaciones</th><th style="width:70px"></th></tr></thead>
+    <tbody>${lista.map(a=>{
+      const d=desc[a.id];
+      const isBeca=d.tipo==='beca';
+      return `<tr>
+        <td><strong>${a.nombre}</strong></td>
+        <td style="color:var(--tx3);font-size:12px">${a.curso}</td>
+        <td style="text-align:center"><span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px;background:${isBeca?'#EDE9FE':'#DCFCE7'};color:${isBeca?'#7C3AED':'#166534'}">${isBeca?'BECA':'DESC'}</span></td>
+        <td style="text-align:center;font-size:13px;font-weight:700">${isBeca?'100':(d.pct||0)}%</td>
+        <td style="font-size:12px;color:var(--tx3)">${d.obs||'—'}</td>
+        <td><button class="btn btn-sm btn-out" onclick="editarDescuento('${a.id}')">Editar</button></td>
+      </tr>`;
+    }).join('')}</tbody></table></div>`;
+}
+
+function abrirModalAgregarDescuento(){
+  const ciclo=_ocCiclo;
+  const desc=DB.descuentos||{};
+  document.getElementById('mt').textContent='Agregar descuento / beca';
+  document.getElementById('mb').innerHTML=`
+    <div style="display:grid;gap:12px;padding:4px 0">
+      <div class="fg"><label class="flabel">Buscar alumno</label>
+        <input class="fi" id="desc-alumno-q" placeholder="Escribí el nombre..." oninput="buscarAlumnoDesc(this.value)">
+        <div id="desc-sugg" style="border:1px solid var(--bd);border-radius:6px;max-height:160px;overflow-y:auto;display:none;margin-top:4px;background:var(--cb)"></div>
+        <input type="hidden" id="desc-alumno-id">
+        <div id="desc-alumno-sel" style="font-size:12px;color:#7C3AED;margin-top:4px"></div>
+      </div>
+      <div class="fg"><label class="flabel">Tipo</label>
+        <select class="fsel" id="desc-tipo" onchange="toggleDescPct()">
+          <option value="descuento">Descuento porcentual</option>
+          <option value="beca">Beca (100%)</option>
+        </select>
+      </div>
+      <div class="fg" id="desc-pct-fg"><label class="flabel">Porcentaje</label>
+        <input class="fi" id="desc-pct" type="number" min="1" max="99" value="15">
+      </div>
+      <div class="fg"><label class="flabel">Observaciones</label>
+        <input class="fi" id="desc-obs" placeholder="Motivo, detalle...">
+      </div>
+    </div>`;
+  document.getElementById('mf').innerHTML=`
+    <button class="btn btn-out" onclick="closeM()">Cancelar</button>
+    <button class="btn btn-pri" onclick="guardarDescuento()">Guardar</button>`;
+  openM();
+}
+
+function buscarAlumnoDesc(q){
+  const sugg=document.getElementById('desc-sugg'); if(!sugg) return;
+  if(!q||q.length<2){ sugg.style.display='none'; return; }
+  const ciclo=_ocCiclo;
+  const hits=(DB.padron||[]).filter(a=>a.ciclo===ciclo&&a.estado==='activo'&&(a.nombre||'').toLowerCase().includes(q.toLowerCase())).slice(0,8);
+  sugg.style.display=hits.length?'block':'none';
+  sugg.innerHTML=hits.map(a=>`<div style="padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--bd);font-size:13px" onmousedown="selAlumnoDesc('${a.id}','${a.nombre.replace(/'/g,"\\'").replace(/"/g,'&quot;')}','${a.curso}')"><strong>${a.nombre}</strong> <span style="color:var(--tx3);font-size:11px">${a.curso}</span></div>`).join('');
+}
+
+function selAlumnoDesc(id,nombre,curso){
+  const q=document.getElementById('desc-alumno-q');
+  const hid=document.getElementById('desc-alumno-id');
+  const sel=document.getElementById('desc-alumno-sel');
+  const sugg=document.getElementById('desc-sugg');
+  if(q) q.value=nombre;
+  if(hid) hid.value=id;
+  if(sel) sel.innerHTML=`<strong>${nombre}</strong> · ${curso}`;
+  if(sugg) sugg.style.display='none';
+}
+
+function toggleDescPct(){
+  const tipo=document.getElementById('desc-tipo')?.value;
+  const fg=document.getElementById('desc-pct-fg');
+  if(fg) fg.style.display=tipo==='beca'?'none':'';
+}
+
+function guardarDescuento(){
+  const id=document.getElementById('desc-alumno-id')?.value;
+  if(!id){ toast('Seleccioná un alumno','err'); return; }
+  const tipo=document.getElementById('desc-tipo')?.value||'descuento';
+  const pct=tipo==='beca'?100:parseInt(document.getElementById('desc-pct')?.value)||0;
+  const obs=(document.getElementById('desc-obs')?.value||'').trim();
+  DB.descuentos=DB.descuentos||{};
+  DB.descuentos[id]={tipo,pct,obs,desde:today()};
+  saveDB(); closeM();
+  const body=document.getElementById('oc-body');
+  if(body){ body.innerHTML=renderDescuentos(); attachDescuentosEvents(); }
+  toast('Descuento guardado','ok');
+}
+
+function editarDescuento(alumnoId){
+  const a=(DB.padron||[]).find(x=>x.id===alumnoId); if(!a) return;
+  const d=(DB.descuentos||{})[alumnoId]||{tipo:'descuento',pct:0,obs:''};
+  document.getElementById('mt').textContent=`Editar — ${a.nombre}`;
+  document.getElementById('mb').innerHTML=`
+    <div style="padding:10px 14px;background:var(--cr);border-radius:8px;margin-bottom:12px;font-size:13px"><strong>${a.nombre}</strong> · ${a.curso}</div>
+    <div style="display:grid;gap:12px;padding:4px 0">
+      <div class="fg"><label class="flabel">Tipo</label>
+        <select class="fsel" id="desc-tipo" onchange="toggleDescPct()">
+          <option value="descuento"${d.tipo==='descuento'?' selected':''}>Descuento porcentual</option>
+          <option value="beca"${d.tipo==='beca'?' selected':''}>Beca (100%)</option>
+        </select>
+      </div>
+      <div class="fg" id="desc-pct-fg" style="${d.tipo==='beca'?'display:none':''}"><label class="flabel">Porcentaje</label>
+        <input class="fi" id="desc-pct" type="number" min="1" max="99" value="${d.pct||0}">
+      </div>
+      <div class="fg"><label class="flabel">Observaciones</label>
+        <input class="fi" id="desc-obs" value="${(d.obs||'').replace(/"/g,'&quot;')}">
+      </div>
+    </div>`;
+  document.getElementById('mf').innerHTML=`
+    <button class="btn btn-out" style="color:#EF4444" onclick="eliminarDescuento('${alumnoId}')">Eliminar</button>
+    <button class="btn btn-out" onclick="closeM()">Cancelar</button>
+    <button class="btn btn-pri" onclick="actualizarDescuento('${alumnoId}')">Guardar</button>`;
+  openM();
+}
+
+function actualizarDescuento(alumnoId){
+  const tipo=document.getElementById('desc-tipo')?.value||'descuento';
+  const pct=tipo==='beca'?100:parseInt(document.getElementById('desc-pct')?.value)||0;
+  const obs=(document.getElementById('desc-obs')?.value||'').trim();
+  DB.descuentos=DB.descuentos||{};
+  DB.descuentos[alumnoId]={...DB.descuentos[alumnoId],tipo,pct,obs};
+  saveDB(); closeM();
+  const body=document.getElementById('oc-body');
+  if(body){ body.innerHTML=renderDescuentos(); attachDescuentosEvents(); }
+  toast('Actualizado','ok');
+}
+
+function eliminarDescuento(alumnoId){
+  if(!confirm('¿Eliminar este descuento?')) return;
+  DB.descuentos=DB.descuentos||{};
+  delete DB.descuentos[alumnoId];
+  saveDB(); closeM();
+  const body=document.getElementById('oc-body');
+  if(body){ body.innerHTML=renderDescuentos(); attachDescuentosEvents(); }
+  toast('Descuento eliminado','ok');
+}
+
+function attachDescuentosEvents(){ filtrarDescuentos(); }
+
+// ─── MOROSOS ────────────────────────────────────────
+function renderMorosos(){
+  const ciclo=_ocCiclo;
+  const morosos=DB.morosos||[];
+  const padronActivos=(DB.padron||[]).filter(a=>a.ciclo===ciclo&&a.estado==='activo');
+  // Remove families where no student with that apellido is active this ciclo
+  const morososActivos=morosos.filter(m=>{
+    const ap=m.apellido.toLowerCase();
+    return padronActivos.some(a=>(a.nombre||'').toLowerCase().split(/[\s,]+/).some(p=>p===ap||p.startsWith(ap)||ap.startsWith(p)&&ap.length>2));
+  });
+  return `<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
+    <input class="fi" id="morosos-q" placeholder="Buscar o escribir apellido para agregar..." style="max-width:320px;padding:7px 12px" oninput="buscarMoroso(this.value)">
+    <div style="flex:1"></div>
+    <span style="font-size:12px;color:var(--tx3)">${morososActivos.length} familia${morososActivos.length!==1?'s':''} activa${morososActivos.length!==1?'s':''}</span>
+  </div>
+  <div id="morosos-sugg" style="border:1px solid var(--bd);border-radius:6px;max-height:180px;overflow-y:auto;background:var(--cb);margin-bottom:10px;display:none"></div>
+  <div id="morosos-lista">${morososActivos.length
+    ? morososActivos.map(m=>renderMorosoCard(m,padronActivos)).join('')
+    : `<div class="cbox"><p style="color:var(--tx3);padding:14px">Sin familias morosas registradas. Escribí un apellido en el campo de búsqueda para agregar.</p></div>`}</div>`;
+}
+
+function renderMorosoCard(m,padronActivos){
+  const ap=m.apellido.toLowerCase();
+  const alumnos=padronActivos.filter(a=>(a.nombre||'').toLowerCase().split(/[\s,]+/).some(p=>p===ap||p.startsWith(ap)||ap.startsWith(p)&&ap.length>2));
+  return `<div class="cbox" style="margin-bottom:12px;border-left:3px solid #EF4444">
+    <div class="cbox-h">
+      <div>
+        <div class="cbox-t">Familia ${m.apellido}</div>
+        ${m.obs?`<div style="font-size:12px;color:var(--tx3);margin-top:2px">${m.obs}</div>`:''}
+      </div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <span style="font-size:11px;color:var(--tx3)">Desde ${m.desde||'—'}</span>
+        <button class="btn btn-sm btn-out" onclick="editarMoroso('${m.apellido.replace(/'/g,"\\'")}')">Editar</button>
+        <button class="btn btn-sm btn-out" style="color:#EF4444" onclick="eliminarMoroso('${m.apellido.replace(/'/g,"\\'")}')">Quitar</button>
+      </div>
+    </div>
+    ${alumnos.length
+      ?`<table><thead><tr><th>Alumno</th><th>Sección</th></tr></thead>
+        <tbody>${alumnos.map(a=>`<tr><td><strong>${a.nombre}</strong></td><td style="color:var(--tx3);font-size:12px">${a.curso}</td></tr>`).join('')}</tbody></table>`
+      :`<div style="padding:10px 16px;font-size:12px;color:var(--tx3)">Sin alumnos activos con apellido "${m.apellido}" en ciclo ${_ocCiclo}.</div>`}
+  </div>`;
+}
+
+function buscarMoroso(q){
+  const sugg=document.getElementById('morosos-sugg'); if(!sugg) return;
+  if(!q||q.length<2){ sugg.style.display='none'; return; }
+  const ciclo=_ocCiclo;
+  const ql=q.toLowerCase();
+  const padronActivos=(DB.padron||[]).filter(a=>a.ciclo===ciclo&&a.estado==='activo');
+  const morosos=new Set((DB.morosos||[]).map(m=>m.apellido.toLowerCase()));
+  const encontrados={};
+  padronActivos.forEach(a=>{
+    (a.nombre||'').split(/[\s,]+/).forEach(p=>{
+      if(p.toLowerCase().includes(ql)&&p.length>2)
+        encontrados[p.toUpperCase()]=(encontrados[p.toUpperCase()]||0)+1;
+    });
+  });
+  const items=Object.entries(encontrados);
+  sugg.style.display='block';
+  let html=items.map(([ap,cnt])=>`
+    <div style="padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--bd);font-size:13px;display:flex;justify-content:space-between;align-items:center" onmousedown="agregarMoroso('${ap}')">
+      <div><strong>${ap}</strong> <span style="color:var(--tx3);font-size:11px">${cnt} alumno${cnt!==1?'s':''}</span></div>
+      ${morosos.has(ap.toLowerCase())
+        ?'<span style="font-size:11px;color:#EF4444">Ya registrado</span>'
+        :'<span style="font-size:11px;color:#D97706">+ Agregar</span>'}
+    </div>`).join('');
+  if(!items.length) html=`<div style="padding:8px 12px;cursor:pointer;font-size:13px;color:#D97706" onmousedown="agregarMoroso('${q.toUpperCase()}')">+ Agregar familia "${q.toUpperCase()}"</div>`;
+  sugg.innerHTML=html;
+}
+
+function agregarMoroso(apellido){
+  const q=document.getElementById('morosos-q');
+  const sugg=document.getElementById('morosos-sugg');
+  if(q) q.value='';
+  if(sugg) sugg.style.display='none';
+  if((DB.morosos||[]).find(m=>m.apellido.toLowerCase()===apellido.toLowerCase())){
+    toast('Esta familia ya está registrada','err'); return;
+  }
+  document.getElementById('mt').textContent=`Agregar familia morosa — ${apellido}`;
+  document.getElementById('mb').innerHTML=`
+    <div style="display:grid;gap:12px;padding:4px 0">
+      <div class="fg"><label class="flabel">Apellido</label>
+        <input class="fi" id="moroso-apellido" value="${apellido}">
+      </div>
+      <div class="fg"><label class="flabel">Observaciones (opcional)</label>
+        <textarea class="fi" id="moroso-obs" rows="3" placeholder="Deuda, situación, contacto..."></textarea>
+      </div>
+    </div>`;
+  document.getElementById('mf').innerHTML=`
+    <button class="btn btn-out" onclick="closeM()">Cancelar</button>
+    <button class="btn btn-pri" onclick="guardarMoroso()">Guardar</button>`;
+  openM();
+}
+
+function guardarMoroso(){
+  const apellido=(document.getElementById('moroso-apellido')?.value||'').trim().toUpperCase();
+  const obs=(document.getElementById('moroso-obs')?.value||'').trim();
+  if(!apellido){ toast('Ingresá el apellido','err'); return; }
+  DB.morosos=DB.morosos||[];
+  if(DB.morosos.find(m=>m.apellido.toLowerCase()===apellido.toLowerCase())){ toast('Ya existe','err'); return; }
+  DB.morosos.push({apellido,obs,desde:today()});
+  saveDB(); closeM();
+  const body=document.getElementById('oc-body');
+  if(body) body.innerHTML=renderMorosos();
+  toast(`Familia ${apellido} registrada`,'ok');
+}
+
+function editarMoroso(apellido){
+  const m=(DB.morosos||[]).find(x=>x.apellido.toLowerCase()===apellido.toLowerCase()); if(!m) return;
+  document.getElementById('mt').textContent=`Editar — ${m.apellido}`;
+  document.getElementById('mb').innerHTML=`
+    <div style="display:grid;gap:12px;padding:4px 0">
+      <div class="fg"><label class="flabel">Observaciones</label>
+        <textarea class="fi" id="moroso-obs" rows="3">${m.obs||''}</textarea>
+      </div>
+    </div>`;
+  document.getElementById('mf').innerHTML=`
+    <button class="btn btn-out" onclick="closeM()">Cancelar</button>
+    <button class="btn btn-pri" onclick="actualizarMoroso('${apellido.replace(/'/g,"\\'")}')">Guardar</button>`;
+  openM();
+}
+
+function actualizarMoroso(apellido){
+  const m=(DB.morosos||[]).find(x=>x.apellido.toLowerCase()===apellido.toLowerCase()); if(!m) return;
+  m.obs=(document.getElementById('moroso-obs')?.value||'').trim();
+  saveDB(); closeM();
+  const body=document.getElementById('oc-body');
+  if(body) body.innerHTML=renderMorosos();
+  toast('Actualizado','ok');
+}
+
+function eliminarMoroso(apellido){
+  if(!confirm(`¿Quitar a familia ${apellido} de morosos?`)) return;
+  DB.morosos=(DB.morosos||[]).filter(m=>m.apellido.toLowerCase()!==apellido.toLowerCase());
+  saveDB();
+  const body=document.getElementById('oc-body');
+  if(body) body.innerHTML=renderMorosos();
+  toast('Removido','ok');
 }
 
 function asignarSeccion(id, seccion){
