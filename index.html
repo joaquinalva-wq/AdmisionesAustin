@@ -491,7 +491,7 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
       <button class="pnl" onclick="navScroll('#sec-ped')">Pedagogía</button>
       <button class="pnl" onclick="navScroll('#sec-proc')">Proceso</button>
       <a class="pnl" href="https://www.austinebs-ah.edu.ar" target="_blank" style="text-decoration:none">Sitio web ↗</a>
-      <button class="pnl cta" onclick="goPost()">Quiero postularme</button>
+      <button class="pnl cta" onclick="goPost()">¡Quiero conocer el colegio!</button>
       <button class="pnl staff" onclick="goLogin()">Staff ·</button>
     </div>
   </nav>
@@ -504,8 +504,8 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
       <h1>Austin Eco Bilingual School</h1>
       <p>Una comunidad educativa bilingüe, innovadora y comprometida con el desarrollo integral de cada estudiante desde los 2 años.</p>
       <div class="hero-btns">
-        <button class="hbtn hbtn-p" onclick="goPost()">Quiero postularme →</button>
-        <a class="hbtn hbtn-s" href="https://www.austinebs-ah.edu.ar" target="_blank">Conocer el colegio ↗</a>
+        <button class="hbtn hbtn-p" onclick="goPost()">¡Quiero conocer el colegio! →</button>
+        <a class="hbtn hbtn-s" href="https://www.austinebs-ah.edu.ar" target="_blank">Sitio oficial Austin EBS ↗</a>
       </div>
       <div class="hero-chips">
         <span class="hchip">🌿 Eco Friendly</span>
@@ -655,7 +655,7 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
 
     <div class="fstep" id="fst0">
       <div class="fstep-h" id="fst0-h">Datos del estudiante</div>
-      <div class="fstep-s" id="fst0-s">Completá los datos del niño/a que desea postularse a Austin EBS.</div>
+      <div class="fstep-s" id="fst0-s">Completá los datos del niño/a que quiere unirse a Austin EBS.</div>
       <div class="fgrow">
         <div class="fg"><label class="flabel">Nombre <span class="req">*</span></label><input class="fi" id="pf-n" placeholder="Nombre"></div>
         <div class="fg"><label class="flabel">Apellido <span class="req">*</span></label><input class="fi" id="pf-ap" placeholder="Apellido"></div>
@@ -2542,7 +2542,7 @@ function updateStudentHeader(){
     if(s) s.textContent='Completá los datos del estudiante '+(estudianteIdx+1)+'. Los datos de contacto de la familia se completarán después.';
   } else {
     if(h) h.textContent='Datos del estudiante';
-    if(s) s.textContent='Completá los datos del niño/a que desea postularse a Austin EBS.';
+    if(s) s.textContent='Completá los datos del niño/a que quiere unirse a Austin EBS.';
   }
 }
 
