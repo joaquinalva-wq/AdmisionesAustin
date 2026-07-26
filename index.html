@@ -1018,9 +1018,9 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
       <div id="view-vac" class="view">
         <div class="ph"><h1>Vacantes por curso</h1><p>Definí la disponibilidad · Cuando un curso se llena el sistema lo advierte automáticamente</p></div>
         <div style="background:#fff;border-radius:var(--r2);border:1px solid var(--bd);padding:12px 17px;margin-bottom:16px;font-size:12.5px;color:var(--tx2);line-height:1.6">
-          <strong>¿Cómo funciona?</strong> Al cambiar el estado de un postulante a "Postulado" y el curso está lleno, el sistema sugiere automáticamente "Lista de espera" y lo advierte visualmente.
+          <strong>¿Cómo funciona?</strong> Las vacantes disponibles se calculan automáticamente: <strong>Total − Alumnos activos en el padrón</strong>. Al agregar un alumno al padrón, su sección pierde una vacante. Podés editar el total por sección y guardar — eso también actualiza los datos en Ocupación.
         </div>
-        <div class="vacgrid" id="vacgrid"></div>
+        <div id="vacgrid"></div>
         <div style="margin-top:14px"><button class="btn btn-td" onclick="saveVac()">Guardar vacantes</button></div>
       </div>
 
@@ -2175,29 +2175,60 @@ function abrirMailto_(email,subj,body){
 // ═══════════════════════════
 // VACANTES
 // ═══════════════════════════
+function getCap(sc){ return (DB.ocupacion&&DB.ocupacion[sc]&&DB.ocupacion[sc].cap!=null)?DB.ocupacion[sc].cap:(OC_DEFAULT[sc]?OC_DEFAULT[sc].cap:27); }
+
 function renderVac(){
   syncVacantesFromOcupacion();
-  document.getElementById('vacgrid').innerHTML=CURSOS.map(c=>{
-    const v=DB.vacantes[c]||{t:20,u:0};
-    // Derivar matriculados del dato real para mantener sincronía con Ocupación
-    const matCount=DB.postulantes.filter(p=>(p.estado==='matriculado'||p.estado==='nuevo')&&p.curso===c).length;
-    const pct=Math.min(100,Math.round(matCount/v.t*100));
-    const fc=pct>=100?'full':pct>=80?'warn':'';
-    const key=c.replace(/[\s()\/]/g,'_');
-    const libres=Math.max(0,v.t-matCount);
-    return `<div class="vacc">
-      <div class="vacc-t">${c}${pct>=100?`<span class="vacfull-badge">LLENO</span>`:''}</div>
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-        <span style="font-size:11px;color:var(--tx3)">Total vacantes:</span>
-        <input class="vaci" type="number" id="vt-${key}" value="${v.t}" min="0" max="60">
+  const ciclo=_ocCiclo;
+  const padronActivos=(DB.padron||[]).filter(a=>a.ciclo===ciclo&&a.estado==='activo');
+  const niveles=['Inicial','Elementary','High School'];
+  const container=document.getElementById('vacgrid');
+  container.innerHTML=niveles.map(nivel=>{
+    const secs=SCHOOL_CURSOS.filter(sc=>SCHOOL_NIVEL(sc)===nivel);
+    const totCap=secs.reduce((s,sc)=>s+getCap(sc),0);
+    const totAct=secs.reduce((s,sc)=>s+padronActivos.filter(a=>a.curso===sc).length,0);
+    const totLib=Math.max(0,totCap-totAct);
+    const pctT=totCap>0?totAct/totCap:0;
+    return `<div style="margin-bottom:24px">
+      <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1.5px solid var(--bd);margin-bottom:12px;padding-bottom:8px">
+        <div style="font-size:13.5px;font-weight:700;color:var(--td)">${nivel}</div>
+        <div style="font-size:11.5px;color:var(--tx3)">${totAct} alumnos · <strong style="color:${totLib===0?'#DC2626':totLib<=5?'#D97706':'#16A34A'}">${totLib} disponibles</strong> · ${Math.round(pctT*100)}% ocupación</div>
       </div>
-      <div class="vacbar"><div class="vacfill ${fc}" style="width:${pct}%"></div></div>
-      <div class="vacnums"><span>${matCount} matriculado${matCount!==1?'s':''}</span><span>${libres} libre${libres!==1?'s':''}</span></div>
+      <div class="vacgrid" style="margin:0">${secs.map(sc=>{
+        const cap=getCap(sc);
+        const act=padronActivos.filter(a=>a.curso===sc).length;
+        const lib=Math.max(0,cap-act);
+        const pct=cap>0?Math.min(100,Math.round(act/cap*100)):0;
+        const fc=pct>=100?'full':pct>=80?'warn':'';
+        const key=sc.replace(/[^a-zA-Z0-9]/g,'_');
+        return `<div class="vacc">
+          <div class="vacc-t">${sc}${pct>=100?'<span class="vacfull-badge">LLENO</span>':''}</div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+            <span style="font-size:11px;color:var(--tx3)">Total:</span>
+            <input class="vaci" type="number" id="vt-${key}" value="${cap}" min="0" max="60">
+          </div>
+          <div class="vacbar"><div class="vacfill ${fc}" style="width:${pct}%"></div></div>
+          <div class="vacnums">
+            <span>${act} alumno${act!==1?'s':''}</span>
+            <span style="color:${lib===0?'#DC2626':lib<=3?'#D97706':'var(--gr)'}">${lib} libre${lib!==1?'s':''}</span>
+          </div>
+        </div>`;
+      }).join('')}</div>
     </div>`;
   }).join('');
 }
 function saveVac(){
-  CURSOS.forEach(c=>{ const key=c.replace(/[\s()\/]/g,'_'); const el=document.getElementById('vt-'+key); if(el){ DB.vacantes[c]=DB.vacantes[c]||{t:20,u:0}; DB.vacantes[c].t=parseInt(el.value)||20; } });
+  DB.ocupacion=DB.ocupacion||{};
+  SCHOOL_CURSOS.forEach(sc=>{
+    const key=sc.replace(/[^a-zA-Z0-9]/g,'_');
+    const el=document.getElementById('vt-'+key);
+    if(el){
+      const cap=parseInt(el.value)||27;
+      const prev=DB.ocupacion[sc]||OC_DEFAULT[sc]||{base:0};
+      DB.ocupacion[sc]={base:prev.base||0,cap};
+    }
+  });
+  syncVacantesFromOcupacion();
   saveDB(); toast('Vacantes actualizadas','ok');
 }
 
@@ -4974,28 +5005,24 @@ function attachDescuentosEvents(){ filtrarDescuentos(); }
 
 // ─── MOROSOS ────────────────────────────────────────
 function renderMorosos(){
-  const ciclo=_ocCiclo;
   const morosos=DB.morosos||[];
-  const padronActivos=(DB.padron||[]).filter(a=>a.ciclo===ciclo&&a.estado==='activo');
-  // Remove families where no student with that apellido is active this ciclo
-  const morososActivos=morosos.filter(m=>{
-    const ap=m.apellido.toLowerCase();
-    return padronActivos.some(a=>(a.nombre||'').toLowerCase().split(/[\s,]+/).some(p=>p===ap||p.startsWith(ap)||ap.startsWith(p)&&ap.length>2));
-  });
   return `<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
-    <input class="fi" id="morosos-q" placeholder="Buscar o escribir apellido para agregar..." style="max-width:320px;padding:7px 12px" oninput="buscarMoroso(this.value)">
+    <input class="fi" id="morosos-q" placeholder="Filtrar por apellido..." style="max-width:260px;padding:7px 12px" oninput="filtrarMorosos(this.value)">
+    <button class="btn btn-sm btn-pri" onclick="abrirModalAgregarMoroso()">+ Agregar familia</button>
     <div style="flex:1"></div>
-    <span style="font-size:12px;color:var(--tx3)">${morososActivos.length} familia${morososActivos.length!==1?'s':''} activa${morososActivos.length!==1?'s':''}</span>
+    <span style="font-size:12px;color:var(--tx3)">${morosos.length} familia${morosos.length!==1?'s':''} registrada${morosos.length!==1?'s':''}</span>
   </div>
-  <div id="morosos-sugg" style="border:1px solid var(--bd);border-radius:6px;max-height:180px;overflow-y:auto;background:var(--cb);margin-bottom:10px;display:none"></div>
-  <div id="morosos-lista">${morososActivos.length
-    ? morososActivos.map(m=>renderMorosoCard(m,padronActivos)).join('')
-    : `<div class="cbox"><p style="color:var(--tx3);padding:14px">Sin familias morosas registradas. Escribí un apellido en el campo de búsqueda para agregar.</p></div>`}</div>`;
+  <div id="morosos-lista">${morosos.length
+    ? morosos.map(m=>renderMorosoCard(m)).join('')
+    : '<div class="cbox"><p style="color:var(--tx3);padding:14px">Sin familias registradas. Usá "+ Agregar familia" para empezar.</p></div>'}</div>`;
 }
 
-function renderMorosoCard(m,padronActivos){
-  const ap=m.apellido.toLowerCase();
-  const alumnos=padronActivos.filter(a=>(a.nombre||'').toLowerCase().split(/[\s,]+/).some(p=>p===ap||p.startsWith(ap)||ap.startsWith(p)&&ap.length>2));
+function renderMorosoCard(m){
+  const ciclo=_ocCiclo;
+  const padronActivos=(DB.padron||[]).filter(a=>a.ciclo===ciclo&&a.estado==='activo');
+  const ml=m.apellido.toLowerCase();
+  const alumnos=padronActivos.filter(a=>(a.nombre||'').toLowerCase().includes(ml));
+  const aEsc=m.apellido.replace(/'/g,"\\'");
   return `<div class="cbox" style="margin-bottom:12px;border-left:3px solid #EF4444">
     <div class="cbox-h">
       <div>
@@ -5004,66 +5031,72 @@ function renderMorosoCard(m,padronActivos){
       </div>
       <div style="display:flex;gap:6px;align-items:center">
         <span style="font-size:11px;color:var(--tx3)">Desde ${m.desde||'—'}</span>
-        <button class="btn btn-sm btn-out" onclick="editarMoroso('${m.apellido.replace(/'/g,"\\'")}')">Editar</button>
-        <button class="btn btn-sm btn-out" style="color:#EF4444" onclick="eliminarMoroso('${m.apellido.replace(/'/g,"\\'")}')">Quitar</button>
+        <button class="btn btn-sm btn-out" onclick="editarMoroso('${aEsc}')">Editar</button>
+        <button class="btn btn-sm btn-out" style="color:#EF4444" onclick="eliminarMoroso('${aEsc}')">Quitar</button>
       </div>
     </div>
     ${alumnos.length
       ?`<table><thead><tr><th>Alumno</th><th>Sección</th></tr></thead>
         <tbody>${alumnos.map(a=>`<tr><td><strong>${a.nombre}</strong></td><td style="color:var(--tx3);font-size:12px">${a.curso}</td></tr>`).join('')}</tbody></table>`
-      :`<div style="padding:10px 16px;font-size:12px;color:var(--tx3)">Sin alumnos activos con apellido "${m.apellido}" en ciclo ${_ocCiclo}.</div>`}
+      :`<div style="padding:8px 16px;font-size:12px;color:var(--tx3)">Sin alumnos activos en ciclo ${ciclo}.</div>`}
   </div>`;
 }
 
-function buscarMoroso(q){
-  const sugg=document.getElementById('morosos-sugg'); if(!sugg) return;
-  if(!q||q.length<2){ sugg.style.display='none'; return; }
-  const ciclo=_ocCiclo;
-  const ql=q.toLowerCase();
-  const padronActivos=(DB.padron||[]).filter(a=>a.ciclo===ciclo&&a.estado==='activo');
-  const morosos=new Set((DB.morosos||[]).map(m=>m.apellido.toLowerCase()));
-  const encontrados={};
-  padronActivos.forEach(a=>{
-    (a.nombre||'').split(/[\s,]+/).forEach(p=>{
-      if(p.toLowerCase().includes(ql)&&p.length>2)
-        encontrados[p.toUpperCase()]=(encontrados[p.toUpperCase()]||0)+1;
-    });
-  });
-  const items=Object.entries(encontrados);
-  sugg.style.display='block';
-  let html=items.map(([ap,cnt])=>`
-    <div style="padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--bd);font-size:13px;display:flex;justify-content:space-between;align-items:center" onmousedown="agregarMoroso('${ap}')">
-      <div><strong>${ap}</strong> <span style="color:var(--tx3);font-size:11px">${cnt} alumno${cnt!==1?'s':''}</span></div>
-      ${morosos.has(ap.toLowerCase())
-        ?'<span style="font-size:11px;color:#EF4444">Ya registrado</span>'
-        :'<span style="font-size:11px;color:#D97706">+ Agregar</span>'}
-    </div>`).join('');
-  if(!items.length) html=`<div style="padding:8px 12px;cursor:pointer;font-size:13px;color:#D97706" onmousedown="agregarMoroso('${q.toUpperCase()}')">+ Agregar familia "${q.toUpperCase()}"</div>`;
-  sugg.innerHTML=html;
+function filtrarMorosos(q){
+  const lista=document.getElementById('morosos-lista'); if(!lista) return;
+  const morosos=DB.morosos||[];
+  const ql=(q||'').toLowerCase();
+  const filtrados=ql.length<2?morosos:morosos.filter(m=>m.apellido.toLowerCase().includes(ql));
+  lista.innerHTML=filtrados.length
+    ?filtrados.map(m=>renderMorosoCard(m)).join('')
+    :`<div class="cbox"><p style="color:var(--tx3);padding:14px">Sin resultados para "${q}".</p></div>`;
 }
 
-function agregarMoroso(apellido){
-  const q=document.getElementById('morosos-q');
-  const sugg=document.getElementById('morosos-sugg');
-  if(q) q.value='';
-  if(sugg) sugg.style.display='none';
-  if((DB.morosos||[]).find(m=>m.apellido.toLowerCase()===apellido.toLowerCase())){
-    toast('Esta familia ya está registrada','err'); return;
-  }
-  document.getElementById('mt').textContent=`Agregar familia morosa — ${apellido}`;
+function abrirModalAgregarMoroso(){
+  document.getElementById('mt').textContent='Agregar familia morosa';
   document.getElementById('mb').innerHTML=`
     <div style="display:grid;gap:12px;padding:4px 0">
-      <div class="fg"><label class="flabel">Apellido</label>
-        <input class="fi" id="moroso-apellido" value="${apellido}">
+      <div class="fg">
+        <label class="flabel">Apellido / nombre de la familia</label>
+        <input class="fi" id="moroso-apellido" placeholder="Escribí o buscá un alumno del padrón..." oninput="buscarEstudianteMoroso(this.value)" autocomplete="off">
+        <div id="moroso-sugg-modal" style="border:1px solid var(--bd);border-radius:6px;max-height:180px;overflow-y:auto;background:var(--cb);margin-top:4px;display:none"></div>
+        <small style="color:var(--tx3);font-size:11px">Al escribir verás alumnos del padrón para seleccionar</small>
       </div>
       <div class="fg"><label class="flabel">Observaciones (opcional)</label>
-        <textarea class="fi" id="moroso-obs" rows="3" placeholder="Deuda, situación, contacto..."></textarea>
+        <textarea class="fi" id="moroso-obs" rows="3" placeholder="Deuda habitual, situación particular..."></textarea>
       </div>
     </div>`;
   document.getElementById('mf').innerHTML=`
     <button class="btn btn-out" onclick="closeM()">Cancelar</button>
     <button class="btn btn-pri" onclick="guardarMoroso()">Guardar</button>`;
   openM();
+}
+
+function buscarEstudianteMoroso(q){
+  const sugg=document.getElementById('moroso-sugg-modal'); if(!sugg) return;
+  if(!q||q.length<2){ sugg.style.display='none'; return; }
+  const ql=q.toLowerCase();
+  const padron=(DB.padron||[]).filter(a=>a.estado==='activo');
+  const matches=padron.filter(a=>(a.nombre||'').toLowerCase().includes(ql)).slice(0,12);
+  if(!matches.length){ sugg.style.display='none'; return; }
+  sugg.style.display='block';
+  sugg.innerHTML=matches.map(a=>`
+    <div style="padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--bd);font-size:13px;display:flex;justify-content:space-between;align-items:center" onmousedown="seleccionarAlumnoMoroso('${(a.nombre||'').replace(/'/g,"\\'").replace(/"/g,'&quot;')}')">
+      <strong>${a.nombre}</strong>
+      <span style="color:var(--tx3);font-size:11px">${a.curso} · ${a.ciclo}</span>
+    </div>`).join('');
+}
+
+function seleccionarAlumnoMoroso(nombre){
+  const inp=document.getElementById('moroso-apellido');
+  const sugg=document.getElementById('moroso-sugg-modal');
+  if(inp) inp.value=nombre;
+  if(sugg) sugg.style.display='none';
+}
+
+function agregarMoroso(apellido){
+  abrirModalAgregarMoroso();
+  setTimeout(()=>{ const el=document.getElementById('moroso-apellido'); if(el) el.value=apellido; },50);
 }
 
 function guardarMoroso(){
