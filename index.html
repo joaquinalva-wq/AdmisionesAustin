@@ -3439,10 +3439,16 @@ async function pollEOEResults(){
   const pendientes = DB.postulantes.filter(p=>p.estado==='eoe_ingles'&&p.eoeDocId);
   if(pendientes.length===0) return;
 
+  // El polling corre con sesión de staff, así que se manda el token: eso permite que
+  // 'admisiones-revision' exija autenticación en vez de quedar con lectura pública.
+  // El PATCH de "procesado" además ya requería auth, y sin token venía fallando.
+  const _tk = await fsToken();
+  const _authH = _tk ? {'Authorization':'Bearer '+_tk} : {};
+
   for(const p of pendientes){
     try{
       const url=`${FS_BASE}/admisiones-revision/${p.eoeDocId}`;
-      const res=await fetch(url);
+      const res=await fetch(url,{headers:_authH});
       if(!res.ok) continue;
       const doc=await res.json();
       const estado=doc.fields?.resultado?.stringValue||doc.fields?.estado?.stringValue||'';
@@ -3458,7 +3464,7 @@ async function pollEOEResults(){
         saveDB();
         enviarMailDG(p);
         // Marcar como procesado en Firestore
-        await fetch(url,{method:'PATCH',headers:{'Content-Type':'application/json'},
+        await fetch(url,{method:'PATCH',headers:{'Content-Type':'application/json',..._authH},
           body:JSON.stringify({fields:{estado:{stringValue:'Procesado — Aprobado'},procesadoEn:{integerValue:String(Date.now())}}})
         });
         // Notificar en UI
@@ -3473,7 +3479,7 @@ async function pollEOEResults(){
         p.hist=p.hist||[];
         p.hist.push({e:'rechazado_eoe',f:today(),auto:true});
         saveDB();
-        await fetch(url,{method:'PATCH',headers:{'Content-Type':'application/json'},
+        await fetch(url,{method:'PATCH',headers:{'Content-Type':'application/json',..._authH},
           body:JSON.stringify({fields:{estado:{stringValue:'Procesado — Rechazado'},procesadoEn:{integerValue:String(Date.now())}}})
         });
         mostrarNotifEOE(p,'rechazado');
