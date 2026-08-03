@@ -1204,7 +1204,11 @@ const FIREBASE_CONFIG = {
 
 // Cuentas habilitadas para el panel. Debe coincidir con la lista de las reglas de
 // Firestore: acá sólo se controla la interfaz; la seguridad real está en las reglas.
-const STAFF_EMAILS = ['admisiones@austinebs-ah.edu.ar'];
+// Si sumás o quitás a alguien, hay que hacerlo en los dos lugares.
+const STAFF_EMAILS = [
+  'admisiones@austinebs-ah.edu.ar',
+  'joaquin.alva@activelearning.com.ar'
+];
 
 let _fbReady = false;
 let _authUser = null;
