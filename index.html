@@ -1235,7 +1235,7 @@ async function hashPw(pw){
   try{
     const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(pw));
     return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
-  }catch(e){ return null; } // crypto.subtle unavailable on HTTP
+  }catch(e){ return null; } // crypto.subtle no existe fuera de contextos seguros
 }
 // Vacantes de un curso del pipeline, SIEMPRE derivadas de la fuente única de verdad:
 // capacidad (DB.ocupacion[sección].cap) − ocupación real (padrón activo + altas del pipeline).
@@ -1529,20 +1529,24 @@ async function doLogin(){
   const isHash=/^[a-f0-9]{64}$/.test(stored);
   let ok=false;
   const h=await hashPw(pw);
-  if(h!==null){
-    // Secure context (HTTPS): hash comparison
-    if(isHash){ ok=em==='admisiones@austinebs-ah.edu.ar'&&h===stored; }
-    else{ ok=em==='admisiones@austinebs-ah.edu.ar'&&pw===stored; if(ok) hashPw(pw).then(hh=>{if(hh){DB.config.password=hh;saveDB();}}); }
-  } else {
-    // Non-secure context (HTTP): plain text fallback
-    ok=em==='admisiones@austinebs-ah.edu.ar'&&(isHash?pw==='austin2026':pw===stored);
+  if(h===null){
+    // Sin crypto.subtle no se puede verificar el hash. Antes se caía a comparar contra una
+    // contraseña en texto plano escrita en el fuente público; se eliminó por ser una
+    // credencial publicada. Producción corre sobre HTTPS, donde crypto.subtle siempre existe.
+    const err=document.getElementById('lerr');
+    if(err){ err.textContent='Abrí el sistema por HTTPS para poder iniciar sesión.'; err.style.display='block'; }
+    return;
   }
+  if(isHash){ ok=em==='admisiones@austinebs-ah.edu.ar'&&h===stored; }
+  else{ ok=em==='admisiones@austinebs-ah.edu.ar'&&pw===stored; if(ok){ DB.config.password=h; saveDB(); } }
   if(ok){
     go('s-panel'); renderPanel();
     syncFromCloud();
     startEOEPolling();
   } else {
-    document.getElementById('lerr').style.display='block';
+    const err=document.getElementById('lerr');
+    err.textContent='Credenciales incorrectas. Intentá nuevamente.';
+    err.style.display='block';
   }
 }
 function doLogout(){
