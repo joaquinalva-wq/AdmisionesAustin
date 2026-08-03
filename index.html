@@ -1190,6 +1190,13 @@ let estudianteIdx = 0;
 let sinEntrevista = false;
 let estudiantesData = []; // [{n,ap,nac,dni,curso,nivel,jornada,anio,escuela,hermano,como}]
 const SCREENS = ['s-portal','s-postulacion','s-login','s-panel'];
+// Escapa datos de usuario antes de interpolarlos en HTML (defensa XSS).
+// El formulario público es anónimo: cualquiera puede inyectar markup en nombre/obs/etc.
+function esc(v){
+  if(v===null||v===undefined) return '';
+  return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
 const ESTADOS = ['contactado','citado','entrevistado','postulado','eoe_ingles','pendiente_dg','matriculado','nuevo','lista de espera','rechazado_eoe','desiste','no_queremos'];
 const EL = {nueva:'Nueva consulta',contactado:'Contactado',citado:'Citado entrevista',entrevistado:'Entrevistado',postulado:'Postulado',eoe_ingles:'EOE / Inglés',pendiente_dg:'Pend. Dir. General',rechazado_eoe:'Rechazado EOE',matriculado:'Matriculado',nuevo:'Nuevo alumno','lista de espera':'Lista de espera',desiste:'Desiste',no_queremos:'No incorporado'};
 const ECLS = {nueva:'bg-n',contactado:'bg-co',citado:'bg-ci',entrevistado:'bg-en',postulado:'bg-po',eoe_ingles:'bg-eoe',pendiente_dg:'bg-dg',rechazado_eoe:'bg-reoe',matriculado:'bg-ma',nuevo:'bg-nu','lista de espera':'bg-es',desiste:'bg-de',no_queremos:'bg-de'};
@@ -1230,10 +1237,16 @@ async function hashPw(pw){
     return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
   }catch(e){ return null; } // crypto.subtle unavailable on HTTP
 }
-function ajustarVacante(curso,prevEst,newEst){
-  const v=DB.vacantes[curso]; if(!v||prevEst===newEst) return;
-  if(newEst==='matriculado'&&prevEst!=='matriculado') v.u=Math.min(v.t,(v.u||0)+1);
-  else if(prevEst==='matriculado'&&newEst!=='matriculado') v.u=Math.max(0,(v.u||0)-1);
+// Vacantes de un curso del pipeline, SIEMPRE derivadas de la fuente única de verdad:
+// capacidad (DB.ocupacion[sección].cap) − ocupación real (padrón activo + altas del pipeline).
+// Se calcula en el momento y no se cachea: antes existía un contador mutable (`.u`) que
+// una función de ajuste incrementaba y syncVacantesFromOcupacion() pisaba, quedando desincronizado.
+function vacantesDe(cursoPipeline, anio){
+  const secciones = PIPELINE_TO_SECTIONS[cursoPipeline];
+  if(!secciones || !secciones.length) return null;
+  let t=0, u=0;
+  ocData(anio).forEach(r=>{ if(secciones.indexOf(r.sc)!==-1){ t+=r.cap; u+=r.actual; } });
+  return {t, u, libres:Math.max(0, t-u)};
 }
 const DIAS_INACTIVO = 7;
 
@@ -1251,7 +1264,7 @@ let DB = {
   tarifas:{k2_m:660285,k2_s:528228,k2_c:703291,k3_m:797491,k3_s:528228,k3_c:637993,k45_m:797491,k45_c:637993,el_m:989835,el_c:791868,hs13_m:1128077,hs13_c:902462,hs46_m:1167976,hs46_c:934381},
   emails:{
     contactado:{subj:'Postulación Austin EBS — información y próximos pasos',body:'Hola {{padre}},\n\nSoy Laura Unamuno, parte del staff de Austin Eco Bilingual School y encargada del proceso de admisiones.\n\n¡Nos alegra muchísimo tu postulación para {{alumno}}! Para conocer el proyecto en detalle y las tarifas, podés ver el brochure y los aranceles aquí: https://drive.google.com/drive/folders/1c0vFf1MWUcSC8-lqBjBCGDQ-hbXxGQDA\n\nPara empezar con el proceso, ingresá al siguiente link: https://calendar.app.google/WrfYGGSiRH3smkxL8 y reservá un horario disponible de visita con entrevista para conocer el proyecto educativo en profundidad y las instalaciones del colegio.\n\nQuedo a disposición por cualquier consulta.\n\nSaludos cordiales,\nLaura Unamuno\nAdmisiones – Austin EBS'},
-    citado:{subj:'Tu entrevista en Austin EBS esta confirmada',body:'Hola {{padre}},\n\nTu entrevista en Austin Eco Bilingual School esta confirmada. Te esperamos con gusto.\n\nSi necesitas reprogramar, respondenos este mail a admisiones@austinebs-ah.edu.ar y lo coordinamos.\n\nUn saludo,\nLaura Unamuno\nAdmisiones – Austin EBS'},
+    citado:{subj:'Tu entrevista en Austin EBS está confirmada',body:'Hola {{padre}},\n\nTu entrevista en Austin Eco Bilingual School está confirmada. Te esperamos con gusto.\n\nSi necesitás reprogramar, respondenos este mail a admisiones@austinebs-ah.edu.ar y lo coordinamos.\n\nUn saludo,\nLaura Unamuno\nAdmisiones – Austin EBS'},
     entrevistado:{subj:'¡Gracias por la entrevista!',body:'Hola {{padre}},\n\nFue un gusto recibirlos y conocerlos. Estamos orgullosos de que nos contemplen para la elección escolar de {{alumno}}.\n\nPara seguir acompañándolos en el proceso, les pedimos que completen este breve formulario post entrevista:\nhttps://forms.gle/rsQwi9ps1chN2q8x5\n\nEn caso de querer avanzar, esperamos su confirmación por este medio.\n\nUn afectuoso saludo,\nAdmisiones – Austin EBS'},
     postulado:{subj:'Siguiente paso en el proceso de admisión',body:'Hola {{padre}},\n\nGracias por la postulación de {{alumno}}.\n\nEstamos muy contentos de acompañarlos en los pasos a seguir para continuar con la reserva de vacante. Podrán encontrar las tarifas en el siguiente enlace:\n{{link_drive}}\n\nEl proceso quedará confirmado una vez que recibamos el comprobante de pago de la reserva de vacante por este medio.\n\nUn afectuoso saludo,\nAdmisiones – Austin EBS'},
     eoe_ingles:{subj:'Próximo paso: entrevista en inglés y con el EOE',body:'Hola {{padre}},\n\nGracias por seguir avanzando en el proceso de admisión de {{alumno}} en Austin Eco Bilingual School.\n\nComo parte del proceso de ingreso, necesitamos coordinar una breve entrevista en inglés y con nuestro Equipo de Orientación Escolar (EOE). Nos comunicaremos a la brevedad para acordar el horario.\n\nQuedamos a disposición.\n\nSaludos cordiales,\nLaura Unamuno\nAdmisiones – Austin EBS'},
@@ -1262,7 +1275,7 @@ let DB = {
     no_queremos:{subj:'Proceso de admisión — Austin EBS',body:'Hola {{padre}},\n\nQueremos agradecerles sinceramente el tiempo y la confianza depositada en Austin Eco Bilingual School durante este proceso.\n\nLuego de evaluar con mucho cuidado las posibilidades de incorporación para el ciclo lectivo, lamentablemente no contamos con las vacantes necesarias para incorporar a {{alumno}} en esta ocasión.\n\nLes deseamos lo mejor en este proceso de encontrar la escuela que mejor acompañe su búsqueda, y esperamos que encuentren pronto el lugar ideal.\n\nQuedamos a disposición por cualquier consulta.\n\nUn afectuoso saludo,\nLaura Unamuno\nAdmisiones – Austin EBS'},
     seguimiento_entrevista:{subj:'¿Cómo fue la entrevista? — Austin EBS',body:'Hola {{padre}},\n\nFue un placer recibirlos en la entrevista. Esperamos que {{alumno}} y ustedes hayan quedado tan contentos como nosotros.\n\nSi desean continuar con el proceso de admisión, por favor respondé este mail confirmando tu interés. Con eso podremos avanzar con los pasos de reserva de vacante.\n\nSi por algún motivo decidieron no continuar, también podés avisarnos por este medio — lo entendemos perfectamente y siempre será bienvenida la familia si desean retomar en el futuro.\n\nEsperamos tu respuesta.\n\nUn afectuoso saludo,\nAdmisiones – Austin EBS'},
     no_asistio:{subj:'¡Que lástima! Podemos reprogramar tu entrevista — Austin EBS',body:'Hola {{padre}},\n\nLamentamos que no hayas podido llegar a la entrevista que tenías agendada. ¡Nos hubiera encantado conocerlos!\n\nSi querés reprogramarla, respondé este mail y coordinamos un nuevo horario con gusto. También podés volver a completar el formulario de postulación para elegir una nueva fecha.\n\nEsperamos poder conocerlos pronto.\n\nUn afectuoso saludo,\nAdmisiones – Austin EBS'},
-    nuevo:{subj:'¡Bienvenidos a Austin EBS! Información de inicio',body:'Hola {{padre}},\n\n¡Estamos muy emocionados de darles la bienvenida oficial a Austin Eco Bilingual School! {{alumno}} ya forma parte de nuestra comunidad.\n\nA continuación les compartimos información importante para el inicio del ciclo:\n\n▸ UNIFORMES\nLos uniformes pueden adquirirse en [completar nombre y dirección de la tienda]. Te recomendamos gestionarlo con anticipación para asegurarte de tener todo a tiempo.\n\n▸ REDES SOCIALES\nSeguinos para estar al tanto de todas las novedades:\n• Instagram: @austinebs\n• Facebook: Austin Eco Bilingual School\n\n▸ SISTEMAS DEL COLEGIO — HANDING Y ACADEU\nEn los próximos días recibirán el alta en los sistemas Handing y Acadeu con sus accesos. Si pasados algunos días no recibieron la información, por favor contactarse a admisiones@austinebs-ah.edu.ar indicando el nombre de {{alumno}}.\n\n¡Los esperamos con mucho entusiasmo!\n\nAdmisiones – Austin EBS'},
+    nuevo:{subj:'¡Bienvenidos a Austin EBS! Información de inicio',body:'Hola {{padre}},\n\n¡Estamos muy emocionados de darles la bienvenida oficial a Austin Eco Bilingual School! {{alumno}} ya forma parte de nuestra comunidad.\n\nA continuación les compartimos información importante para el inicio del ciclo:\n\n▸ UNIFORMES\nPara la compra del uniforme escribinos a admisiones@austinebs-ah.edu.ar y te pasamos los datos del proveedor. Te recomendamos gestionarlo con anticipación para tener todo a tiempo.\n\n▸ REDES SOCIALES\nSeguinos para estar al tanto de todas las novedades:\n• Instagram: @austinebs\n• Facebook: Austin Eco Bilingual School\n\n▸ SISTEMAS DEL COLEGIO — HANDING Y ACADEU\nEn los próximos días recibirán el alta en los sistemas Handing y Acadeu con sus accesos. Si pasados algunos días no recibieron la información, por favor contactarse a admisiones@austinebs-ah.edu.ar indicando el nombre de {{alumno}}.\n\n¡Los esperamos con mucho entusiasmo!\n\nAdmisiones – Austin EBS'},
     admin_matriculado:{subj:'NUEVO MATRICULADO: {{alumno}} — {{curso}} {{anio}}',body:'Estimado equipo de Administración,\n\nEl siguiente estudiante completó el proceso de admisión y se encuentra MATRICULADO. Por favor proceder con el alta, cobro de matrícula y solicitud de documentación.\n\n══ DATOS DEL ESTUDIANTE ══\nNombre: {{alumno}}\nNivel: {{nivel}}\nCurso: {{curso}}\nJornada: {{jornada}}\nCiclo lectivo: {{anio}}\nHermano/a Austin: {{hermano}}\nColegio anterior: {{colegio}}\n\n══ DATOS DE LA FAMILIA ══\nPadre / Madre / Tutor: {{padre}}\nEmail: {{email}}\nTeléfono: {{tel}}\n\n══ APROBACIONES ══\nAdmisiones: ✓\nEOE / Inglés: ✓\nDirección General: ✓\n\nSistema de Admisiones – Austin EBS'},
     dg_notif:{subj:'EOE aprobó a {{alumno}} — pendiente confirmación DG',body:'Estimada Dirección General,\n\nEOE e Inglés dieron el visto bueno para el ingreso de {{alumno}} ({{curso}}, ciclo {{anio}}).\nAdmisiones confirmó la vacante.\n\nPor favor confirmar el ingreso antes del plazo indicado.\nSi no hay respuesta en 48hs, el sistema procederá automáticamente con la matrícula.\n\nDatos:\n- Nombre: {{alumno}}\n- Nivel: {{nivel}} — {{curso}}\n- Ciclo: {{anio}}\n- Familia: {{padre}}\n- Email: {{email}}\n- Teléfono: {{tel}}\n\nSaludos,\nSistema de Admisiones – Austin EBS'}
   },
@@ -1590,6 +1603,8 @@ function gcalLink(p){
   const tStart=fBase+'T'+String(hh).padStart(2,'0')+String(mm).padStart(2,'0')+'00';
   const endH=hh+1;
   const tEnd=fBase+'T'+String(endH).padStart(2,'0')+String(mm).padStart(2,'0')+'00';
+  // Texto plano para la URL de Google Calendar: lo sanea encodeURIComponent, NO esc()
+  // (escapar a entidades HTML aquí haría que un "&" se vea como "&amp;" en el evento).
   const title=`ENTREVISTA: ${p.alumno} (${p.curso})`;
   const details=`Familia: ${p.padre}\nEmail: ${p.email}\nTel: ${p.tel||'—'}\nNivel: ${p.nivel}`;
   return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${tStart}/${tEnd}&details=${encodeURIComponent(details)}&location=${encodeURIComponent('Planta alta de High School — Austin EBS')}&sf=true`;
@@ -1671,7 +1686,7 @@ function renderDashboard(){
   document.getElementById('dash-accion').innerHTML=accion.length===0
     ?`<div class="empty"><div class="empty-ic">✓</div><p>Todo al día — sin pendientes</p></div>`
     :accion.map(p=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 17px;border-bottom:1px solid var(--bd);font-size:12.5px">
-      <div><strong>${p.alumno}</strong>${esInactivo(p)?` <span class="inac-badge">⚠ ${diasDesde(p.ultAccion||p.fecha)}d</span>`:''} <span style="color:var(--tx3);font-size:11px">· ${p.curso}</span></div>
+      <div><strong>${esc(p.alumno)}</strong>${esInactivo(p)?` <span class="inac-badge">⚠ ${diasDesde(p.ultAccion||p.fecha)}d</span>`:''} <span style="color:var(--tx3);font-size:11px">· ${esc(p.curso)}</span></div>
       <div style="display:flex;align-items:center;gap:7px">${badge(p.estado)}<button class="btn btn-sm btn-td" onclick="openDetalle(${p.id})">Gestionar →</button></div>
     </div>`).join('');
 
@@ -1690,9 +1705,9 @@ function renderDashboard(){
   document.getElementById('dash-rec').innerHTML=rec.length===0
     ?`<tr><td colspan="6"><div class="empty"><div class="empty-ic">📋</div><p>Aún no hay postulantes. Las nuevas postulaciones aparecerán aquí.</p></div></td></tr>`
     :rec.map(p=>`<tr onclick="openDetalle(${p.id})"${esInactivo(p)?' class="inactivo-row"':''}>
-      <td><strong>${p.alumno}</strong>${p.hermano==='si'?` <span style="font-size:10px;background:#EBF7D4;color:#3A6A0A;padding:1px 5px;border-radius:10px">★hno</span>`:''}</td>
-      <td style="color:var(--tx2)">${p.padre}</td>
-      <td><span class="pill">${p.nivel}</span> ${p.curso}</td>
+      <td><strong>${esc(p.alumno)}</strong>${p.hermano==='si'?` <span style="font-size:10px;background:#EBF7D4;color:#3A6A0A;padding:1px 5px;border-radius:10px">★hno</span>`:''}</td>
+      <td style="color:var(--tx2)">${esc(p.padre)}</td>
+      <td><span class="pill">${p.nivel}</span> ${esc(p.curso)}</td>
       <td>${badge(p.estado)}</td>
       <td style="color:var(--tx3);font-size:11.5px">${fDate(p.ultAccion||p.fecha)}</td>
       <td><button class="btn btn-sm btn-td" onclick="event.stopPropagation();openDetalle(${p.id})">Gestionar</button></td>
@@ -1723,8 +1738,8 @@ function renderPipeline(){
       <div class="pcb">
         ${ps.length===0?`<div style="font-size:11px;color:var(--tx3);padding:8px 5px;text-align:center">—</div>`:''}
         ${ps.map(p=>`<div class="pcard${esInactivo(p)?' inactivo':''}" onclick="openDetalle(${p.id})">
-          <div class="pcard-n">${p.alumno}${p.hermano==='si'?' ★':''}</div>
-          <div class="pcard-c">${p.curso}</div>
+          <div class="pcard-n">${esc(p.alumno)}${p.hermano==='si'?' ★':''}</div>
+          <div class="pcard-c">${esc(p.curso)}</div>
           <div class="pcard-d">${esInactivo(p)?`⚠ ${diasDesde(p.ultAccion||p.fecha)}d inactivo`:fDate(p.ultAccion||p.fecha)}</div>
         </div>`).join('')}
       </div>
@@ -1744,12 +1759,12 @@ function renderTable(list=null){
   document.getElementById('post-tb').innerHTML=ps.length===0
     ?`<tr><td colspan="8"><div class="empty"><div class="empty-ic">◎</div><p>Sin resultados</p></div></td></tr>`
     :ps.map(p=>`<tr onclick="openDetalle(${p.id})"${esInactivo(p)?' class="inactivo-row"':''}>
-      <td><strong>${p.alumno}</strong>${p.hermano==='si'?` <span style="font-size:10px;background:#EBF7D4;color:#3A6A0A;padding:1px 5px;border-radius:10px">★hno</span>`:''}</td>
-      <td style="color:var(--tx2)">${p.padre}</td>
-      <td><small style="color:var(--tx3)">${p.nivel} ·</small> ${p.curso}</td>
+      <td><strong>${esc(p.alumno)}</strong>${p.hermano==='si'?` <span style="font-size:10px;background:#EBF7D4;color:#3A6A0A;padding:1px 5px;border-radius:10px">★hno</span>`:''}</td>
+      <td style="color:var(--tx2)">${esc(p.padre)}</td>
+      <td><small style="color:var(--tx3)">${p.nivel} ·</small> ${esc(p.curso)}</td>
       <td><span class="pill">${p.anio}</span></td>
       <td>${badge(p.estado)}</td>
-      <td style="color:var(--tx2);font-size:11.5px">${p.email}</td>
+      <td style="color:var(--tx2);font-size:11.5px">${esc(p.email)}</td>
       <td style="font-size:11.5px">${esInactivo(p)?`<span class="inac-badge">⚠ ${diasDesde(p.ultAccion||p.fecha)}d</span>`:`<span style="color:var(--tx3)">${diasDesde(p.ultAccion||p.fecha)}d</span>`}</td>
       <td onclick="event.stopPropagation()"><button class="btn btn-sm btn-td" onclick="openDetalle(${p.id})">Gestionar</button></td>
     </tr>`).join('');
@@ -1777,12 +1792,12 @@ function openDetalle(id){
     <div class="deth">
       <div class="detav" style="background:${ECOL[p.estado]}">${init}</div>
       <div class="detinfo">
-        <h2>${p.alumno}</h2>
-        <p>${p.padre} · <a href="mailto:${p.email}" style="color:var(--tl)">${p.email}</a>${p.tel?` · ${p.tel}`:''}</p>
+        <h2>${esc(p.alumno)}</h2>
+        <p>${esc(p.padre)} · <a href="mailto:${esc(p.email)}" style="color:var(--tl)">${esc(p.email)}</a>${p.tel?` · ${esc(p.tel)}`:''}</p>
         <div class="dettags">
           ${badge(p.estado)}
           <span class="dettag">${p.nivel}</span>
-          <span class="dettag">${p.curso}</span>
+          <span class="dettag">${esc(p.curso)}</span>
           <span class="dettag">${p.jornada||'—'}</span>
           <span class="dettag">Ciclo ${p.anio}</span>
           ${p.hermano==='si'?`<span class="dettag" style="background:#EBF7D4;color:#3A6A0A">★ Hermano en Austin</span>`:''}
@@ -1791,11 +1806,11 @@ function openDetalle(id){
       </div>
     </div>
     <div class="detgrid">
-      <div class="detf"><div class="detfl">Email</div><div class="detfv"><a href="mailto:${p.email}">${p.email}</a></div></div>
-      <div class="detf"><div class="detfl">Teléfono</div><div class="detfv">${p.tel||'—'}</div></div>
+      <div class="detf"><div class="detfl">Email</div><div class="detfv"><a href="mailto:${esc(p.email)}">${esc(p.email)}</a></div></div>
+      <div class="detf"><div class="detfl">Teléfono</div><div class="detfv">${esc(p.tel||'—')}</div></div>
       <div class="detf"><div class="detfl">Postulado el</div><div class="detfv">${fDateFull(p.fecha)}</div></div>
-      <div class="detf"><div class="detfl">Vacante en ${p.curso}</div><div class="detfv">${getVacDisp(p.curso)}</div></div>
-      ${p.colegio?`<div class="detf"><div class="detfl">Colegio anterior</div><div class="detfv">${p.colegio}</div></div>`:''}
+      <div class="detf"><div class="detfl">Vacante en ${esc(p.curso)}</div><div class="detfv">${getVacDisp(p.curso, p.anio)}</div></div>
+      ${p.colegio?`<div class="detf"><div class="detfl">Colegio anterior</div><div class="detfv">${esc(p.colegio)}</div></div>`:''}
       ${p.dir?`<div class="detf"><div class="detfl">Localidad</div><div class="detfv">${p.dir}</div></div>`:''}
     </div>
 
@@ -1947,9 +1962,9 @@ function addNota(id){
   saveDB(); toast('Nota guardada','ok');
 }
 
-function getVacDisp(curso){
-  const v=DB.vacantes[curso]; if(!v) return '—';
-  const lib=v.t-v.u;
+function getVacDisp(curso, anio){
+  const v=vacantesDe(curso, anio); if(!v) return '—';
+  const lib=v.libres;
   if(lib<=0) return `<span style="color:#DC2626;font-weight:600">Curso lleno</span>`;
   if(lib<=3) return `<span style="color:var(--or);font-weight:600">${lib} lugar${lib!==1?'es':''} (últimos)</span>`;
   return `<span style="color:var(--gr);font-weight:600">${lib} lugar${lib!==1?'es':''}</span>`;
@@ -1998,9 +2013,9 @@ function changeE(id){
   const prevEst=p.estado;
 
   if(newEst==='postulado'||newEst==='lista de espera'){
-    const v=DB.vacantes[p.curso];
+    const v=vacantesDe(p.curso, p.anio);
     if(v){
-      const lib=v.t-v.u;
+      const lib=v.libres;
       const msg = lib<=0 ? 'Curso LLENO — sin vacantes disponibles' : lib<=3 ? lib+' vacante'+(lib>1?'s':'')+' disponibles (últimas)' : lib+' vacantes disponibles';
       toast('Vacantes en '+p.curso+': '+msg, lib<=0?'err':'info');
     }
@@ -2009,7 +2024,6 @@ function changeE(id){
   p.ultAccion=today();
   p.hist=p.hist||[];
   p.hist.push({e:newEst,f:today(),mailOk:false});
-  ajustarVacante(p.curso,prevEst,newEst);
 
   // Estado pendiente_dg → marcar deadline 48hs
   if(newEst==='pendiente_dg'){
@@ -2671,7 +2685,7 @@ function buildResumen(){
     const nombre=`${est.n} ${est.ap}`.trim();
     if(numStudents>1) rows+=`<div style="grid-column:1/-1;margin-top:${i>0?'10px':'0'};padding-top:${i>0?'10px':'0'};border-top:${i>0?'1px solid var(--bd)':'none'}"><strong style="font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em">ESTUDIANTE ${i+1}</strong></div>`;
     rows+=`<div><span style="color:var(--tx3);font-size:10.5px;text-transform:uppercase;letter-spacing:.07em">Nombre</span><br><strong>${nombre}</strong></div>`;
-    rows+=`<div><span style="color:var(--tx3);font-size:10.5px;text-transform:uppercase;letter-spacing:.07em">Curso</span><br><strong>${est.curso}</strong></div>`;
+    rows+=`<div><span style="color:var(--tx3);font-size:10.5px;text-transform:uppercase;letter-spacing:.07em">Curso</span><br><strong>${esc(est.curso)}</strong></div>`;
     rows+=`<div><span style="color:var(--tx3);font-size:10.5px;text-transform:uppercase;letter-spacing:.07em">Jornada</span><br>${est.jornada}</div>`;
     rows+=`<div><span style="color:var(--tx3);font-size:10.5px;text-transform:uppercase;letter-spacing:.07em">Ciclo</span><br>${est.anio}</div>`;
     if(est.hermano==='si') rows+=`<div style="grid-column:1/-1"><span style="color:var(--gr);font-weight:600">★ Hermano/a de estudiante actual — prioridad de ingreso</span></div>`;
@@ -2986,7 +3000,7 @@ function renderAdminCal(){
     const diaN = NOMBRES[dow];
     const entsDia = DB.postulantes.filter(p=>p.entFecha===fechaStr).sort((a,b)=>(a.entHora||'').localeCompare(b.entHora||''));
     const entsHtml = entsDia.map(p=>`
-      <div class="admin-cal-ent estado-${(p.entResultado||p.estado||'').replace(/\s+/g,'-')}" onclick="openDetalleEntrevista(${p.id})" title="${p.alumno} ${p.entHora||''}">
+      <div class="admin-cal-ent estado-${(p.entResultado||p.estado||'').replace(/\s+/g,'-')}" onclick="openDetalleEntrevista(${p.id})" title="${esc(p.alumno)} ${p.entHora||''}">
         <strong>${p.entHora||'—'}</strong> ${p.alumno.split(' ')[0]}
         ${p.entResultado?'✓':''}
       </div>`).join('');
@@ -3023,9 +3037,9 @@ function renderEntAdminLista(filtro){
     const sinRes = esPasada && !p.entResultado;
     return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 18px;border-bottom:1px solid var(--bd);font-size:12.5px;${sinRes?'background:#FEF2F2;':''}">
       <div>
-        <strong>${p.alumno}</strong>${p.hermano==='si'?' ★':''}
-        <span style="color:var(--tx3);margin:0 6px">·</span>${p.padre}
-        <span style="color:var(--tx3);margin:0 6px">·</span><span class="pill">${p.curso}</span>
+        <strong>${esc(p.alumno)}</strong>${p.hermano==='si'?' ★':''}
+        <span style="color:var(--tx3);margin:0 6px">·</span>${esc(p.padre)}
+        <span style="color:var(--tx3);margin:0 6px">·</span><span class="pill">${esc(p.curso)}</span>
       </div>
       <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
         <span style="color:var(--tl);font-weight:600">${formatFechaLinda(p.entFecha)} ${p.entHora||''}</span>
@@ -3045,7 +3059,7 @@ function openDetalleEntrevista(id){
   const hoy = today();
   const esPasada = p.entFecha && p.entFecha < hoy;
   const tieneRes = !!p.entResultado;
-  const v = DB.vacantes[p.curso]; const hayVac = v && v.u < v.t;
+  const v = vacantesDe(p.curso, p.anio); const hayVac = !!(v && v.libres > 0);
   const init = p.alumno.split(' ').slice(0,2).map(function(w){return w[0]||'';}).join('').toUpperCase();
 
   document.getElementById('mt').textContent = 'Entrevista — ' + p.alumno;
@@ -3054,14 +3068,14 @@ function openDetalleEntrevista(id){
       '<div class="detav" style="background:'+ECOL[p.estado]+'">'+init+'</div>' +
       '<div class="detinfo">' +
         '<h2>'+p.alumno+(p.hermano==='si'?' ★':'')+'</h2>' +
-        '<p>'+p.padre+' · <a href="mailto:'+p.email+'" style="color:var(--tl)">'+p.email+'</a>'+(p.tel?' · '+p.tel:'')+'</p>' +
+        '<p>'+esc(p.padre)+' · <a href="mailto:'+esc(p.email)+'" style="color:var(--tl)">'+esc(p.email)+'</a>'+(p.tel?' · '+esc(p.tel):'')+'</p>' +
         '<div class="dettags">'+badge(p.estado)+'<span class="dettag">'+p.curso+'</span><span class="dettag">Ciclo '+p.anio+'</span>'+(p.hermano==='si'?'<span class="dettag" style="background:#EBF7D4;color:#3A6A0A">★ Hermano</span>':'')+'</div>' +
       '</div>' +
     '</div>' +
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:14px">' +
       '<div class="detf"><div class="detfl">Fecha</div><div class="detfv">'+(p.entFecha?formatFechaLinda(p.entFecha):'—')+'</div></div>' +
       '<div class="detf"><div class="detfl">Hora</div><div class="detfv">'+(p.entHora||'—')+'</div></div>' +
-      '<div class="detf"><div class="detfl">Vacante</div><div class="detfv">'+getVacDisp(p.curso)+'</div></div>' +
+      '<div class="detf"><div class="detfl">Vacante</div><div class="detfv">'+getVacDisp(p.curso, p.anio)+'</div></div>' +
       '<div class="detf"><div class="detfl">Resultado</div><div class="detfv">'+(p.entResultado?EL[p.entResultado]||p.entResultado:'Pendiente')+'</div></div>' +
     '</div>' +
 
@@ -3080,7 +3094,7 @@ function openDetalleEntrevista(id){
       '<div class="ent-resultado">' +
         '<div class="ent-r-title">Registrar resultado de la entrevista</div>' +
         (v ? '<div class="'+(hayVac?'info-box':'warn-box')+'" style="margin-bottom:10px">'+
-          (hayVac ? '✅ <strong>'+(v.t-v.u)+'</strong> vacante'+(v.t-v.u!==1?'s':'')+' disponibles en '+p.curso+'.' : '⚠️ Sin vacantes en '+p.curso+'. Podés pasar a Lista de espera.')+
+          (hayVac ? '✅ <strong>'+v.libres+'</strong> vacante'+(v.libres!==1?'s':'')+' disponibles en '+esc(p.curso)+'.' : '⚠️ Sin vacantes en '+esc(p.curso)+'. Podés pasar a Lista de espera.')+
           '</div>' : '') +
         '<div class="ent-opciones">' +
           '<div class="ent-opcion" id="rop-post" onclick="selectRes(\'post\')">✅<br>Quiere avanzar</div>' +
@@ -3119,7 +3133,7 @@ function confirmarResultado(id){
   if(!resultadoSel){ toast('Seleccioná un resultado primero','err'); return; }
   const p = DB.postulantes.find(x=>x.id===id); if(!p) return;
   const obs = (document.getElementById('ent-obs-res') ? document.getElementById('ent-obs-res').value : '').trim();
-  const v = DB.vacantes[p.curso]; const hayVac = v && v.u < v.t;
+  const v = vacantesDe(p.curso, p.anio); const hayVac = !!(v && v.libres > 0);
   let nuevoEstado;
   if(resultadoSel==='post') nuevoEstado = 'postulado'; // admin decides manually if lista de espera
   else if(resultadoSel==='esp') nuevoEstado = 'lista de espera';
@@ -3308,8 +3322,8 @@ function mostrarNotifEOE(p, resultado){
   d.className='notif-b'+(aprobado?'':' warn');
   d.innerHTML=`
     <div class="notif-t">
-      <h4>${aprobado?'✓ EOE aprobó a':'✗ EOE rechazó a'} ${p.alumno}</h4>
-      <p>${p.curso} — ${aprobado?'Pasó a Pendiente Dir. General':'Volvió a Admisiones como Rechazado EOE'}</p>
+      <h4>${aprobado?'✓ EOE aprobó a':'✗ EOE rechazó a'} ${esc(p.alumno)}</h4>
+      <p>${esc(p.curso)} — ${aprobado?'Pasó a Pendiente Dir. General':'Volvió a Admisiones como Rechazado EOE'}</p>
     </div>
     <div class="notif-a">
       <button class="nbtn ${aprobado?'nbtn-v':'nbtn-v warn-v'}" onclick="openDetalle(${p.id});this.closest('.notif-b').remove()">Ver perfil</button>
@@ -3387,7 +3401,6 @@ function confirmarDG(id){
   p.ultAccion=today();
   p.hist=p.hist||[];
   p.hist.push({e:'matriculado',f:today(),mailOk:false});
-  ajustarVacante(p.curso,prevEst,'matriculado');
   saveDB();
   enviarMailAdministracion(p);
   enviarMailAdmin(p,'matriculado',(ok,mode)=>{
@@ -3413,7 +3426,6 @@ function checkPendienteDG(){
       p.ultAccion=today();
       p.hist=p.hist||[];
       p.hist.push({e:'matriculado',f:today(),mailOk:false,auto:true});
-      ajustarVacante(p.curso,prevEst,'matriculado');
       enviarMailAdministracion(p);
       enviarMailAdmin(p,'matriculado',(ok)=>{ if(ok){ p.hist[p.hist.length-1].mailOk=true; saveDB(); } });
       changed=true;
@@ -3428,8 +3440,8 @@ function checkPendienteDG(){
 function enviarMailDG(p){
   const dgEmail=DB.config.emailDG||'alejandra.luna@austinebs-ah.edu.ar';
   const tmpl=DB.emails.dg_notif;
-  const subj=tmpl?fillV(tmpl.subj,p):`EOE aprobó a ${p.alumno} — pendiente confirmación DG`;
-  const body=tmpl?fillV(tmpl.body,p):`EOE aprobó a ${p.alumno} (${p.curso}, ciclo ${p.anio}). Familia: ${p.padre} · ${p.email}`;
+  const subj=tmpl?fillV(tmpl.subj,p):`EOE aprobó a ${esc(p.alumno)} — pendiente confirmación DG`;
+  const body=tmpl?fillV(tmpl.body,p):`EOE aprobó a ${esc(p.alumno)} (${esc(p.curso)}, ciclo ${p.anio}). Familia: ${esc(p.padre)} · ${esc(p.email)}`;
   if(DB.config.appsScriptUrl){
     apiCall('sendMail',{to:dgEmail,subject:subj,body}).then(()=>{});
   } else {
@@ -3443,8 +3455,8 @@ function enviarMailDG(p){
 function enviarMailAdministracion(p, manual=false){
   const adminEmail=DB.config.emailAdmin||'adm@austinebs-ah.edu.ar';
   const tmpl=DB.emails.admin_matriculado;
-  const subj=tmpl?fillV(tmpl.subj,p):`NUEVO MATRICULADO: ${p.alumno} — ${p.curso} ${p.anio}`;
-  const body=tmpl?fillV(tmpl.body,p):`Matriculado: ${p.alumno} · ${p.curso} · Ciclo ${p.anio}\nFamilia: ${p.padre} · ${p.email} · ${p.tel||'—'}`;
+  const subj=tmpl?fillV(tmpl.subj,p):`NUEVO MATRICULADO: ${esc(p.alumno)} — ${esc(p.curso)} ${p.anio}`;
+  const body=tmpl?fillV(tmpl.body,p):`Matriculado: ${esc(p.alumno)} · ${esc(p.curso)} · Ciclo ${p.anio}\nFamilia: ${esc(p.padre)} · ${esc(p.email)} · ${esc(p.tel||'—')}`;
   if(DB.config.appsScriptUrl){
     apiCall('sendMail',{to:adminEmail,subject:subj,body}).then(()=>{});
   } else {
@@ -3503,9 +3515,9 @@ function renderBajas(){
   }
   tb.innerHTML=bajas.map(p=>`<tr>
     <td onclick="event.stopPropagation()"><input type="checkbox" class="baja-chk" data-id="${p.id}"></td>
-    <td style="cursor:pointer" onclick="openDetalle(${p.id})"><strong>${p.alumno}</strong></td>
-    <td><small style="color:var(--tx3)">${p.nivel} ·</small> ${p.curso}</td>
-    <td>${p.padre}${p.tel?`<br><small style="color:var(--tx3)">${p.tel}</small>`:''}</td>
+    <td style="cursor:pointer" onclick="openDetalle(${p.id})"><strong>${esc(p.alumno)}</strong></td>
+    <td><small style="color:var(--tx3)">${p.nivel} ·</small> ${esc(p.curso)}</td>
+    <td>${esc(p.padre)}${p.tel?`<br><small style="color:var(--tx3)">${esc(p.tel)}</small>`:''}</td>
     <td>${fDateFull(p.ultAccion||p.fecha)}</td>
     <td>${p.lastContact?fDateFull(p.lastContact):`<span style="color:var(--tx3);font-size:11px">Sin contacto</span>`}</td>
     <td><span class="pill">${p.anio}</span></td>
@@ -3552,8 +3564,8 @@ function renderBajasEsc(){
     return;
   }
   tb.innerHTML=lista.map(b=>`<tr>
-    <td><strong>${b.alumno}</strong></td>
-    <td><small style="color:var(--tx3)">${b.nivel||''} ·</small> ${b.curso}</td>
+    <td><strong>${esc(b.alumno)}</strong></td>
+    <td><small style="color:var(--tx3)">${b.nivel||''} ·</small> ${esc(b.curso)}</td>
     <td>${fDateFull(b.fecha)}</td>
     <td style="max-width:280px;white-space:pre-wrap;font-size:13px">${b.motivo||'—'}</td>
     <td><button class="btn btn-sm btn-out" onclick="eliminarBajaEsc(${b.id})" style="color:var(--err)">Eliminar</button></td>
@@ -3656,8 +3668,8 @@ function renderDashEntHoy(){
     return `<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 18px;border-bottom:1px solid var(--bd);font-size:12.5px">
       <div style="display:flex;align-items:center;gap:10px">
         ${esHoyLabel?`<span style="background:var(--or);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px">HOY</span>`:`<span style="background:var(--cr2);color:var(--tx2);font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px">${formatFechaLinda(p.entFecha)}</span>`}
-        <strong>${p.alumno}</strong>
-        <span style="color:var(--tx3)">· ${p.padre} · ${p.curso}</span>
+        <strong>${esc(p.alumno)}</strong>
+        <span style="color:var(--tx3)">· ${esc(p.padre)} · ${esc(p.curso)}</span>
       </div>
       <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
         <span style="color:var(--tl);font-weight:600">${p.entHora||'—'}</span>
@@ -3861,8 +3873,8 @@ function normalizarNivel(raw){
   return raw;
 }
 
-function ocData(){
-  const ciclo = _ocCiclo;
+function ocData(cicloOverride){
+  const ciclo = cicloOverride || _ocCiclo;
   const padronCiclo = (DB.padron||[]).filter(a=>a.ciclo===ciclo);
   const usePadron = padronCiclo.length > 0;
 
@@ -4124,7 +4136,7 @@ function filtrarPadron(){
       </div>
       <table><thead><tr><th>Nombre</th><th>Nivel</th><th>Estado</th><th>Fecha alta</th><th></th></tr></thead>
       <tbody>${alumnos.map(a=>`<tr style="${a.estado==='baja'?'opacity:.6':''}">
-        <td><strong>${a.nombre||'—'}</strong>${a.admisionId?` <span style="font-size:10px;color:#7C3AED;background:#EDE9FE;padding:1px 5px;border-radius:3px">Adm</span>`:''}</td>
+        <td><strong>${esc(a.nombre||'—')}</strong>${a.admisionId?` <span style="font-size:10px;color:#7C3AED;background:#EDE9FE;padding:1px 5px;border-radius:3px">Adm</span>`:''}</td>
         <td style="color:var(--tx3);font-size:12px">${a.nivel||'—'}</td>
         <td>${a.estado==='activo'
           ?`<span style="color:#16A34A;font-size:12px;font-weight:600">● Activo</span>`
@@ -4178,8 +4190,8 @@ function registrarBajaPadronModal(id){
   document.getElementById('mt').textContent='Registrar baja';
   document.getElementById('mb').innerHTML=`
     <div style="margin-bottom:12px;padding:10px 14px;background:var(--cr);border-radius:8px">
-      <div style="font-size:15px;font-weight:600">${a.nombre}</div>
-      <div style="font-size:12px;color:var(--tx3)">${a.curso} · ${a.nivel} · Ciclo ${a.ciclo}</div>
+      <div style="font-size:15px;font-weight:600">${esc(a.nombre)}</div>
+      <div style="font-size:12px;color:var(--tx3)">${esc(a.curso)} · ${a.nivel} · Ciclo ${a.ciclo}</div>
     </div>
     <div style="display:grid;gap:12px;padding:4px 0">
       <div class="fg"><label class="flabel">Fecha de baja</label><input class="fi" id="pbaja-fecha" type="date" value="${today()}"></div>
@@ -4415,7 +4427,7 @@ function filtrarRemat(){
         const est=_getRematEst(a.id,sig);
         const obs=((DB.reMatricula||{})[a.id+'_'+sig]?.obs||'').replace(/"/g,'&quot;');
         return `<tr style="${est==='baja'?'background:#FFF5F5':est==='no_sabe'?'background:#FFFBEB':''}">
-          <td><strong>${a.nombre}</strong></td>
+          <td><strong>${esc(a.nombre)}</strong></td>
           <td style="text-align:center">
             <div style="display:inline-flex;gap:4px;border:1px solid var(--bd);border-radius:6px;overflow:hidden">
               <button onclick="setRemat('${a.id}','re_matricula')" title="Re-matricula" style="padding:5px 10px;border:none;cursor:pointer;font-size:13px;font-weight:700;background:${est==='re_matricula'?'#16A34A':'var(--cr)'};color:${est==='re_matricula'?'#fff':'#16A34A'}">✓</button>
@@ -4556,7 +4568,7 @@ function exportarRematPDF(tipo){
           const estColor=est==='re_matricula'?'#16A34A':est==='no_sabe'?'#D97706':'#EF4444';
           return `<tr style="border-bottom:1px solid #eee;${i%2===1?'background:#FAFAF8':''}">
             <td style="padding:7px 12px;font-size:12px;color:#666">${i+1}</td>
-            <td style="padding:7px 12px;font-size:13px;font-weight:600">${a.nombre}</td>
+            <td style="padding:7px 12px;font-size:13px;font-weight:600">${esc(a.nombre)}</td>
             <td style="padding:7px 12px;font-size:12px;color:#555">${a.nivel||'—'}</td>
             ${tipo==='all'?`<td style="padding:7px 12px;text-align:center"><span style="font-size:11px;font-weight:700;color:${estColor};background:${estColor}1A;padding:2px 8px;border-radius:4px">${estLabel}</span></td>`:''}
           </tr>`;
@@ -4657,8 +4669,8 @@ function moverSeccionModal(alumnoId){
   document.getElementById('mt').textContent='Mover alumno de sección';
   document.getElementById('mb').innerHTML=`
     <div style="padding:10px 14px;background:var(--cr);border-radius:8px;margin-bottom:14px">
-      <div style="font-size:15px;font-weight:600">${a.nombre}</div>
-      <div style="font-size:12px;color:var(--tx3)">Ciclo ${a.ciclo} · Sección actual: <strong>${a.curso||'Sin sección'}</strong></div>
+      <div style="font-size:15px;font-weight:600">${esc(a.nombre)}</div>
+      <div style="font-size:12px;color:var(--tx3)">Ciclo ${a.ciclo} · Sección actual: <strong>${esc(a.curso||'Sin sección')}</strong></div>
     </div>
     <div class="fg"><label class="flabel">Nueva sección</label>
       <select class="fsel" id="mover-curso" style="width:100%">${opts}</select>
@@ -4808,7 +4820,7 @@ function filtrarMovimientos(){
       <div class="cbox-h"><div class="cbox-t" style="color:#92400E">⚠ Matriculados sin sección (${sinSeccion.length})</div></div>
       <table><thead><tr><th>Alumno</th><th>Curso pipeline</th><th>Ciclo</th><th></th></tr></thead>
       <tbody>${sinSeccion.map(p=>`<tr>
-        <td><strong>${p.alumno}</strong></td><td>${p.curso||'—'}</td><td>${p.anio||'—'}</td>
+        <td><strong>${esc(p.alumno)}</strong></td><td>${esc(p.curso||'—')}</td><td>${p.anio||'—'}</td>
         <td><button class="btn btn-sm btn-out" onclick="openDetalle(${p.id})">Asignar</button></td>
       </tr>`).join('')}</tbody></table></div>`;
   }
@@ -4833,7 +4845,7 @@ function filtrarMovimientos(){
         </div>`:'<div></div>'}
         ${d.bajas.length?`<div>
           <div style="font-size:11px;font-weight:600;color:#EF4444;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Bajas de alumnos</div>
-          ${d.bajas.map(b=>`<div style="padding:6px 0;border-bottom:1px solid var(--bd);font-size:13px"><strong>${b.alumno}</strong><br><span style="color:var(--tx3);font-size:11.5px">${b.curso||'—'}${b.motivo?' · '+b.motivo:''}</span></div>`).join('')}
+          ${d.bajas.map(b=>`<div style="padding:6px 0;border-bottom:1px solid var(--bd);font-size:13px"><strong>${esc(b.alumno)}</strong><br><span style="color:var(--tx3);font-size:11.5px">${esc(b.curso||'—')}${b.motivo?' · '+b.motivo:''}</span></div>`).join('')}
         </div>`:'<div></div>'}
       </div>
     </div>`;
@@ -4871,11 +4883,11 @@ function filtrarDescuentos(){
       const d=desc[a.id];
       const isBeca=d.tipo==='beca';
       return `<tr>
-        <td><strong>${a.nombre}</strong></td>
-        <td style="color:var(--tx3);font-size:12px">${a.curso}</td>
+        <td><strong>${esc(a.nombre)}</strong></td>
+        <td style="color:var(--tx3);font-size:12px">${esc(a.curso)}</td>
         <td style="text-align:center"><span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px;background:${isBeca?'#EDE9FE':'#DCFCE7'};color:${isBeca?'#7C3AED':'#166534'}">${isBeca?'BECA':'DESC'}</span></td>
         <td style="text-align:center;font-size:13px;font-weight:700">${isBeca?'100':(d.pct||0)}%</td>
-        <td style="font-size:12px;color:var(--tx3)">${d.obs||'—'}</td>
+        <td style="font-size:12px;color:var(--tx3)">${esc(d.obs||'—')}</td>
         <td><button class="btn btn-sm btn-out" onclick="editarDescuento('${a.id}')">Editar</button></td>
       </tr>`;
     }).join('')}</tbody></table></div>`;
@@ -4918,7 +4930,7 @@ function buscarAlumnoDesc(q){
   const ciclo=_ocCiclo;
   const hits=(DB.padron||[]).filter(a=>a.ciclo===ciclo&&a.estado==='activo'&&(a.nombre||'').toLowerCase().includes(q.toLowerCase())).slice(0,8);
   sugg.style.display=hits.length?'block':'none';
-  sugg.innerHTML=hits.map(a=>`<div style="padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--bd);font-size:13px" onmousedown="selAlumnoDesc('${a.id}','${a.nombre.replace(/'/g,"\\'").replace(/"/g,'&quot;')}','${a.curso}')"><strong>${a.nombre}</strong> <span style="color:var(--tx3);font-size:11px">${a.curso}</span></div>`).join('');
+  sugg.innerHTML=hits.map(a=>`<div style="padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--bd);font-size:13px" onmousedown="selAlumnoDesc('${a.id}','${a.nombre.replace(/'/g,"\\'").replace(/"/g,'&quot;')}','${esc(a.curso)}')"><strong>${esc(a.nombre)}</strong> <span style="color:var(--tx3);font-size:11px">${esc(a.curso)}</span></div>`).join('');
 }
 
 function selAlumnoDesc(id,nombre,curso){
@@ -4957,7 +4969,7 @@ function editarDescuento(alumnoId){
   const d=(DB.descuentos||{})[alumnoId]||{tipo:'descuento',pct:0,obs:''};
   document.getElementById('mt').textContent=`Editar — ${a.nombre}`;
   document.getElementById('mb').innerHTML=`
-    <div style="padding:10px 14px;background:var(--cr);border-radius:8px;margin-bottom:12px;font-size:13px"><strong>${a.nombre}</strong> · ${a.curso}</div>
+    <div style="padding:10px 14px;background:var(--cr);border-radius:8px;margin-bottom:12px;font-size:13px"><strong>${esc(a.nombre)}</strong> · ${esc(a.curso)}</div>
     <div style="display:grid;gap:12px;padding:4px 0">
       <div class="fg"><label class="flabel">Tipo</label>
         <select class="fsel" id="desc-tipo" onchange="toggleDescPct()">
@@ -5026,8 +5038,8 @@ function renderMorosoCard(m){
   return `<div class="cbox" style="margin-bottom:12px;border-left:3px solid #EF4444">
     <div class="cbox-h">
       <div>
-        <div class="cbox-t">Familia ${m.apellido}</div>
-        ${m.obs?`<div style="font-size:12px;color:var(--tx3);margin-top:2px">${m.obs}</div>`:''}
+        <div class="cbox-t">Familia ${esc(m.apellido)}</div>
+        ${m.obs?`<div style="font-size:12px;color:var(--tx3);margin-top:2px">${esc(m.obs)}</div>`:''}
       </div>
       <div style="display:flex;gap:6px;align-items:center">
         <span style="font-size:11px;color:var(--tx3)">Desde ${m.desde||'—'}</span>
@@ -5037,7 +5049,7 @@ function renderMorosoCard(m){
     </div>
     ${alumnos.length
       ?`<table><thead><tr><th>Alumno</th><th>Sección</th></tr></thead>
-        <tbody>${alumnos.map(a=>`<tr><td><strong>${a.nombre}</strong></td><td style="color:var(--tx3);font-size:12px">${a.curso}</td></tr>`).join('')}</tbody></table>`
+        <tbody>${alumnos.map(a=>`<tr><td><strong>${esc(a.nombre)}</strong></td><td style="color:var(--tx3);font-size:12px">${esc(a.curso)}</td></tr>`).join('')}</tbody></table>`
       :`<div style="padding:8px 16px;font-size:12px;color:var(--tx3)">Sin alumnos activos en ciclo ${ciclo}.</div>`}
   </div>`;
 }
@@ -5082,8 +5094,8 @@ function buscarEstudianteMoroso(q){
   sugg.style.display='block';
   sugg.innerHTML=matches.map(a=>`
     <div style="padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--bd);font-size:13px;display:flex;justify-content:space-between;align-items:center" onmousedown="seleccionarAlumnoMoroso('${(a.nombre||'').replace(/'/g,"\\'").replace(/"/g,'&quot;')}')">
-      <strong>${a.nombre}</strong>
-      <span style="color:var(--tx3);font-size:11px">${a.curso} · ${a.ciclo}</span>
+      <strong>${esc(a.nombre)}</strong>
+      <span style="color:var(--tx3);font-size:11px">${esc(a.curso)} · ${a.ciclo}</span>
     </div>`).join('');
 }
 
@@ -5118,7 +5130,7 @@ function editarMoroso(apellido){
   document.getElementById('mb').innerHTML=`
     <div style="display:grid;gap:12px;padding:4px 0">
       <div class="fg"><label class="flabel">Observaciones</label>
-        <textarea class="fi" id="moroso-obs" rows="3">${m.obs||''}</textarea>
+        <textarea class="fi" id="moroso-obs" rows="3">${esc(m.obs||'')}</textarea>
       </div>
     </div>`;
   document.getElementById('mf').innerHTML=`
@@ -5214,8 +5226,8 @@ function filtrarBajaPicker(){
   }
   el.innerHTML=`<table><thead><tr><th>Nombre</th><th>Sección</th><th style="width:90px"></th></tr></thead>
     <tbody>${lista.map(a=>`<tr>
-      <td><strong>${a.nombre||'—'}</strong></td>
-      <td style="color:var(--tx3);font-size:12px">${a.curso||'—'}</td>
+      <td><strong>${esc(a.nombre||'—')}</strong></td>
+      <td style="color:var(--tx3);font-size:12px">${esc(a.curso||'—')}</td>
       <td><button class="btn btn-sm btn-out" style="color:#EF4444" onclick="registrarBajaPadronModal('${a.id}')">Dar de baja</button></td>
     </tr>`).join('')}</tbody></table>`;
 }
