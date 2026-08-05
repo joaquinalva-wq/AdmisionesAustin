@@ -524,7 +524,6 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
       <div class="nivc"><div class="nivc-ic">🐣</div><div class="nivc-t">Inicial / Kindergarten</div><div class="nivc-s">Desde sala de 2 años. Ambiente lúdico y bilingüe que acompaña el desarrollo temprano con grupos reducidos y espacios flexibles.</div><div class="nivc-r">Sala de 2 a Sala de 5</div></div>
       <div class="nivc"><div class="nivc-ic">📚</div><div class="nivc-t">Elementary School</div><div class="nivc-s">Educación primaria bilingüe con enfoque en inteligencias múltiples, pensamiento crítico y aprendizaje por proyectos.</div><div class="nivc-r">1ro a 6to año</div></div>
       <div class="nivc"><div class="nivc-ic">🎓</div><div class="nivc-t">High School</div><div class="nivc-s">Bachillerato bilingüe con Programa del Diploma IB. Formación de ciudadanos del mundo con certificaciones internacionales reconocidas.</div><div class="nivc-r">1ro a 6to año</div></div>
-      <div class="nivc"><div class="nivc-ic">🌎</div><div class="nivc-t">Escuela IB</div><div class="nivc-s">Austin ebs es una de las 54 escuelas IB de la Argentina. El Programa del Diploma prepara a los estudiantes para universidades y empleadores de todo el mundo.</div><div class="nivc-r">IB World School</div></div>
     </div>
   </section>
 
@@ -1316,6 +1315,7 @@ let DB = {
   emails:{
     contactado:{subj:'Postulación Austin EBS — información y próximos pasos',body:'Hola {{padre}},\n\nSoy Laura Unamuno, parte del staff de Austin Eco Bilingual School y encargada del proceso de admisiones.\n\n¡Nos alegra muchísimo tu postulación para {{alumno}}! Para conocer el proyecto en detalle y las tarifas, podés ver el brochure y los aranceles aquí: https://drive.google.com/drive/folders/1c0vFf1MWUcSC8-lqBjBCGDQ-hbXxGQDA\n\nPara empezar con el proceso, ingresá al siguiente link: https://calendar.app.google/WrfYGGSiRH3smkxL8 y reservá un horario disponible de visita con entrevista para conocer el proyecto educativo en profundidad y las instalaciones del colegio.\n\nQuedo a disposición por cualquier consulta.\n\nSaludos cordiales,\nLaura Unamuno\nAdmisiones – Austin EBS'},
     citado:{subj:'Tu entrevista en Austin EBS está confirmada',body:'Hola {{padre}},\n\nTu entrevista en Austin Eco Bilingual School está confirmada. Te esperamos con gusto.\n\nSi necesitás reprogramar, respondenos este mail a admisiones@austinebs-ah.edu.ar y lo coordinamos.\n\nUn saludo,\nLaura Unamuno\nAdmisiones – Austin EBS'},
+    citado_sin_fecha:{subj:'Recibimos tu postulación — coordinemos la entrevista',body:'Hola {{padre}},\n\n¡Gracias por postular a {{alumno}} en Austin Eco Bilingual School!\n\nRegistramos tu solicitud y vimos que preferís definir más adelante la fecha de la entrevista. Tu lugar en el proceso ya está reservado; sólo nos queda encontrar el momento que mejor les venga.\n\nEscribinos a admisiones@austinebs-ah.edu.ar o respondé este mail y coordinamos el día y horario. También podés elegir un turno directamente acá: {{link_calendario}}\n\nMientras tanto, si querés conocer el proyecto y los aranceles, están disponibles en: {{link_drive}}\n\nQuedamos a disposición.\n\nSaludos cordiales,\nLaura Unamuno\nAdmisiones – Austin EBS'},
     entrevistado:{subj:'¡Gracias por la entrevista!',body:'Hola {{padre}},\n\nFue un gusto recibirlos y conocerlos. Estamos orgullosos de que nos contemplen para la elección escolar de {{alumno}}.\n\nPara seguir acompañándolos en el proceso, les pedimos que completen este breve formulario post entrevista:\nhttps://forms.gle/rsQwi9ps1chN2q8x5\n\nEn caso de querer avanzar, esperamos su confirmación por este medio.\n\nUn afectuoso saludo,\nAdmisiones – Austin EBS'},
     postulado:{subj:'Siguiente paso en el proceso de admisión',body:'Hola {{padre}},\n\nGracias por la postulación de {{alumno}}.\n\nEstamos muy contentos de acompañarlos en los pasos a seguir para continuar con la reserva de vacante. Podrán encontrar las tarifas en el siguiente enlace:\n{{link_drive}}\n\nEl proceso quedará confirmado una vez que recibamos el comprobante de pago de la reserva de vacante por este medio.\n\nUn afectuoso saludo,\nAdmisiones – Austin EBS'},
     eoe_ingles:{subj:'Próximo paso: entrevista en inglés y con el EOE',body:'Hola {{padre}},\n\nGracias por seguir avanzando en el proceso de admisión de {{alumno}} en Austin Eco Bilingual School.\n\nComo parte del proceso de ingreso, necesitamos coordinar una breve entrevista en inglés y con nuestro Equipo de Orientación Escolar (EOE). Nos comunicaremos a la brevedad para acordar el horario.\n\nQuedamos a disposición.\n\nSaludos cordiales,\nLaura Unamuno\nAdmisiones – Austin EBS'},
@@ -1848,14 +1848,20 @@ function renderDashboard(){
     <div class="stc-sub">${s.c?`<span class="stc-dot" style="background:${s.c}"></span>`:''}${s.s}</div>
   </div>`).join('');
 
-  // Requieren acción
-  const accion=ps.filter(p=>['citado','entrevistado','postulado'].includes(p.estado)).sort((a,b)=>esInactivo(b)-esInactivo(a)).slice(0,8);
+  // Requieren acción — las postulaciones más recientes primero.
+  // Antes mezclaba todo el pipeline abierto y el listado quedaba viejo enseguida.
+  const CERRADOS=['matriculado','nuevo','desiste','no_queremos','rechazado_eoe'];
+  const accion=ps.filter(p=>!CERRADOS.includes(p.estado))
+    .sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||'') || (Number(b.id)||0)-(Number(a.id)||0))
+    .slice(0,8);
   document.getElementById('dash-accion').innerHTML=accion.length===0
     ?`<div class="empty"><div class="empty-ic">✓</div><p>Todo al día — sin pendientes</p></div>`
-    :accion.map(p=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 17px;border-bottom:1px solid var(--bd);font-size:12.5px">
-      <div><strong>${esc(p.alumno)}</strong>${esInactivo(p)?` <span class="inac-badge">⚠ ${diasDesde(p.ultAccion||p.fecha)}d</span>`:''} <span style="color:var(--tx3);font-size:11px">· ${esc(p.curso)}</span></div>
+    :accion.map(p=>{
+      const sinFecha = p.estado==='citado' && !p.entFecha;
+      return `<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 17px;border-bottom:1px solid var(--bd);font-size:12.5px">
+      <div><strong>${esc(p.alumno)}</strong>${esInactivo(p)?` <span class="inac-badge">⚠ ${diasDesde(p.ultAccion||p.fecha)}d</span>`:''}${sinFecha?` <span style="font-size:10px;background:#FEF3C7;color:#92400E;padding:1px 6px;border-radius:10px">entrevista a confirmar</span>`:''} <span style="color:var(--tx3);font-size:11px">· ${esc(p.curso)} · ${(p.fecha||'').split('-').reverse().slice(0,2).join('/')}</span></div>
       <div style="display:flex;align-items:center;gap:7px">${badge(p.estado)}<button class="btn btn-sm btn-td" onclick="openDetalle(${p.id})">Gestionar →</button></div>
-    </div>`).join('');
+    </div>`;}).join('');
 
   // Distribución
   const nivs=['Kindergarten','Elementary','High School'];
@@ -2167,7 +2173,7 @@ function fillV(text,p){
     .replace(/{{nivel}}/g,p.nivel||'').replace(/{{anio}}/g,String(p.anio||'')).replace(/{{jornada}}/g,p.jornada||'—')
     .replace(/{{email}}/g,p.email||'').replace(/{{tel}}/g,p.tel||'—').replace(/{{colegio}}/g,p.colegio||'—')
     .replace(/{{hermano}}/g,hermanoTxt)
-    .replace(/{{link_calendario}}/g,'').replace(/{{link_drive}}/g,DB.config.drive)
+    .replace(/{{link_calendario}}/g,DB.config.calendar||'').replace(/{{link_drive}}/g,DB.config.drive)
     .replace(/{{link_tarifas}}/g,DB.config.drive);
 }
 
@@ -2417,7 +2423,7 @@ function saveVac(){
 // EMAIL TEMPLATES
 // ═══════════════════════════
 const EMAIL_DESTINATARIO={
-  contactado:'Familia',citado:'Familia',entrevistado:'Familia',postulado:'Familia',
+  contactado:'Familia',citado:'Familia',citado_sin_fecha:'Familia',entrevistado:'Familia',postulado:'Familia',
   eoe_ingles:'Familia',matriculado:'Familia','lista de espera':'Familia',
   desiste:'Familia',desiste_recontacto:'Familia',no_queremos:'Familia',
   seguimiento_entrevista:'Familia',no_asistio:'Familia',nuevo:'Familia (onboarding)',
@@ -2425,8 +2431,8 @@ const EMAIL_DESTINATARIO={
 };
 
 function renderEmails(){
-  const allTpls=[...ESTADOS,'desiste_recontacto','admin_matriculado','dg_notif'].filter(e=>!['no_queremos','seguimiento_entrevista','rechazado_eoe','pendiente_dg'].includes(e));
-  const labels={...EL,desiste_recontacto:'Re-contacto a desistidos',admin_matriculado:'Notif. Administración (matriculado)',dg_notif:'Notif. Dirección General (EOE aprueba)'};
+  const allTpls=[...ESTADOS,'citado_sin_fecha','desiste_recontacto','admin_matriculado','dg_notif'].filter(e=>!['no_queremos','seguimiento_entrevista','rechazado_eoe','pendiente_dg'].includes(e));
+  const labels={...EL,citado_sin_fecha:'Citado — entrevista a confirmar',desiste_recontacto:'Re-contacto a desistidos',admin_matriculado:'Notif. Administración (matriculado)',dg_notif:'Notif. Dirección General (EOE aprueba)'};
   document.getElementById('email-tpls').innerHTML=allTpls.map(e=>{
     const dest=EMAIL_DESTINATARIO[e]||'Familia';
     const isTeam=dest!=='Familia'&&!dest.startsWith('Familia');
@@ -2896,7 +2902,9 @@ function submitPost(){
     const otrosNombres=allNames.filter((_,j)=>j!==i).join(', ');
     const notaHermanos=numStudents>1 ? `Inscripción familiar — hermanos registrados juntos: ${otrosNombres}` : '';
     const notasTxt=[obs,notaHermanos].filter(Boolean).join(' | ');
-    const estadoInicial = sinEntrevista ? 'contactado' : 'citado';
+    // "Aún no sé": igual entra como citado, con la entrevista a confirmar por Admisiones.
+    // Antes caía en 'contactado' y se mezclaba con quienes todavía no habían tenido contacto.
+    const estadoInicial = 'citado';
     const tmpId = 'w'+Date.now().toString(36)+Math.random().toString(36).slice(2,8)+i;
     nuevosPostulantes.push({
       id:tmpId, tmpId, alumno, padre, email, tel,
@@ -2939,7 +2947,7 @@ function submitPost(){
   }
   // Siempre enviar el mail de confirmación a la familia vía sendMail (independiente de reservarTurno)
   if(p0){
-    const estadoMail = sinEntrevista ? 'contactado' : 'citado';
+    const estadoMail = sinEntrevista ? 'citado_sin_fecha' : 'citado';
     // p0 ya no vive en DB (la postulación viaja por la bandeja), así que no se guarda acá.
     enviarMail(p0, estadoMail, ()=>{});
   }
