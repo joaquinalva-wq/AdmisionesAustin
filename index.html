@@ -3778,13 +3778,17 @@ function renderBajasEsc(){
 }
 
 function abrirModalBajaEsc(){
-  const grps=[{lbl:'Inicial (Kindergarten)',cursos:SCHOOL_CURSOS.filter(c=>SCHOOL_NIVEL(c)==='Inicial')},{lbl:'Elementary (Primaria)',cursos:SCHOOL_CURSOS.filter(c=>SCHOOL_NIVEL(c)==='Elementary')},{lbl:'High School (Secundaria)',cursos:SCHOOL_CURSOS.filter(c=>SCHOOL_NIVEL(c)==='High School')}];
-  const cursoOpts=grps.map(g=>`<optgroup label="${g.lbl}">${g.cursos.map(c=>`<option value="${c}">${c}</option>`).join('')}</optgroup>`).join('');
+  _bajaSel=null;
   document.getElementById('mt').textContent='Registrar baja de alumno';
   document.getElementById('mb').innerHTML=`
     <div style="display:grid;gap:12px;padding:4px 0">
-      <div class="fg"><label class="flabel">Nombre del alumno</label><input class="fi" id="be-alumno" placeholder="Nombre completo"></div>
-      <div class="fg"><label class="flabel">Sección / Curso</label><select class="fsel" id="be-curso"><option value="">Seleccionar sección</option>${cursoOpts}</select></div>
+      <div class="fg">
+        <label class="flabel">Alumno</label>
+        <input class="fi" id="be-q" placeholder="Escribí el nombre para buscarlo en el padrón..." autocomplete="off" oninput="buscarAlumnoBaja(this.value)">
+        <div id="be-sugg" style="border:1px solid var(--bd);border-radius:6px;max-height:200px;overflow-y:auto;background:var(--cb);margin-top:4px;display:none"></div>
+        <div id="be-elegido" style="display:none;margin-top:6px;padding:8px 12px;background:var(--cr);border-radius:6px;font-size:13px"></div>
+        <small style="color:var(--tx3);font-size:11px">Sólo aparecen alumnos activos del ciclo ${_ocCiclo}</small>
+      </div>
       <div class="fg"><label class="flabel">Fecha de baja</label><input class="fi" id="be-fecha" type="date" value="${today()}"></div>
       <div class="fg"><label class="flabel">Motivo de la baja</label><textarea class="fi" id="be-motivo" rows="4" placeholder="Describir el motivo..." style="resize:vertical"></textarea></div>
     </div>`;
@@ -3792,35 +3796,71 @@ function abrirModalBajaEsc(){
     <button class="btn btn-out" onclick="closeM()">Cancelar</button>
     <button class="btn btn-pri" onclick="guardarBajaEsc()">Guardar baja</button>`;
   openM();
+  setTimeout(function(){ buscarAlumnoBaja(''); },0);
+}
+
+function buscarAlumnoBaja(q){
+  const sugg=document.getElementById('be-sugg'); if(!sugg) return;
+  const ql=(q||'').toLowerCase();
+  const activos=(DB.padron||[]).filter(a=>a.ciclo===_ocCiclo&&a.estado==='activo');
+  const m=(ql?activos.filter(a=>(a.nombre||'').toLowerCase().includes(ql)||(a.curso||'').toLowerCase().includes(ql)):activos)
+    .sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||'')).slice(0,40);
+  if(!m.length){
+    sugg.style.display='block';
+    sugg.innerHTML='<div style="padding:8px 12px;font-size:12px;color:var(--tx3)">Sin alumnos activos que coincidan.</div>';
+    return;
+  }
+  sugg.style.display='block';
+  sugg.innerHTML=m.map(a=>`<div style="padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--bd);font-size:13px;display:flex;justify-content:space-between;gap:8px" onmousedown="selAlumnoBaja('${String(a.id).replace(/'/g,"\'")}')">
+      <strong>${esc(a.nombre)}</strong><span style="color:var(--tx3);font-size:11px">${esc(a.curso||'')}</span>
+    </div>`).join('');
+}
+
+function selAlumnoBaja(id){
+  const a=(DB.padron||[]).find(x=>String(x.id)===String(id)); if(!a) return;
+  _bajaSel=a;
+  const sugg=document.getElementById('be-sugg'); if(sugg) sugg.style.display='none';
+  const q=document.getElementById('be-q'); if(q) q.value=a.nombre||'';
+  const el=document.getElementById('be-elegido');
+  if(el){ el.style.display='block'; el.innerHTML=`Seleccionado: <strong>${esc(a.nombre)}</strong> — ${esc(a.curso||'')}`; }
 }
 
 function guardarBajaEsc(){
-  const alumno=(document.getElementById('be-alumno')?.value||'').trim();
-  const curso=document.getElementById('be-curso')?.value||'';
+  if(!_bajaSel){ toast('Elegí un alumno del padrón','err'); return; }
   const fecha=document.getElementById('be-fecha')?.value||today();
   const motivo=(document.getElementById('be-motivo')?.value||'').trim();
-  if(!alumno){ toast('Ingresá el nombre del alumno','err'); return; }
-  if(!curso){ toast('Seleccioná el curso','err'); return; }
-  const nivel=SCHOOL_NIVEL(curso)||NIVEL(curso);
-  const id=Date.now();
+  const a=(DB.padron||[]).find(x=>String(x.id)===String(_bajaSel.id));
+  if(!a){ toast('No se encontró al alumno en el padrón','err'); return; }
+  if(a.estado==='baja'){ toast('Ese alumno ya está dado de baja','err'); return; }
+
+  // La baja se marca en el padrón, que es la fuente de verdad: con eso se libera
+  // la vacante del curso y el alumno deja de aparecer para re-matricular.
+  a.estado='baja'; a.fechaBaja=fecha; a.motivoBaja=motivo;
+
+  // Se conserva el registro en bajasEscolares para el listado y el export.
   DB.bajasEscolares=DB.bajasEscolares||[];
-  DB.bajasEscolares.push({id,alumno,curso,nivel,fecha,motivo});
-  saveDB();
-  closeM();
-  updateSidebarBadges();
-  renderBajasEsc();
-  renderOcupacionCards();
-  toast('Baja registrada','ok');
+  DB.bajasEscolares.push({id:Date.now(),padronId:a.id,alumno:a.nombre,curso:a.curso,
+    nivel:a.nivel||SCHOOL_NIVEL(a.curso),fecha,motivo});
+
+  saveDB(); closeM(); _bajaSel=null;
+  updateSidebarBadges(); renderBajasEsc(); renderOcupacion();
+  toast(`Baja registrada — se liberó una vacante en ${a.curso}`,'ok');
 }
 
 function eliminarBajaEsc(id){
-  if(!confirm('¿Eliminar este registro de baja?')) return;
-  DB.bajasEscolares=(DB.bajasEscolares||[]).filter(b=>b.id!==id);
+  const b=(DB.bajasEscolares||[]).find(x=>x.id===id);
+  const a=b&&b.padronId?(DB.padron||[]).find(x=>String(x.id)===String(b.padronId)):null;
+  const msg=a?`¿Eliminar la baja de ${a.nombre}? Vuelve a quedar activo en ${a.curso} y se ocupa de nuevo la vacante.`
+            :'¿Eliminar este registro de baja?';
+  if(!confirm(msg)) return;
+  // Si la baja vino del padrón, reactivar al alumno para no dejar el dato inconsistente
+  if(a){ a.estado='activo'; a.fechaBaja=null; a.motivoBaja=null; }
+  DB.bajasEscolares=(DB.bajasEscolares||[]).filter(x=>x.id!==id);
   saveDB();
   updateSidebarBadges();
   renderBajasEsc();
-  renderOcupacionCards();
-  toast('Registro eliminado','ok');
+  renderOcupacion();
+  toast(a?`${a.nombre} volvió a estar activo`:'Registro eliminado','ok');
 }
 
 function exportBajasEscCSV(){
@@ -4024,6 +4064,7 @@ calBloqueos = DB.bloqueos||[];
 // ═══════════════════════════
 // OCUPACIÓN
 // ═══════════════════════════
+let _bajaSel = null;
 let _ocTab = 'resumen';
 let _ocCiclo = new Date().getFullYear();
 
