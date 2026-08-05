@@ -2524,8 +2524,12 @@ const EMAIL_DESTINATARIO={
 };
 
 function renderEmails(){
-  const allTpls=[...ESTADOS,'citado_sin_fecha','desiste_recontacto','admin_matriculado','dg_notif'].filter(e=>!['no_queremos','seguimiento_entrevista','rechazado_eoe','pendiente_dg'].includes(e));
-  const labels={...EL,hermanos:'Hermanos / familiares del personal',citado_sin_fecha:'Citado — entrevista a confirmar',desiste_recontacto:'Re-contacto a desistidos',admin_matriculado:'Notif. Administración (matriculado)',dg_notif:'Notif. Dirección General (EOE aprueba)'};
+  // Se listan todas las plantillas que el sistema puede enviar. Antes quedaban ocultas
+  // no_queremos (envío manual) y no_asistio (al marcar que no llegaron): se podían
+  // mandar pero no editar. Se siguen excluyendo rechazado_eoe y pendiente_dg, que son
+  // estados internos sin mail a la familia, y seguimiento_entrevista, que no está conectada.
+  const allTpls=[...ESTADOS,'citado_sin_fecha','no_asistio','desiste_recontacto','admin_matriculado','dg_notif'].filter(e=>!['seguimiento_entrevista','rechazado_eoe','pendiente_dg'].includes(e));
+  const labels={...EL,hermanos:'Hermanos / familiares del personal',citado_sin_fecha:'Citado — entrevista a confirmar',no_asistio:'No asistió a la entrevista',desiste_recontacto:'Re-contacto a desistidos',admin_matriculado:'Notif. Administración (matriculado)',dg_notif:'Notif. Dirección General (EOE aprueba)'};
   document.getElementById('email-tpls').innerHTML=allTpls.map(e=>{
     const dest=EMAIL_DESTINATARIO[e]||'Familia';
     const isTeam=dest!=='Familia'&&!dest.startsWith('Familia');
