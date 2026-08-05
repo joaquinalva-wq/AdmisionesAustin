@@ -709,6 +709,14 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
         </select>
         <div class="fhermano" id="fherm-msg">⭐ Los hermanos de estudiantes actuales tienen prioridad de ingreso. El equipo de admisiones tendrá esto en cuenta al evaluar la vacante.</div>
       </div>
+      <div class="fg">
+        <label class="flabel">¿Son familiares de alguien del personal de Austin EBS?</label>
+        <select class="fsel" id="pf-personal" onchange="toggleHermanoMsg()">
+          <option value="no">No</option>
+          <option value="si">Sí — familiar de un miembro del personal</option>
+        </select>
+        <div class="fhermano" id="fpers-msg">⭐ Las familias del personal tienen un circuito de admisión simplificado. Admisiones se contactará con ustedes directamente.</div>
+      </div>
       <div class="fg"><label class="flabel">¿Cómo conocieron Austin EBS?</label>
         <select class="fsel" id="pf-como">
           <option value="">— Seleccioná —</option>
@@ -1247,11 +1255,11 @@ function esc(v){
   return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
-const ESTADOS = ['contactado','citado','entrevistado','postulado','eoe_ingles','pendiente_dg','matriculado','nuevo','lista de espera','rechazado_eoe','desiste','no_queremos'];
-const EL = {nueva:'Nueva consulta',contactado:'Contactado',citado:'Citado entrevista',entrevistado:'Entrevistado',postulado:'Postulado',eoe_ingles:'EOE / Inglés',pendiente_dg:'Pend. Dir. General',rechazado_eoe:'Rechazado EOE',matriculado:'Matriculado',nuevo:'Nuevo alumno','lista de espera':'Lista de espera',desiste:'Desiste',no_queremos:'No incorporado'};
+const ESTADOS = ['contactado','hermanos','citado','entrevistado','postulado','eoe_ingles','pendiente_dg','matriculado','nuevo','lista de espera','rechazado_eoe','desiste','no_queremos'];
+const EL = {nueva:'Nueva consulta',contactado:'Contactado',hermanos:'Hermanos / Personal',citado:'Citado entrevista',entrevistado:'Entrevistado',postulado:'Postulado',eoe_ingles:'EOE / Inglés',pendiente_dg:'Pend. Dir. General',rechazado_eoe:'Rechazado EOE',matriculado:'Matriculado',nuevo:'Nuevo alumno','lista de espera':'Lista de espera',desiste:'Desiste',no_queremos:'No incorporado'};
 const ECLS = {nueva:'bg-n',contactado:'bg-co',citado:'bg-ci',entrevistado:'bg-en',postulado:'bg-po',eoe_ingles:'bg-eoe',pendiente_dg:'bg-dg',rechazado_eoe:'bg-reoe',matriculado:'bg-ma',nuevo:'bg-nu','lista de espera':'bg-es',desiste:'bg-de',no_queremos:'bg-de'};
 const EPCLS = {nueva:'ph-n',contactado:'ph-co',citado:'ph-ci',entrevistado:'ph-en',postulado:'ph-po',eoe_ingles:'ph-eoe',pendiente_dg:'ph-dg',rechazado_eoe:'ph-reoe',matriculado:'ph-ma',nuevo:'ph-nu','lista de espera':'ph-es',desiste:'ph-de',no_queremos:'ph-de'};
-const ECOL = {nueva:'var(--cn)',contactado:'#1A7A8E',citado:'var(--cc)',entrevistado:'var(--ce)',postulado:'var(--cp)',eoe_ingles:'#7B52AB',pendiente_dg:'#B45309',rechazado_eoe:'#DC2626',matriculado:'var(--cm)',nuevo:'#166534','lista de espera':'var(--cs)',desiste:'var(--cd)',no_queremos:'var(--cd)'};
+const ECOL = {nueva:'var(--cn)',contactado:'#1A7A8E',hermanos:'#7C3AED',citado:'var(--cc)',entrevistado:'var(--ce)',postulado:'var(--cp)',eoe_ingles:'#7B52AB',pendiente_dg:'#B45309',rechazado_eoe:'#DC2626',matriculado:'var(--cm)',nuevo:'#166534','lista de espera':'var(--cs)',desiste:'var(--cd)',no_queremos:'var(--cd)'};
 const CURSOS = ['K2 (Puppies)','K3 (Koalas/Dolphins)','K4 (Foxes/Monkeys)','K5 (Bears/Hippos)','1er año Elementary','2do año Elementary','3er año Elementary','4to año Elementary','5to año Elementary','6to año Elementary','1er año High School','2do año High School','3er año High School','4to año High School','5to año High School','6to año High School'];
 const NIVEL = c => !c ? '' : c.startsWith('K') ? 'Kindergarten' : c.includes('Elementary') ? 'Elementary' : 'High School';
 
@@ -1315,6 +1323,7 @@ let DB = {
   emails:{
     contactado:{subj:'Postulación Austin EBS — información y próximos pasos',body:'Hola {{padre}},\n\nSoy Laura Unamuno, parte del staff de Austin Eco Bilingual School y encargada del proceso de admisiones.\n\n¡Nos alegra muchísimo tu postulación para {{alumno}}! Para conocer el proyecto en detalle y las tarifas, podés ver el brochure y los aranceles aquí: https://drive.google.com/drive/folders/1c0vFf1MWUcSC8-lqBjBCGDQ-hbXxGQDA\n\nPara empezar con el proceso, ingresá al siguiente link: https://calendar.app.google/WrfYGGSiRH3smkxL8 y reservá un horario disponible de visita con entrevista para conocer el proyecto educativo en profundidad y las instalaciones del colegio.\n\nQuedo a disposición por cualquier consulta.\n\nSaludos cordiales,\nLaura Unamuno\nAdmisiones – Austin EBS'},
     citado:{subj:'Tu entrevista en Austin EBS está confirmada',body:'Hola {{padre}},\n\nTu entrevista en Austin Eco Bilingual School está confirmada. Te esperamos con gusto.\n\nSi necesitás reprogramar, respondenos este mail a admisiones@austinebs-ah.edu.ar y lo coordinamos.\n\nUn saludo,\nLaura Unamuno\nAdmisiones – Austin EBS'},
+    hermanos:{subj:'Postulación de {{alumno}} — circuito para familias Austin',body:'Hola {{padre}},\n\n¡Qué alegría recibir la postulación de {{alumno}}!\n\nComo ya son parte de la comunidad Austin, el proceso de admisión es más simple: no hace falta la entrevista de presentación del colegio, porque ya lo conocen.\n\nNos vamos a comunicar con ustedes en los próximos días para confirmar la vacante en {{curso}} y coordinar la documentación de ingreso.\n\nSi tenés cualquier consulta mientras tanto, escribinos a admisiones@austinebs-ah.edu.ar.\n\nUn abrazo,\nLaura Unamuno\nAdmisiones – Austin EBS'},
     citado_sin_fecha:{subj:'Recibimos tu postulación — coordinemos la entrevista',body:'Hola {{padre}},\n\n¡Gracias por postular a {{alumno}} en Austin Eco Bilingual School!\n\nRegistramos tu solicitud y vimos que preferís definir más adelante la fecha de la entrevista. Tu lugar en el proceso ya está reservado; sólo nos queda encontrar el momento que mejor les venga.\n\nEscribinos a admisiones@austinebs-ah.edu.ar o respondé este mail y coordinamos el día y horario. También podés elegir un turno directamente acá: {{link_calendario}}\n\nMientras tanto, si querés conocer el proyecto y los aranceles, están disponibles en: {{link_drive}}\n\nQuedamos a disposición.\n\nSaludos cordiales,\nLaura Unamuno\nAdmisiones – Austin EBS'},
     entrevistado:{subj:'¡Gracias por la entrevista!',body:'Hola {{padre}},\n\nFue un gusto recibirlos y conocerlos. Estamos orgullosos de que nos contemplen para la elección escolar de {{alumno}}.\n\nPara seguir acompañándolos en el proceso, les pedimos que completen este breve formulario post entrevista:\nhttps://forms.gle/rsQwi9ps1chN2q8x5\n\nEn caso de querer avanzar, esperamos su confirmación por este medio.\n\nUn afectuoso saludo,\nAdmisiones – Austin EBS'},
     postulado:{subj:'Siguiente paso en el proceso de admisión',body:'Hola {{padre}},\n\nGracias por la postulación de {{alumno}}.\n\nEstamos muy contentos de acompañarlos en los pasos a seguir para continuar con la reserva de vacante. Podrán encontrar las tarifas en el siguiente enlace:\n{{link_drive}}\n\nEl proceso quedará confirmado una vez que recibamos el comprobante de pago de la reserva de vacante por este medio.\n\nUn afectuoso saludo,\nAdmisiones – Austin EBS'},
@@ -2423,7 +2432,7 @@ function saveVac(){
 // EMAIL TEMPLATES
 // ═══════════════════════════
 const EMAIL_DESTINATARIO={
-  contactado:'Familia',citado:'Familia',citado_sin_fecha:'Familia',entrevistado:'Familia',postulado:'Familia',
+  contactado:'Familia',hermanos:'Familia',citado:'Familia',citado_sin_fecha:'Familia',entrevistado:'Familia',postulado:'Familia',
   eoe_ingles:'Familia',matriculado:'Familia','lista de espera':'Familia',
   desiste:'Familia',desiste_recontacto:'Familia',no_queremos:'Familia',
   seguimiento_entrevista:'Familia',no_asistio:'Familia',nuevo:'Familia (onboarding)',
@@ -2432,7 +2441,7 @@ const EMAIL_DESTINATARIO={
 
 function renderEmails(){
   const allTpls=[...ESTADOS,'citado_sin_fecha','desiste_recontacto','admin_matriculado','dg_notif'].filter(e=>!['no_queremos','seguimiento_entrevista','rechazado_eoe','pendiente_dg'].includes(e));
-  const labels={...EL,citado_sin_fecha:'Citado — entrevista a confirmar',desiste_recontacto:'Re-contacto a desistidos',admin_matriculado:'Notif. Administración (matriculado)',dg_notif:'Notif. Dirección General (EOE aprueba)'};
+  const labels={...EL,hermanos:'Hermanos / familiares del personal',citado_sin_fecha:'Citado — entrevista a confirmar',desiste_recontacto:'Re-contacto a desistidos',admin_matriculado:'Notif. Administración (matriculado)',dg_notif:'Notif. Dirección General (EOE aprueba)'};
   document.getElementById('email-tpls').innerHTML=allTpls.map(e=>{
     const dest=EMAIL_DESTINATARIO[e]||'Familia';
     const isTeam=dest!=='Familia'&&!dest.startsWith('Familia');
@@ -2771,6 +2780,7 @@ function restoreStudentForm(d){
   const j=document.getElementById('pf-jornada'); if(j) j.value=d.jornada||'Jornada Completa';
   const a=document.getElementById('pf-anio'); if(a) a.value=d.anio||'2027';
   const h=document.getElementById('pf-herm'); if(h){ h.value=d.hermano||'no'; toggleHermanoMsg(); }
+  const pe=document.getElementById('pf-personal'); if(pe){ pe.value=d.personal||'no'; toggleHermanoMsg(); }
   const m=document.getElementById('pf-como'); if(m) m.value=d.como||'';
 }
 
@@ -2803,6 +2813,7 @@ function fNext(from){
       anio:parseInt((document.getElementById('pf-anio')||{}).value||'2027'),
       cole:(document.getElementById('pf-cole')||{}).value||'',
       hermano:(document.getElementById('pf-herm')||{}).value||'no',
+      personal:(document.getElementById('pf-personal')||{}).value||'no',
       como:(document.getElementById('pf-como')||{}).value||''
     };
     estudianteIdx++;
@@ -2850,7 +2861,12 @@ function fBack(from){
   }
   showFStep(from-1);
 }
-function toggleHermanoMsg(){ const v=document.getElementById('pf-herm').value; document.getElementById('fherm-msg').classList.toggle('on',v==='si'); }
+function toggleHermanoMsg(){
+  const h=(document.getElementById('pf-herm')||{}).value;
+  const pe=(document.getElementById('pf-personal')||{}).value;
+  const mh=document.getElementById('fherm-msg'); if(mh) mh.classList.toggle('on',h==='si');
+  const mp=document.getElementById('fpers-msg'); if(mp) mp.classList.toggle('on',pe==='si');
+}
 function buildResumen(){
   const padre=`${document.getElementById('pf-pn').value} ${document.getElementById('pf-pap').value}`.trim();
   let rows='';
@@ -2902,9 +2918,12 @@ function submitPost(){
     const otrosNombres=allNames.filter((_,j)=>j!==i).join(', ');
     const notaHermanos=numStudents>1 ? `Inscripción familiar — hermanos registrados juntos: ${otrosNombres}` : '';
     const notasTxt=[obs,notaHermanos].filter(Boolean).join(' | ');
+    // Hermanos de alumnos actuales y familiares del personal ya conocen el colegio:
+    // saltean la entrevista de presentación y entran por un circuito más corto.
+    const esFamiliaAustin = est.hermano==='si' || est.personal==='si';
     // "Aún no sé": igual entra como citado, con la entrevista a confirmar por Admisiones.
     // Antes caía en 'contactado' y se mezclaba con quienes todavía no habían tenido contacto.
-    const estadoInicial = 'citado';
+    const estadoInicial = esFamiliaAustin ? 'hermanos' : 'citado';
     const tmpId = 'w'+Date.now().toString(36)+Math.random().toString(36).slice(2,8)+i;
     nuevosPostulantes.push({
       id:tmpId, tmpId, alumno, padre, email, tel,
@@ -2913,6 +2932,7 @@ function submitPost(){
       anio:est.anio,
       colegio:est.cole||'',
       hermano:est.hermano,
+      personal:est.personal||'no',
       estado:estadoInicial,
       fecha:today(), ultAccion:today(),
       entFecha:sinEntrevista?'':(calSlotSeleccionado?.fecha||''),
@@ -2947,7 +2967,8 @@ function submitPost(){
   }
   // Siempre enviar el mail de confirmación a la familia vía sendMail (independiente de reservarTurno)
   if(p0){
-    const estadoMail = sinEntrevista ? 'citado_sin_fecha' : 'citado';
+    const esFam = nuevosPostulantes.some(x=>x.hermano==='si'||x.personal==='si');
+    const estadoMail = esFam ? 'hermanos' : (sinEntrevista ? 'citado_sin_fecha' : 'citado');
     // p0 ya no vive en DB (la postulación viaja por la bandeja), así que no se guarda acá.
     enviarMail(p0, estadoMail, ()=>{});
   }
