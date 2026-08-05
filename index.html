@@ -2167,7 +2167,7 @@ function prevMail(id){
   pe.innerHTML=`<div class="mprev">
     <div class="mph">
       <div class="mphr"><span class="mphl">Para:</span> ${isTeam?`<em style="color:var(--tx2)">${dest}</em>`:p.email}${destBadge}</div>
-      <div class="mphr"><span class="mphl">Asunto:</span> ${tmpl.subj}</div>
+      <div class="mphr"><span class="mphl">Asunto:</span> ${esc(fillV(tmpl.subj,p))}</div>
       <div class="mphr"><span class="mphl">De:</span> ${DB.config.nombre} &lt;${DB.config.email}&gt;</div>
     </div>
     <div class="mpb">${body}</div>
@@ -2421,7 +2421,8 @@ function enviarMail(p,estado,cb){
   const tmpl=DB.emails[estado]; if(!tmpl){ if(cb) cb(false); return; }
   if(DB.config.appsScriptUrl){
     const _cuerpo = fillV(tmpl.body,p);
-    apiCall('sendMail',{to:p.email,subject:tmpl.subj,body:_cuerpo,html:buildHtmlMail(_cuerpo,tmpl.subj)})
+    const _asunto = fillV(tmpl.subj,p);
+    apiCall('sendMail',{to:p.email,subject:_asunto,body:_cuerpo,html:buildHtmlMail(_cuerpo,_asunto)})
       .then(res=>{ if(cb) cb(res&&res.ok,'apps'); })
       .catch(()=>{ if(cb) cb(false); });
   } else {
@@ -2433,7 +2434,7 @@ function enviarMailAdmin(p,estado,cb){
   // Desde panel admin — Apps Script o fallback mailto
   const tmpl=DB.emails[estado]; if(!tmpl){ if(cb) cb(false); return; }
   const body=fillV(tmpl.body,p);
-  const subj=tmpl.subj;
+  const subj=fillV(tmpl.subj,p);
   if(DB.config.appsScriptUrl){
     apiCall('sendMail',{to:p.email,subject:subj,body:body,html:buildHtmlMail(body,subj)})
       .then(res=>{
