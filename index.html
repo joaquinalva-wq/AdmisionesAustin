@@ -1339,7 +1339,7 @@ let DB = {
     admin_matriculado:{subj:'NUEVO MATRICULADO: {{alumno}} — {{curso}} {{anio}}',body:'Estimado equipo de Administración,\n\nEl siguiente estudiante completó el proceso de admisión y se encuentra MATRICULADO. Por favor proceder con el alta, cobro de matrícula y solicitud de documentación.\n\n══ DATOS DEL ESTUDIANTE ══\nNombre: {{alumno}}\nNivel: {{nivel}}\nCurso: {{curso}}\nJornada: {{jornada}}\nCiclo lectivo: {{anio}}\nHermano/a Austin: {{hermano}}\nColegio anterior: {{colegio}}\n\n══ DATOS DE LA FAMILIA ══\nPadre / Madre / Tutor: {{padre}}\nEmail: {{email}}\nTeléfono: {{tel}}\n\n══ APROBACIONES ══\nAdmisiones: ✓\nEOE / Inglés: ✓\nDirección General: ✓\n\nSistema de Admisiones – Austin EBS'},
     dg_notif:{subj:'EOE aprobó a {{alumno}} — pendiente confirmación DG',body:'Estimada Dirección General,\n\nEOE e Inglés dieron el visto bueno para el ingreso de {{alumno}} ({{curso}}, ciclo {{anio}}).\nAdmisiones confirmó la vacante.\n\nPor favor confirmar el ingreso antes del plazo indicado.\nSi no hay respuesta en 48hs, el sistema procederá automáticamente con la matrícula.\n\nDatos:\n- Nombre: {{alumno}}\n- Nivel: {{nivel}} — {{curso}}\n- Ciclo: {{anio}}\n- Familia: {{padre}}\n- Email: {{email}}\n- Teléfono: {{tel}}\n\nSaludos,\nSistema de Admisiones – Austin EBS'}
   },
-  config:{nombre:'Admisiones Austin EBS',email:'admisiones@austinebs-ah.edu.ar',calendar:'https://calendar.app.google/WrfYGGSiRH3smkxL8',drive:'https://drive.google.com/drive/folders/1c0vFf1MWUcSC8-lqBjBCGDQ-hbXxGQDA',appsScriptUrl:'https://script.google.com/macros/s/AKfycbzK82ibenmWqIdWQAWb4x5Wy6gXRFrg8ASGhW-DvNOwt-Eo7GzY2alnFhLaUYIcy8bBUg/exec',emailAdmin:'adm@austinebs-ah.edu.ar',emailDG:'alejandra.luna@austinebs-ah.edu.ar',eoeApiUrl:'https://eoe-austin.netlify.app/',},
+  config:{nombre:'Admisiones Austin EBS',email:'admisiones@austinebs-ah.edu.ar',calendar:'https://calendar.app.google/WrfYGGSiRH3smkxL8',drive:'https://drive.google.com/drive/folders/1c0vFf1MWUcSC8-lqBjBCGDQ-hbXxGQDA',appsScriptUrl:'https://script.google.com/macros/s/AKfycbzGXKe6Azyy3q9NVSKsV_ERgDKvJmQRdjHlLG9-Q-0w-70Y2QkP3ikIwx9dHRwDFYp_9Q/exec',emailAdmin:'adm@austinebs-ah.edu.ar',emailDG:'alejandra.luna@austinebs-ah.edu.ar',eoeApiUrl:'https://eoe-austin.netlify.app/',},
   pendingNotif:[],
   bajasEscolares:[],
   ocupacion:{},
@@ -1618,7 +1618,7 @@ function loadDB(){
   } catch(e){}
   if(!DB.ocupacion||!Object.keys(DB.ocupacion).length) DB.ocupacion={...OC_DEFAULT};
   // Safety net: nunca sobreescribir con vacío — valores críticos del sistema
-  if(!DB.config.appsScriptUrl) DB.config.appsScriptUrl='https://script.google.com/macros/s/AKfycbzK82ibenmWqIdWQAWb4x5Wy6gXRFrg8ASGhW-DvNOwt-Eo7GzY2alnFhLaUYIcy8bBUg/exec';
+  if(!DB.config.appsScriptUrl) DB.config.appsScriptUrl='https://script.google.com/macros/s/AKfycbzGXKe6Azyy3q9NVSKsV_ERgDKvJmQRdjHlLG9-Q-0w-70Y2QkP3ikIwx9dHRwDFYp_9Q/exec';
   if(!DB.config.emailAdmin) DB.config.emailAdmin='adm@austinebs-ah.edu.ar';
   if(!DB.config.emailDG) DB.config.emailDG='alejandra.luna@austinebs-ah.edu.ar';
   if(!DB.config.eoeApiUrl) DB.config.eoeApiUrl='https://eoe-austin.netlify.app/';
