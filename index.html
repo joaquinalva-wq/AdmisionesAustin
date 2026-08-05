@@ -2175,6 +2175,88 @@ function prevMail(id){
   </div>`;
 }
 
+// ═══════════════════════════
+// MAIL EN HTML
+// ═══════════════════════════
+// Las plantillas se siguen editando como texto plano en el panel. El HTML se arma
+// acá al momento de enviar, así nadie tiene que escribir markup para cambiar un texto.
+// Se manda además el texto plano como alternativa, para clientes que no muestran HTML.
+const MAIL_WEB = 'https://www.austinebs-ah.edu.ar';
+const MAIL_LOGO = 'https://admisionesaustin.com.ar/logo-email.png';
+
+function mailEscape(t){
+  return String(t==null?'':t).replace(/[&<>]/g,function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c];
+  });
+}
+
+function mailLinkify(t){
+  return t.replace(/(https?:\/\/[^\s<]+)/g,
+    '<a href="$1" style="color:#3A607A">$1</a>');
+}
+
+function buildHtmlMail(texto, asunto){
+  const bloques = String(texto||'').split(/\n\s*\n/);
+  const cuerpo = bloques.map(function(b, idx){
+    const t = b.replace(/\s+$/,'');
+    if(!t.trim()) return '';
+    // Separador de sección tipo  ══ DATOS ══  (plantillas internas)
+    if(/^\s*══/.test(t)){
+      const titulo = t.replace(/[═\s]+/g,' ').trim();
+      return '<tr><td style="padding:18px 32px 6px">'
+        + '<div style="font:600 12px Arial,Helvetica,sans-serif;letter-spacing:.08em;'
+        + 'text-transform:uppercase;color:#3A607A;border-bottom:1px solid #E3DED3;padding-bottom:6px">'
+        + mailEscape(titulo) + '</div></td></tr>';
+    }
+    // Subtítulo tipo  ▸ UNIFORMES
+    if(/^\s*▸/.test(t)){
+      const lineas = t.split('\n');
+      const cab = mailEscape(lineas[0].replace(/^\s*▸\s*/,''));
+      const resto = mailLinkify(mailEscape(lineas.slice(1).join('\n'))).replace(/\n/g,'<br>');
+      return '<tr><td style="padding:14px 32px 0">'
+        + '<div style="font:700 13px Arial,Helvetica,sans-serif;color:#2C4A5E;margin-bottom:4px">'
+        + cab + '</div>'
+        + '<div style="font:400 14px/1.65 Arial,Helvetica,sans-serif;color:#5A5A54">'
+        + resto + '</div></td></tr>';
+    }
+    const html = mailLinkify(mailEscape(t)).replace(/\n/g,'<br>');
+    // La despedida va separada del cuerpo, con un filete y en un tono mas suave
+    const esFirma = idx===bloques.length-1 &&
+      (/^(Saludos|Un abrazo|Un afectuoso|Un saludo|Atentamente|Cordialmente)/i.test(t)
+       || /Austin EBS\s*$/.test(t));
+    if(esFirma){
+      return '<tr><td style="padding:18px 32px 6px;font:400 13.5px/1.7 Arial,Helvetica,sans-serif;color:#5A5A54">'
+        + '<div style="border-top:1px solid #E3DED3;padding-top:14px">' + html + '</div></td></tr>';
+    }
+    return '<tr><td style="padding:9px 32px;font:400 15px/1.7 Arial,Helvetica,sans-serif;color:#252520;word-break:break-word">'
+      + html + '</td></tr>';
+  }).join('');
+
+  return '<!doctype html><html lang="es"><head><meta charset="utf-8">'
+  + '<meta name="viewport" content="width=device-width,initial-scale=1">'
+  + '<title>' + mailEscape(asunto||'Austin EBS') + '</title></head>'
+  + '<body style="margin:0;padding:0;background:#EEE9DF">'
+  + '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#EEE9DF;padding:24px 12px">'
+  + '<tr><td align="center">'
+  + '<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:100%;max-width:600px;background:#FFFFFF;border-radius:10px;overflow:hidden;border:1px solid #E3DED3">'
+  // Encabezado
+  + '<tr><td align="center" style="background:#F8F6F0;padding:26px 32px 20px;border-bottom:3px solid #E8621A">'
+  + '<img src="' + MAIL_LOGO + '" width="74" alt="Austin EBS" style="display:block;border:0;margin:0 auto 10px">'
+  + '<div style="font:700 17px Georgia,serif;color:#2C4A5E;letter-spacing:.01em">Austin Eco Bilingual School</div>'
+  + '<div style="font:400 11.5px Arial,Helvetica,sans-serif;color:#95958E;letter-spacing:.09em;text-transform:uppercase;margin-top:3px">Admisiones</div>'
+  + '</td></tr>'
+  + '<tr><td style="height:10px"></td></tr>'
+  + cuerpo
+  + '<tr><td style="height:14px"></td></tr>'
+  // Pie
+  + '<tr><td style="background:#F8F6F0;border-top:1px solid #E3DED3;padding:18px 32px;font:400 12px/1.7 Arial,Helvetica,sans-serif;color:#95958E">'
+  + '<strong style="color:#2C4A5E">Admisiones · Austin Eco Bilingual School</strong><br>'
+  + '<a href="mailto:admisiones@austinebs-ah.edu.ar" style="color:#3A607A">admisiones@austinebs-ah.edu.ar</a>'
+  + ' &nbsp;·&nbsp; <a href="' + MAIL_WEB + '" style="color:#3A607A">austinebs-ah.edu.ar</a>'
+  + '</td></tr>'
+  + '</table></td></tr></table></body></html>';
+}
+
 function fillV(text,p){
   const hermanoTxt = p.hermano==='si'?'SÍ — verificar beneficio':'No';
   return text
@@ -2338,7 +2420,8 @@ function enviarMail(p,estado,cb){
   // Desde formulario de familias — solo envía si hay Apps Script, nunca abre mailto
   const tmpl=DB.emails[estado]; if(!tmpl){ if(cb) cb(false); return; }
   if(DB.config.appsScriptUrl){
-    apiCall('sendMail',{to:p.email,subject:tmpl.subj,body:fillV(tmpl.body,p)})
+    const _cuerpo = fillV(tmpl.body,p);
+    apiCall('sendMail',{to:p.email,subject:tmpl.subj,body:_cuerpo,html:buildHtmlMail(_cuerpo,tmpl.subj)})
       .then(res=>{ if(cb) cb(res&&res.ok,'apps'); })
       .catch(()=>{ if(cb) cb(false); });
   } else {
@@ -2352,7 +2435,7 @@ function enviarMailAdmin(p,estado,cb){
   const body=fillV(tmpl.body,p);
   const subj=tmpl.subj;
   if(DB.config.appsScriptUrl){
-    apiCall('sendMail',{to:p.email,subject:subj,body:body})
+    apiCall('sendMail',{to:p.email,subject:subj,body:body,html:buildHtmlMail(body,subj)})
       .then(res=>{
         if(res&&res.ok){ if(cb) cb(true,'apps'); }
         else { abrirMailto_(p.email,subj,body); if(cb) cb(true,'mailto'); }
@@ -2665,9 +2748,11 @@ async function testMailAppsScript(){
   if(!cfg.appsScriptUrl){ toast('Primero guardá la URL del Apps Script en el campo verde','err'); return; }
   toast('Enviando mail de prueba...','');
   try{
+    const _subjTest='✓ Test — Sistema Austin EBS';
+    const _bodyTest='Este es un mail de prueba del Sistema de Admisiones Austin EBS.\n\nSi lo recibís, el sistema está correctamente configurado y los mails se enviarán automáticamente desde Gmail.\n\nAdmisiones – Austin EBS';
     const res=await apiCall('sendMail',{
-      to:cfg.email, subject:'✓ Test — Sistema Austin EBS',
-      body:'Este es un mail de prueba del Sistema de Admisiones Austin EBS.\n\nSi lo recibís, el sistema está correctamente configurado y los mails se enviarán automáticamente desde Gmail.\n\nAdmisiones – Austin EBS'
+      to:cfg.email, subject:_subjTest, body:_bodyTest,
+      html:buildHtmlMail(_bodyTest,_subjTest)
     });
     if(res.ok) toast('✓ Mail de prueba enviado a '+cfg.email,'ok');
     else toast('Error: '+(res.error||'respuesta inválida')+' — revisá la URL del Apps Script','err');
@@ -3648,7 +3733,7 @@ function enviarMailDG(p){
   const subj=tmpl?fillV(tmpl.subj,p):`EOE aprobó a ${esc(p.alumno)} — pendiente confirmación DG`;
   const body=tmpl?fillV(tmpl.body,p):`EOE aprobó a ${esc(p.alumno)} (${esc(p.curso)}, ciclo ${p.anio}). Familia: ${esc(p.padre)} · ${esc(p.email)}`;
   if(DB.config.appsScriptUrl){
-    apiCall('sendMail',{to:dgEmail,subject:subj,body}).then(()=>{});
+    apiCall('sendMail',{to:dgEmail,subject:subj,body,html:buildHtmlMail(body,subj)}).then(()=>{});
   } else {
     window.open('mailto:'+dgEmail+'?subject='+encodeURIComponent(subj)+'&body='+encodeURIComponent(body));
   }
@@ -3663,7 +3748,7 @@ function enviarMailAdministracion(p, manual=false){
   const subj=tmpl?fillV(tmpl.subj,p):`NUEVO MATRICULADO: ${esc(p.alumno)} — ${esc(p.curso)} ${p.anio}`;
   const body=tmpl?fillV(tmpl.body,p):`Matriculado: ${esc(p.alumno)} · ${esc(p.curso)} · Ciclo ${p.anio}\nFamilia: ${esc(p.padre)} · ${esc(p.email)} · ${esc(p.tel||'—')}`;
   if(DB.config.appsScriptUrl){
-    apiCall('sendMail',{to:adminEmail,subject:subj,body}).then(()=>{});
+    apiCall('sendMail',{to:adminEmail,subject:subj,body,html:buildHtmlMail(body,subj)}).then(()=>{});
   } else {
     window.open('mailto:'+adminEmail+'?subject='+encodeURIComponent(subj)+'&body='+encodeURIComponent(body));
   }
