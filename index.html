@@ -692,7 +692,7 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
           </select>
         </div>
         <div class="fg"><label class="flabel">Ciclo lectivo <span class="req">*</span></label>
-          <select class="fsel" id="pf-anio"><option value="2025">2025</option><option value="2026">2026</option><option value="2027">2027</option><option value="2028">2028</option><option value="2029">2029</option><option value="2030">2030</option></select>
+          <select class="fsel" id="pf-anio"></select>
         </div>
       </div>
       <div class="fgrow">
@@ -2839,7 +2839,7 @@ function clearStudentForm(){
   });
   const c=document.getElementById('pf-curso'); if(c) c.value='';
   const j=document.getElementById('pf-jornada'); if(j) j.selectedIndex=0;
-  const a=document.getElementById('pf-anio'); if(a) a.selectedIndex=0;
+  const a=document.getElementById('pf-anio'); if(a) a.value=String(anioLectivoDefault());
   const h=document.getElementById('pf-herm'); if(h){ h.value='no'; toggleHermanoMsg(); }
   const m=document.getElementById('pf-como'); if(m) m.value='';
   // Clear field errors
@@ -2863,7 +2863,7 @@ function restoreStudentForm(d){
   set('pf-n',d.n); set('pf-ap',d.ap); set('pf-nac',d.nac); set('pf-dni',d.dni);
   set('pf-curso',d.curso); set('pf-cole',d.cole);
   const j=document.getElementById('pf-jornada'); if(j) j.value=d.jornada||'Jornada Completa';
-  const a=document.getElementById('pf-anio'); if(a) a.value=d.anio||'2027';
+  const a=document.getElementById('pf-anio'); if(a) a.value=String(d.anio||anioLectivoDefault());
   const h=document.getElementById('pf-herm'); if(h){ h.value=d.hermano||'no'; toggleHermanoMsg(); }
   const pe=document.getElementById('pf-personal'); if(pe){ pe.value=d.personal||'no'; toggleHermanoMsg(); }
   const m=document.getElementById('pf-como'); if(m) m.value=d.como||'';
@@ -2880,6 +2880,31 @@ function showFStep(n){
   currentStep=n;
   if(n===2) initCalFormulario();
 }
+// El ciclo lectivo se arma desde el año en curso: antes estaba fijo desde 2025 y
+// quedaba ofreciendo años ya pasados. Por defecto propone el año siguiente,
+// que es para el que se postula la mayoría de las familias.
+function anioLectivoDefault(){ return new Date().getFullYear()+1; }
+function poblarAniosFormulario(){
+  const sel=document.getElementById('pf-anio'); if(!sel) return;
+  const desde=new Date().getFullYear();
+  sel.innerHTML='';
+  for(let y=desde; y<=desde+5; y++){
+    const o=document.createElement('option');
+    o.value=String(y); o.textContent=String(y);
+    sel.appendChild(o);
+  }
+  sel.value=String(anioLectivoDefault());
+}
+poblarAniosFormulario();
+
+// Hermanos de alumnos actuales y familiares del personal no agendan entrevista de
+// presentacion: ya conocen el colegio. Se les saltea el paso del calendario.
+function esFamiliaAustinForm(){
+  return (estudiantesData||[]).some(function(e){
+    return e && (e.hermano==='si' || e.personal==='si');
+  });
+}
+
 function fNext(from){
   if(from===0){
     const n=document.getElementById('pf-n'), ap=document.getElementById('pf-ap'), cu=document.getElementById('pf-curso');
@@ -2895,7 +2920,7 @@ function fNext(from){
       curso:cu.value,
       nivel:NIVEL(cu.value),
       jornada:(document.getElementById('pf-jornada')||{}).value||'Jornada Completa',
-      anio:parseInt((document.getElementById('pf-anio')||{}).value||'2027'),
+      anio:parseInt((document.getElementById('pf-anio')||{}).value||String(anioLectivoDefault())),
       cole:(document.getElementById('pf-cole')||{}).value||'',
       hermano:(document.getElementById('pf-herm')||{}).value||'no',
       personal:(document.getElementById('pf-personal')||{}).value||'no',
@@ -2916,6 +2941,16 @@ function fNext(from){
     let ok=true;
     [pn,pap,em,tel].forEach(el=>{ if(!el.value.trim()){ el.classList.add('err'); ok=false; } else el.classList.remove('err'); });
     if(!ok){ toast('Completá los campos obligatorios','err'); return; }
+
+    // Sin calendario para familias Austin: si reservaran un turno, el Apps Script
+    // les mandaria ademas el mail de "entrevista confirmada", que no corresponde.
+    if(esFamiliaAustinForm()){
+      sinEntrevista=true;
+      calSlotSeleccionado=null;
+      buildResumen();
+      showFStep(3);
+      return;
+    }
   }
   if(from===2){
     if(!calSlotSeleccionado && !sinEntrevista){ toast('Seleccioná un horario para la entrevista','err'); return; }
@@ -2935,6 +2970,8 @@ function fBack(from){
     return;
   }
   if(from===3){
+    // Estas familias no pasaron por el calendario: se vuelve a los datos de contacto
+    if(esFamiliaAustinForm()){ showFStep(1); return; }
     // Reset "aún no sé" state when going back to calendar
     sinEntrevista=false;
     const entBox=document.getElementById('fst3-ent-box');
@@ -3066,7 +3103,11 @@ function submitPost(){
   const entDiv=document.getElementById('fsuccess-ent');
   const entTxt=document.getElementById('fsuccess-ent-txt');
   const pMain=document.getElementById('fsuccess-p-main');
-  if(sinEntrevista){
+  if(esFamiliaAustinForm()){
+    // Familias que ya son parte de Austin: no se les habla de agendar entrevista
+    if(pMain) pMain.textContent='Tu postulación fue enviada. Como ya son parte de la comunidad Austin, el proceso es más simple: admisiones se va a comunicar con ustedes en los próximos días para confirmar la vacante.';
+    if(entDiv) entDiv.style.display='none';
+  } else if(sinEntrevista){
     if(pMain) pMain.textContent='Tu postulación fue enviada. El equipo de admisiones se comunicará con vos para coordinar la entrevista.';
     if(entDiv) entDiv.style.display='none';
   } else {
