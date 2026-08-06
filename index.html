@@ -908,7 +908,7 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
         <div id="stats" class="stats"></div>
         <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:14px;margin-bottom:18px">
           <div class="cbox">
-            <div class="cbox-h"><div class="cbox-t">⚡ Requieren acción</div><button class="btn btn-ghost btn-sm" onclick="showV('pipeline')">Ver pipeline →</button></div>
+            <div class="cbox-h"><div class="cbox-t">Últimos postulantes</div><button class="btn btn-ghost btn-sm" onclick="showV('pipeline')">Ver pipeline →</button></div>
             <div id="dash-accion"></div>
           </div>
           <div class="cbox">
@@ -1633,13 +1633,26 @@ function resetDB(){
   renderDashboard(); toast('Datos eliminados de local y nube','info');
 }
 
+// Refresca las vistas abiertas tras cambiar datos de postulantes. Antes cada acción
+// repetía esta lista y era fácil olvidarse una: eliminar un postulante actualizaba
+// el dashboard pero no el pipeline, y la tarjeta seguía ahí hasta recargar la página.
+function refrescarVistasPostulantes(){
+  renderDashboard();
+  updateSidebarBadges();
+  const pv=document.getElementById('view-pipeline'); if(pv&&pv.classList.contains('on')) renderPipeline();
+  const tv=document.getElementById('view-post');     if(tv&&tv.classList.contains('on')) filterT();
+  const bv=document.getElementById('view-bajas');    if(bv&&bv.classList.contains('on')) renderBajas();
+  const vv=document.getElementById('view-vac');      if(vv&&vv.classList.contains('on')) renderVac();
+  renderOcupacionCards();
+}
+
 function eliminarPostulante(id){
   const p=DB.postulantes.find(x=>x.id===id); if(!p) return;
   if(!confirm('¿Eliminar a '+p.alumno+' del sistema? Esta acción no se puede deshacer.')) return;
   DB.postulantes=DB.postulantes.filter(x=>x.id!==id);
   DB.pendingNotif=DB.pendingNotif.filter(x=>x!==id);
   saveDB(); closeM();
-  renderDashboard(); updateSidebarBadges();
+  refrescarVistasPostulantes();
   toast(p.alumno+' eliminado','ok');
 }
 
@@ -1857,14 +1870,14 @@ function renderDashboard(){
     <div class="stc-sub">${s.c?`<span class="stc-dot" style="background:${s.c}"></span>`:''}${s.s}</div>
   </div>`).join('');
 
-  // Requieren acción — las postulaciones más recientes primero.
-  // Antes mezclaba todo el pipeline abierto y el listado quedaba viejo enseguida.
-  const CERRADOS=['matriculado','nuevo','desiste','no_queremos','rechazado_eoe'];
-  const accion=ps.filter(p=>!CERRADOS.includes(p.estado))
+  // Últimos postulantes: los 5 más recientes que completaron el formulario.
+  // No se filtra por estado — la idea es ver quién entró último, sin importar
+  // en qué punto del proceso esté. Al entrar uno nuevo, el quinto sale solo.
+  const accion=ps.slice()
     .sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||'') || (Number(b.id)||0)-(Number(a.id)||0))
-    .slice(0,8);
+    .slice(0,5);
   document.getElementById('dash-accion').innerHTML=accion.length===0
-    ?`<div class="empty"><div class="empty-ic">✓</div><p>Todo al día — sin pendientes</p></div>`
+    ?`<div class="empty"><div class="empty-ic">📋</div><p>Todavía no hay postulaciones</p></div>`
     :accion.map(p=>{
       const sinFecha = p.estado==='citado' && !p.entFecha;
       return `<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 17px;border-bottom:1px solid var(--bd);font-size:12.5px">
@@ -2325,11 +2338,8 @@ function changeE(id){
     });
   }
 
-  closeM(); renderDashboard();
-  const pv=document.getElementById('view-pipeline'); if(pv&&pv.classList.contains('on')) renderPipeline();
-  const tv=document.getElementById('view-post'); if(tv&&tv.classList.contains('on')) filterT();
-  const vv=document.getElementById('view-vac'); if(vv&&vv.classList.contains('on')) renderVac();
-  renderOcupacionCards();
+  closeM();
+  refrescarVistasPostulantes();
   dismissN(id);
 }
 
@@ -3193,29 +3203,56 @@ function initCalFormulario(){
 
 async function cargarTurnosYRenderizar(){
   const loading = document.getElementById('cal-loading');
-  if(loading) loading.style.display='block';
-  // Siempre cargar del localStorage primero (fallback instantáneo)
+
+  // Se dibuja de entrada con lo que haya en cache: la familia ve el calendario al
+  // instante en vez de esperar al Apps Script, que tarda unos segundos.
   try{
-    const local = JSON.parse(localStorage.getItem('austin_turnos')||'[]');
-    calTurnosReservados = local;
+    calTurnosReservados = JSON.parse(localStorage.getItem('austin_turnos')||'[]');
   } catch(e){ calTurnosReservados = []; }
-  // Intentar sincronizar con Apps Script (timeout 6s para no bloquear el spinner)
-  if(DB.config.appsScriptUrl){
-    try{
-      const withTimeout = (p, ms) => Promise.race([p, new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),ms))]);
-      const res = await withTimeout(apiCall('getTurnos',{}), 6000);
-      if(res && res.ok && res.turnos){
-        calTurnosReservados = res.turnos.filter(function(t){
-          return t.Estado==='reservado'||t.Estado==='recordatorio_enviado';
-        });
-        localStorage.setItem('austin_turnos', JSON.stringify(calTurnosReservados));
-      }
-      const rb = await withTimeout(apiCall('getBloqueos',{}), 6000);
-      if(rb && rb.ok) calBloqueos = rb.bloqueos||[];
-    } catch(e){ /* usar cache local si timeout o error */ }
+  try{
+    calBloqueos = JSON.parse(localStorage.getItem('austin_bloqueos')||'[]');
+  } catch(e){ calBloqueos = calBloqueos||[]; }
+
+  const hayCache = calTurnosReservados.length > 0;
+  if(hayCache){
+    if(loading) loading.style.display='none';
+    renderCalFormulario();
+  } else {
+    if(loading) loading.style.display='block';
   }
+
+  if(!DB.config.appsScriptUrl){
+    if(loading) loading.style.display='none';
+    if(!hayCache) renderCalFormulario();
+    return;
+  }
+
+  // Los dos pedidos van en paralelo: antes eran secuenciales y se sumaban las esperas.
+  const conTimeout = (pr, ms) => Promise.race([
+    pr, new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')), ms))
+  ]);
+  const [rt, rb] = await Promise.all([
+    conTimeout(apiCall('getTurnos',{}), 8000).catch(()=>null),
+    conTimeout(apiCall('getBloqueos',{}), 8000).catch(()=>null)
+  ]);
+
+  let cambio = false;
+  if(rt && rt.ok && rt.turnos){
+    calTurnosReservados = rt.turnos.filter(function(t){
+      return t.Estado==='reservado'||t.Estado==='recordatorio_enviado';
+    });
+    try{ localStorage.setItem('austin_turnos', JSON.stringify(calTurnosReservados)); }catch(e){}
+    cambio = true;
+  }
+  if(rb && rb.ok){
+    calBloqueos = rb.bloqueos||[];
+    try{ localStorage.setItem('austin_bloqueos', JSON.stringify(calBloqueos)); }catch(e){}
+    cambio = true;
+  }
+
   if(loading) loading.style.display='none';
-  renderCalFormulario();
+  // Se vuelve a dibujar sólo si llegaron datos frescos
+  if(cambio || !hayCache) renderCalFormulario();
 }
 
 function renderCalFormulario(){
