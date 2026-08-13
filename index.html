@@ -2625,12 +2625,16 @@ function parsePesos(v){
 }
 
 function fPesos(n){
-  return '$ ' + parsePesos(n).toLocaleString('es-AR', {minimumFractionDigits:0, maximumFractionDigits:2});
+  const v=parsePesos(n);
+  const dec = Math.abs(v % 1) > 0.0001 ? 2 : 0;
+  return '$ ' + v.toLocaleString('es-AR', {minimumFractionDigits:dec, maximumFractionDigits:dec});
 }
 
 // Sin el signo, para los campos editables del panel
 function fMonto(n){
-  return parsePesos(n).toLocaleString('es-AR', {minimumFractionDigits:0, maximumFractionDigits:2});
+  const v=parsePesos(n);
+  const dec = Math.abs(v % 1) > 0.0001 ? 2 : 0;
+  return v.toLocaleString('es-AR', {minimumFractionDigits:dec, maximumFractionDigits:dec});
 }
 
 // Normaliza lo escrito en un campo de tarifa al salir de él
