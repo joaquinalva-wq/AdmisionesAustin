@@ -2574,37 +2574,68 @@ function renderTar(){
   const t=DB.tarifas;
   document.getElementById('tar-cont').innerHTML=`
     <div class="tarc"><div class="tarh"><div class="tart">Kindergarten</div></div><div class="tarb">
-      <div class="tarrow"><span class="tarlbl">K2 (Puppies) – Matrícula</span><input class="tari" id="t-k2m" value="${t.k2_m}"></div>
-      <div class="tarrow"><span class="tarlbl">K2 – Jornada Simple</span><input class="tari" id="t-k2s" value="${t.k2_s}"></div>
-      <div class="tarrow"><span class="tarlbl">K2 – Jornada Completa</span><input class="tari" id="t-k2c" value="${t.k2_c}"></div>
-      <div class="tarrow"><span class="tarlbl">K3 – Matrícula</span><input class="tari" id="t-k3m" value="${t.k3_m}"></div>
-      <div class="tarrow"><span class="tarlbl">K3 – Jornada Simple</span><input class="tari" id="t-k3s" value="${t.k3_s}"></div>
-      <div class="tarrow"><span class="tarlbl">K3 – Jornada Completa</span><input class="tari" id="t-k3c" value="${t.k3_c}"></div>
-      <div class="tarrow"><span class="tarlbl">K4 y K5 – Matrícula</span><input class="tari" id="t-k45m" value="${t.k45_m}"></div>
-      <div class="tarrow"><span class="tarlbl">K4 y K5 – Jornada Completa</span><input class="tari" id="t-k45c" value="${t.k45_c}"></div>
+      <div class="tarrow"><span class="tarlbl">K2 (Puppies) – Matrícula</span><input class="tari" id="t-k2m" value="${fMonto(t.k2_m)}" onblur="normalizarMonto(this)"></div>
+      <div class="tarrow"><span class="tarlbl">K2 – Jornada Simple</span><input class="tari" id="t-k2s" value="${fMonto(t.k2_s)}" onblur="normalizarMonto(this)"></div>
+      <div class="tarrow"><span class="tarlbl">K2 – Jornada Completa</span><input class="tari" id="t-k2c" value="${fMonto(t.k2_c)}" onblur="normalizarMonto(this)"></div>
+      <div class="tarrow"><span class="tarlbl">K3 – Matrícula</span><input class="tari" id="t-k3m" value="${fMonto(t.k3_m)}" onblur="normalizarMonto(this)"></div>
+      <div class="tarrow"><span class="tarlbl">K3 – Jornada Simple</span><input class="tari" id="t-k3s" value="${fMonto(t.k3_s)}" onblur="normalizarMonto(this)"></div>
+      <div class="tarrow"><span class="tarlbl">K3 – Jornada Completa</span><input class="tari" id="t-k3c" value="${fMonto(t.k3_c)}" onblur="normalizarMonto(this)"></div>
+      <div class="tarrow"><span class="tarlbl">K4 y K5 – Matrícula</span><input class="tari" id="t-k45m" value="${fMonto(t.k45_m)}" onblur="normalizarMonto(this)"></div>
+      <div class="tarrow"><span class="tarlbl">K4 y K5 – Jornada Completa</span><input class="tari" id="t-k45c" value="${fMonto(t.k45_c)}" onblur="normalizarMonto(this)"></div>
     </div></div>
     <div class="tarc"><div class="tarh"><div class="tart">Elementary School (1ro – 6to año)</div></div><div class="tarb">
-      <div class="tarrow"><span class="tarlbl">Matrícula</span><input class="tari" id="t-elm" value="${t.el_m}"></div>
-      <div class="tarrow"><span class="tarlbl">Jornada Completa</span><input class="tari" id="t-elc" value="${t.el_c}"></div>
+      <div class="tarrow"><span class="tarlbl">Matrícula</span><input class="tari" id="t-elm" value="${fMonto(t.el_m)}" onblur="normalizarMonto(this)"></div>
+      <div class="tarrow"><span class="tarlbl">Jornada Completa</span><input class="tari" id="t-elc" value="${fMonto(t.el_c)}" onblur="normalizarMonto(this)"></div>
     </div></div>
     <div class="tarc"><div class="tarh"><div class="tart">High School 1ro – 3ro</div></div><div class="tarb">
-      <div class="tarrow"><span class="tarlbl">Matrícula</span><input class="tari" id="t-h13m" value="${t.hs13_m}"></div>
-      <div class="tarrow"><span class="tarlbl">Jornada Completa</span><input class="tari" id="t-h13c" value="${t.hs13_c}"></div>
+      <div class="tarrow"><span class="tarlbl">Matrícula</span><input class="tari" id="t-h13m" value="${fMonto(t.hs13_m)}" onblur="normalizarMonto(this)"></div>
+      <div class="tarrow"><span class="tarlbl">Jornada Completa</span><input class="tari" id="t-h13c" value="${fMonto(t.hs13_c)}" onblur="normalizarMonto(this)"></div>
     </div></div>
     <div class="tarc"><div class="tarh"><div class="tart">High School 4to – 6to</div></div><div class="tarb">
-      <div class="tarrow"><span class="tarlbl">Matrícula</span><input class="tari" id="t-h46m" value="${t.hs46_m}"></div>
-      <div class="tarrow"><span class="tarlbl">Jornada Completa</span><input class="tari" id="t-h46c" value="${t.hs46_c}"></div>
+      <div class="tarrow"><span class="tarlbl">Matrícula</span><input class="tari" id="t-h46m" value="${fMonto(t.hs46_m)}" onblur="normalizarMonto(this)"></div>
+      <div class="tarrow"><span class="tarlbl">Jornada Completa</span><input class="tari" id="t-h46c" value="${fMonto(t.hs46_c)}" onblur="normalizarMonto(this)"></div>
     </div></div>`;
 }
 function saveTar(){
-  const g=id=>{const el=document.getElementById(id);return el?parseFloat(el.value)||0:0;};
+  const g=id=>{const el=document.getElementById(id);return el?parsePesos(el.value):0;};
   DB.tarifas={k2_m:g('t-k2m'),k2_s:g('t-k2s'),k2_c:g('t-k2c'),k3_m:g('t-k3m'),k3_s:g('t-k3s'),k3_c:g('t-k3c'),k45_m:g('t-k45m'),k45_c:g('t-k45c'),el_m:g('t-elm'),el_c:g('t-elc'),hs13_m:g('t-h13m'),hs13_c:g('t-h13c'),hs46_m:g('t-h46m'),hs46_c:g('t-h46c')};
   saveDB(); toast('Tarifas actualizadas','ok');
 }
 
 // ── HELPER: formatear número como pesos ───────────────────────
+// Montos en formato argentino: punto para miles, coma para decimales (1.234.567,50).
+// Antes se guardaban con parseFloat, que lee "660.285" como 660,285: los importes
+// quedaban mil veces más chicos sin que se notara en pantalla.
+function parsePesos(v){
+  if(typeof v === 'number') return isFinite(v) ? v : 0;
+  let t = String(v==null?'':v).trim().replace(/[$\s ]/g,'').replace(/\.-$/,'');
+  if(!t) return 0;
+  const iCom = t.lastIndexOf(','), iPto = t.lastIndexOf('.');
+  if(iCom > iPto){
+    // Hay una coma después del último punto: la coma marca los decimales
+    t = t.replace(/\./g,'').replace(',','.');
+  } else if(iPto > -1){
+    // Sólo puntos: son separadores de miles si hay más de uno, o si el último
+    // grupo tiene 3 dígitos ("660.285"). Si tiene 1 o 2, es decimal ("660.28").
+    const partes = t.split('.');
+    if(partes.length > 2 || partes[partes.length-1].length === 3) t = partes.join('');
+  }
+  const n = parseFloat(t);
+  return isNaN(n) ? 0 : n;
+}
+
 function fPesos(n){
-  return '$\u00a0'+Math.round(n).toLocaleString('es-AR').replace(/,/g,'.')+'.-';
+  return '$ ' + parsePesos(n).toLocaleString('es-AR', {minimumFractionDigits:0, maximumFractionDigits:2});
+}
+
+// Sin el signo, para los campos editables del panel
+function fMonto(n){
+  return parsePesos(n).toLocaleString('es-AR', {minimumFractionDigits:0, maximumFractionDigits:2});
+}
+
+// Normaliza lo escrito en un campo de tarifa al salir de él
+function normalizarMonto(el){
+  if(el) el.value = fMonto(el.value);
 }
 
 // ── INLINE DISPLAY DE TARIFAS (para el formulario público) ────
@@ -4234,10 +4265,22 @@ calBloqueos = DB.bloqueos||[];
 // ═══════════════════════════
 let _bajaSel = null;
 let _ocTab = 'resumen';
-let _ocCiclo = new Date().getFullYear();
+// El ciclo que se muestra por defecto. Lo define el traspaso y queda guardado,
+// así que al pasar de año el padrón que se ve es el nuevo y no hay que cambiarlo
+// a mano. Si nunca se hizo un traspaso, se toma el ciclo más reciente que tenga
+// padrón cargado, y en última instancia el año calendario.
+function cicloActivoInicial(){
+  const guardado = DB.config && DB.config.cicloActivo;
+  if(guardado) return Number(guardado);
+  const ciclos = [...new Set((DB.padron||[]).filter(a=>a.estado==='activo').map(a=>a.ciclo))];
+  if(ciclos.length) return Math.max.apply(null, ciclos);
+  return new Date().getFullYear();
+}
+let _ocCiclo = cicloActivoInicial();
 
 function setOcCiclo(val){
-  _ocCiclo = parseInt(val)||new Date().getFullYear();
+  _ocCiclo = parseInt(val)||cicloActivoInicial();
+  DB.config=DB.config||{}; DB.config.cicloActivo=_ocCiclo; saveDB();
   const sel=document.getElementById('oc-ciclo-sel');
   if(sel) sel.value=String(_ocCiclo);
   renderOcupacion();
@@ -4515,11 +4558,22 @@ function renderPadron(){
     <div style="flex:1"></div>
     <span style="font-size:12px;color:var(--tx3)">${activos} activos · ${bajas} bajas</span>
     <button class="btn btn-sm btn-out" onclick="abrirModalAgregarAlumno()">+ Agregar</button>
+    <button class="btn btn-sm btn-out" onclick="exportarPadronExcel()">Excel</button>
     <button class="btn btn-sm" style="background:#7C3AED;color:#fff;border:none" onclick="importarPadronModal()">⬆ Importar</button>
     ${usePadron?`<button class="btn btn-sm" style="background:#2C4A5E;color:#fff;border:none" onclick="pasarAlAnoSiguienteModal()" title="Generar padrón ${sigCiclo} avanzando secciones">→ Pasar a ${sigCiclo}</button>`:''}
   </div>
   <div id="padron-tabla"></div>`;
   return html;
+}
+
+// ID interno del colegio para cada alumno. Se escribe a mano en el padrón y
+// se conserva al pasar de año, para poder cruzar con el sistema de facturación.
+function setIdColegio(alumnoId, valor){
+  const a=(DB.padron||[]).find(x=>String(x.id)===String(alumnoId)); if(!a) return;
+  const v=(valor||'').trim();
+  if(a.idColegio===v) return;
+  a.idColegio=v;
+  saveDB();
 }
 
 function filtrarPadron(){
@@ -4530,7 +4584,7 @@ function filtrarPadron(){
   let lista=(DB.padron||[]).filter(a=>a.ciclo===ciclo);
   if(fNivel) lista=lista.filter(a=>a.nivel===fNivel);
   if(fEst) lista=lista.filter(a=>a.estado===fEst);
-  if(q) lista=lista.filter(a=>(a.nombre||'').toLowerCase().includes(q)||(a.curso||'').toLowerCase().includes(q));
+  if(q) lista=lista.filter(a=>(a.nombre||'').toLowerCase().includes(q)||(a.curso||'').toLowerCase().includes(q)||String(a.idColegio||'').toLowerCase().includes(q));
   lista=lista.sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||''));
 
   const tb=document.getElementById('padron-tabla');
@@ -4548,8 +4602,9 @@ function filtrarPadron(){
         <div class="cbox-t">${sec}</div>
         <span style="font-size:12px;color:var(--tx3)">${alumnos.filter(a=>a.estado==='activo').length} activos${alumnos.some(a=>a.estado==='baja')?` · ${alumnos.filter(a=>a.estado==='baja').length} baja`+( alumnos.filter(a=>a.estado==='baja').length!==1?'s':''):''}</span>
       </div>
-      <table><thead><tr><th>Nombre</th><th>Nivel</th><th>Estado</th><th>Fecha alta</th><th></th></tr></thead>
+      <table><thead><tr><th style="width:100px">ID colegio</th><th>Nombre</th><th>Nivel</th><th>Estado</th><th>Fecha alta</th><th></th></tr></thead>
       <tbody>${alumnos.map(a=>`<tr style="${a.estado==='baja'?'opacity:.6':''}">
+        <td><input class="fi" value="${esc(a.idColegio||'')}" placeholder="—" style="font-size:12px;padding:3px 6px;width:88px;box-sizing:border-box;font-family:monospace" onblur="setIdColegio('${a.id}',this.value)"></td>
         <td><strong>${esc(a.nombre||'—')}</strong>${a.admisionId?` <span style="font-size:10px;color:#7C3AED;background:#EDE9FE;padding:1px 5px;border-radius:3px">Adm</span>`:''}</td>
         <td style="color:var(--tx3);font-size:12px">${a.nivel||'—'}</td>
         <td>${a.estado==='activo'
@@ -4730,6 +4785,213 @@ function ejecutarImport(){
 // Default asumido: re_matricula (estado vacío = confirma re-matrícula)
 let _rematSelected = new Set();
 
+// Estados de re-matrícula, en un solo lugar. Antes estaban repetidos en seis
+// lugares (tarjetas, filtros, botones por sección, botones por fila, colores de
+// fila y exportaciones), y sumar uno obligaba a tocarlos todos.
+// 'no_sabe' es la familia que aún no decidió; 'austin_evalua' es el colegio el
+// que no definió si le ofrece la vacante.
+const REMAT_ESTADOS = {
+  re_matricula:  {lbl:'Re-matricula',  corto:'Re-matriculan',   icono:'✓', color:'#16A34A', bg:'#DCFCE7', fg:'#166534', fila:''},
+  no_sabe:       {lbl:'Familia no sabe',corto:'Familia no sabe', icono:'?',      color:'#D97706', bg:'#FEF3C7', fg:'#92400E', fila:'#FFFBEB'},
+  austin_evalua: {lbl:'Austin evalúa', corto:'Austin evalúa',   icono:'!',      color:'#7C3AED', bg:'#EDE9FE', fg:'#5B21B6', fila:'#F5F3FF'},
+  baja:          {lbl:'No continúa',   corto:'No continúan',    icono:'✗', color:'#EF4444', bg:'#FEE2E2', fg:'#991B1B', fila:'#FFF5F5'}
+};
+const REMAT_ORDEN = ['re_matricula','no_sabe','austin_evalua','baja'];
+
+// Los del último año de cada nivel egresan: no se re-matriculan.
+function esEgresado(a){ return SECTION_ADVANCE[a.curso] === null; }
+
+// Alumnos que entran en la re-matriculación de un ciclo: activos y no egresados.
+function padronRematriculable(ciclo){
+  return (DB.padron||[]).filter(a => a.ciclo===ciclo && a.estado==='activo' && !esEgresado(a));
+}
+
+// ═══════════════════════════
+// EXPORTAR A EXCEL (.xlsx real)
+// ═══════════════════════════
+// Genera un xlsx válido sin librerías externas: un xlsx es un ZIP con XML adentro.
+// Se usa ZIP sin compresión (método "store"), que es legal y evita implementar
+// deflate. Sale con encabezado fijo, filtros y anchos de columna, así que se abre
+// listo para usar y sin el aviso de "el formato no coincide" que dan los .xls
+// armados con HTML.
+
+function _crc32(buf){
+  let c, tabla = _crc32.tabla;
+  if(!tabla){
+    tabla = _crc32.tabla = new Uint32Array(256);
+    for(let n=0;n<256;n++){
+      c=n;
+      for(let k=0;k<8;k++) c = (c&1) ? (0xEDB88320 ^ (c>>>1)) : (c>>>1);
+      tabla[n]=c>>>0;
+    }
+  }
+  let crc = 0xFFFFFFFF;
+  for(let i=0;i<buf.length;i++) crc = (crc>>>8) ^ tabla[(crc ^ buf[i]) & 0xFF];
+  return (crc ^ 0xFFFFFFFF)>>>0;
+}
+
+function _zip(archivos){
+  const enc = new TextEncoder();
+  const partes = [], central = [];
+  let offset = 0;
+  archivos.forEach(function(f){
+    const nombre = enc.encode(f.nombre);
+    const datos  = enc.encode(f.contenido);
+    const crc    = _crc32(datos);
+    const cab = new DataView(new ArrayBuffer(30));
+    cab.setUint32(0, 0x04034b50, true); cab.setUint16(4, 20, true);
+    cab.setUint16(6, 0, true);          cab.setUint16(8, 0, true);
+    cab.setUint16(10, 0, true);         cab.setUint16(12, 0, true);
+    cab.setUint32(14, crc, true);
+    cab.setUint32(18, datos.length, true); cab.setUint32(22, datos.length, true);
+    cab.setUint16(26, nombre.length, true); cab.setUint16(28, 0, true);
+    partes.push(new Uint8Array(cab.buffer), nombre, datos);
+
+    const dir = new DataView(new ArrayBuffer(46));
+    dir.setUint32(0, 0x02014b50, true); dir.setUint16(4, 20, true);
+    dir.setUint16(6, 20, true);         dir.setUint16(8, 0, true);
+    dir.setUint16(10, 0, true);         dir.setUint16(12, 0, true);
+    dir.setUint16(14, 0, true);
+    dir.setUint32(16, crc, true);
+    dir.setUint32(20, datos.length, true); dir.setUint32(24, datos.length, true);
+    dir.setUint16(28, nombre.length, true);
+    dir.setUint16(30, 0, true); dir.setUint16(32, 0, true);
+    dir.setUint16(34, 0, true); dir.setUint16(36, 0, true);
+    dir.setUint32(38, 0, true); dir.setUint32(42, offset, true);
+    central.push(new Uint8Array(dir.buffer), nombre);
+    offset += 30 + nombre.length + datos.length;
+  });
+  let tamCentral = 0;
+  central.forEach(function(x){ tamCentral += x.length; });
+  const fin = new DataView(new ArrayBuffer(22));
+  fin.setUint32(0, 0x06054b50, true);
+  fin.setUint16(8, archivos.length, true); fin.setUint16(10, archivos.length, true);
+  fin.setUint32(12, tamCentral, true); fin.setUint32(16, offset, true);
+  fin.setUint16(20, 0, true);
+  const todo = partes.concat(central, [new Uint8Array(fin.buffer)]);
+  let total = 0; todo.forEach(function(x){ total += x.length; });
+  const salida = new Uint8Array(total);
+  let pos = 0; todo.forEach(function(x){ salida.set(x, pos); pos += x.length; });
+  return salida;
+}
+
+function _xmlEsc(v){
+  return String(v==null?'':v)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&apos;')
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g,'');
+}
+function _colLetra(n){
+  let s='';
+  while(n>0){ const r=(n-1)%26; s=String.fromCharCode(65+r)+s; n=Math.floor((n-1)/26); }
+  return s;
+}
+
+// Descarga un .xlsx.
+//   columnas: [{titulo, ancho, tipo:'texto'|'numero'}]
+//   filas:    array de arrays, en el mismo orden que columnas
+function descargarExcel(nombreArchivo, nombreHoja, columnas, filas){
+  const nCols = columnas.length;
+  const cols = columnas.map(function(c,i){
+    return '<col min="'+(i+1)+'" max="'+(i+1)+'" width="'+(c.ancho||18)+'" customWidth="1"/>';
+  }).join('');
+
+  const cab = '<row r="1" ht="26" customHeight="1">' + columnas.map(function(c,i){
+    return '<c r="'+_colLetra(i+1)+'1" s="1" t="inlineStr"><is><t>'+_xmlEsc(c.titulo)+'</t></is></c>';
+  }).join('') + '</row>';
+
+  const cuerpo = filas.map(function(fila, fi){
+    const r = fi+2;
+    const celdas = fila.map(function(v, ci){
+      const ref = _colLetra(ci+1)+r;
+      const esNum = columnas[ci] && columnas[ci].tipo==='numero' && v!=='' && v!=null && !isNaN(v);
+      if(esNum) return '<c r="'+ref+'" s="3"><v>'+Number(v)+'</v></c>';
+      return '<c r="'+ref+'" s="2" t="inlineStr"><is><t>'+_xmlEsc(v)+'</t></is></c>';
+    }).join('');
+    return '<row r="'+r+'">'+celdas+'</row>';
+  }).join('');
+
+  const ultima = _colLetra(nCols) + (filas.length+1);
+  const hoja =
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+    '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'+
+    '<sheetViews><sheetView workbookViewId="0" tabSelected="1">'+
+    '<pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/>'+
+    '</sheetView></sheetViews>'+
+    '<sheetFormatPr defaultRowHeight="15"/>'+
+    '<cols>'+cols+'</cols>'+
+    '<sheetData>'+cab+cuerpo+'</sheetData>'+
+    '<autoFilter ref="A1:'+ultima+'"/>'+
+    '</worksheet>';
+
+  const estilos =
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+    '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'+
+    '<numFmts count="1"><numFmt numFmtId="164" formatCode="#,##0"/></numFmts>'+
+    '<fonts count="2">'+
+      '<font><sz val="11"/><name val="Calibri"/><color rgb="FF252520"/></font>'+
+      '<font><b/><sz val="11"/><name val="Calibri"/><color rgb="FFFFFFFF"/></font>'+
+    '</fonts>'+
+    '<fills count="3">'+
+      '<fill><patternFill patternType="none"/></fill>'+
+      '<fill><patternFill patternType="gray125"/></fill>'+
+      '<fill><patternFill patternType="solid"><fgColor rgb="FF2C4A5E"/><bgColor indexed="64"/></patternFill></fill>'+
+    '</fills>'+
+    '<borders count="2">'+
+      '<border><left/><right/><top/><bottom/><diagonal/></border>'+
+      '<border><left/><right/><top/><bottom style="thin"><color rgb="FFD9D9D9"/></bottom><diagonal/></border>'+
+    '</borders>'+
+    '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'+
+    '<cellXfs count="4">'+
+      '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'+
+      '<xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1">'+
+        '<alignment vertical="center" horizontal="left"/></xf>'+
+      '<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1">'+
+        '<alignment vertical="center" wrapText="1"/></xf>'+
+      '<xf numFmtId="164" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1" applyAlignment="1">'+
+        '<alignment vertical="center" horizontal="right"/></xf>'+
+    '</cellXfs>'+
+    '</styleSheet>';
+
+  const archivos = [
+    {nombre:'[Content_Types].xml', contenido:
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+      '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'+
+      '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'+
+      '<Default Extension="xml" ContentType="application/xml"/>'+
+      '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'+
+      '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'+
+      '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'+
+      '</Types>'},
+    {nombre:'_rels/.rels', contenido:
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+      '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+
+      '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>'+
+      '</Relationships>'},
+    {nombre:'xl/workbook.xml', contenido:
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+      '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" '+
+      'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'+
+      '<sheets><sheet name="'+_xmlEsc(nombreHoja).substring(0,31)+'" sheetId="1" r:id="rId1"/></sheets>'+
+      '</workbook>'},
+    {nombre:'xl/_rels/workbook.xml.rels', contenido:
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+      '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+
+      '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>'+
+      '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>'+
+      '</Relationships>'},
+    {nombre:'xl/styles.xml', contenido: estilos},
+    {nombre:'xl/worksheets/sheet1.xml', contenido: hoja}
+  ];
+
+  const blob = new Blob([_zip(archivos)], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = nombreArchivo.replace(/[^\w.\-]+/g,'_');
+  document.body.appendChild(a); a.click();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+
 function _getRematEst(id, siguiente){
   // '' (vacío) = re_matricula por defecto
   return (DB.reMatricula||{})[id+'_'+siguiente]?.estado || 're_matricula';
@@ -4738,46 +5000,60 @@ function _getRematEst(id, siguiente){
 function renderReMatricula(){
   const ciclo=_ocCiclo;
   const sig=ciclo+1;
-  const padron=(DB.padron||[]).filter(a=>a.ciclo===ciclo&&a.estado==='activo');
+  const padron=padronRematriculable(ciclo);
+  const egresan=(DB.padron||[]).filter(a=>a.ciclo===ciclo&&a.estado==='activo'&&esEgresado(a)).length;
+
   if(!padron.length){
     return `<div class="cbox">
-      <p style="color:var(--tx3);padding:14px">No hay padrón cargado para ${ciclo}.</p>
+      <p style="color:var(--tx3);padding:14px">No hay alumnos para re-matricular en ${ciclo}.</p>
       ${(DB.padron||[]).some(a=>a.ciclo===ciclo-1&&a.estado==='activo')?
-        `<div style="padding:0 16px 16px"><button class="btn btn-pri" onclick="generarPadronDesdeRemat(${ciclo})">Generar padrón ${ciclo} desde re-matrículas ${ciclo-1}</button></div>`:
+        `<div style="padding:0 16px 16px"><button class="btn btn-pri" onclick="abrirTraspasoModal(${ciclo})">Hacer el traspaso a ${ciclo}</button></div>`:
         `<div style="padding:0 16px 16px;font-size:12px;color:var(--tx3)">Importá el padrón ${ciclo} en la solapa Padrón.</div>`}
     </div>`;
   }
 
   const total=padron.length;
-  const cntRM=padron.filter(a=>_getRematEst(a.id,sig)==='re_matricula').length;
-  const cntNS=padron.filter(a=>_getRematEst(a.id,sig)==='no_sabe').length;
-  const cntB=padron.filter(a=>_getRematEst(a.id,sig)==='baja').length;
+  const cnt={};
+  REMAT_ORDEN.forEach(k=>{ cnt[k]=padron.filter(a=>_getRematEst(a.id,sig)===k).length; });
+  const decididos=total-cnt.no_sabe-cnt.austin_evalua;
+
+  const tarjetas=REMAT_ORDEN.map(k=>{
+    const e=REMAT_ESTADOS[k];
+    const sub = k==='re_matricula' ? `de ${total} alumnos`
+              : k==='baja'         ? `vacantes para ${sig}`
+              : 'pendiente de definir';
+    return `<div class="stc" style="cursor:default;border-left:3px solid ${e.color};min-width:132px">
+      <div class="stc-lbl">${e.corto}</div>
+      <div class="stc-val" style="color:${e.color}">${cnt[k]}</div>
+      <div class="stc-sub">${sub}</div>
+    </div>`;
+  }).join('');
 
   return `
-    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:stretch;margin-bottom:16px">
-      <div class="stc" style="cursor:default;border-left:3px solid #16A34A;min-width:130px">
-        <div class="stc-lbl">Re-matriculan</div>
-        <div class="stc-val" style="color:#16A34A">${cntRM}</div>
-        <div class="stc-sub">de ${total} activos</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:stretch;margin-bottom:14px">
+      ${tarjetas}
+    </div>
+
+    <div class="cbox" style="margin-bottom:16px;border-left:3px solid var(--or)">
+      <div class="cbox-h">
+        <div>
+          <div class="cbox-t">Cierre del ciclo ${ciclo}</div>
+          <div style="font-size:12px;color:var(--tx3);margin-top:2px">
+            ${decididos} de ${total} definidos${cnt.no_sabe+cnt.austin_evalua>0?` · faltan ${cnt.no_sabe+cnt.austin_evalua}`:' · todo definido'}
+          </div>
+        </div>
+        <button class="btn btn-pri" onclick="abrirTraspasoModal(${sig})" style="font-size:13px">
+          Hacer el traspaso a ${sig} →
+        </button>
       </div>
-      <div class="stc" style="cursor:default;border-left:3px solid #D97706;min-width:130px">
-        <div class="stc-lbl">No saben aún</div>
-        <div class="stc-val" style="color:#D97706">${cntNS}</div>
-        <div class="stc-sub">pendientes de decisión</div>
-      </div>
-      <div class="stc" style="cursor:default;border-left:3px solid #EF4444;min-width:130px">
-        <div class="stc-lbl">No continúan</div>
-        <div class="stc-val" style="color:#EF4444">${cntB}</div>
-        <div class="stc-sub">vacantes para ${sig}</div>
-      </div>
-      <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:8px;padding:12px;min-width:200px">
-        <div style="font-size:11px;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Exportar PDF para administración</div>
-        <button class="btn btn-sm btn-pri" onclick="exportarRematPDF('re_matricula')">↓ PDF — Re-matriculan (${cntRM})</button>
-        <button class="btn btn-sm btn-out" style="color:#EF4444" onclick="exportarRematPDF('baja')">↓ PDF — No continúan (${cntB})</button>
-        <button class="btn btn-sm btn-out" onclick="exportarRematPDF('all')">↓ PDF — Lista completa</button>
+      <div style="padding:10px 16px;font-size:12px;color:var(--tx2);line-height:1.65">
+        El traspaso arma el padrón ${sig} con los que re-matriculan, suma las altas de
+        <strong>Nuevo alumno</strong> del pipeline y deja afuera las bajas y los egresados.
+        ${egresan?`<br><span style="color:var(--tx3)">${egresan} alumno${egresan!==1?'s':''} de último año egresa${egresan!==1?'n':''} y no aparece${egresan!==1?'n':''} en esta lista.</span>`:''}
       </div>
     </div>
-    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px">
       <input class="fi" id="remat-q" placeholder="Buscar alumno..." style="max-width:220px;padding:7px 12px" oninput="filtrarRemat()">
       <select class="fsel" id="remat-f-nivel" style="font-size:13px" onchange="filtrarRemat()">
         <option value="">Todos los niveles</option>
@@ -4787,12 +5063,15 @@ function renderReMatricula(){
       </select>
       <select class="fsel" id="remat-f-est" style="font-size:13px" onchange="filtrarRemat()">
         <option value="">Todos los estados</option>
-        <option value="re_matricula">Re-matricula</option>
-        <option value="no_sabe">No sabe</option>
-        <option value="baja">No continúa</option>
+        ${REMAT_ORDEN.map(k=>`<option value="${k}">${REMAT_ESTADOS[k].lbl}</option>`).join('')}
       </select>
-      <span style="font-size:11px;color:var(--tx3);margin-left:4px">Por defecto todos re-matriculan · Marcá excepciones</span>
+      <div style="flex:1"></div>
+      <button class="btn btn-sm btn-out" onclick="exportarRematExcel()">Excel — listado completo</button>
+      <button class="btn btn-sm btn-out" onclick="exportarRematPDF('all')">PDF — lista completa</button>
+      <button class="btn btn-sm btn-out" onclick="exportarRematPDF('re_matricula')">PDF — re-matriculan</button>
+      <button class="btn btn-sm btn-out" style="color:#EF4444" onclick="exportarRematPDF('baja')">PDF — no continúan</button>
     </div>
+    <div style="font-size:11px;color:var(--tx3);margin-bottom:10px">Por defecto todos re-matriculan · Marcá las excepciones</div>
     <div id="remat-tabla"></div>`;
 }
 
@@ -4801,53 +5080,68 @@ function filtrarRemat(){
   const q=(document.getElementById('remat-q')?.value||'').toLowerCase();
   const fNivel=document.getElementById('remat-f-nivel')?.value||'';
   const fEst=document.getElementById('remat-f-est')?.value||'';
-  let lista=(DB.padron||[]).filter(a=>a.ciclo===ciclo&&a.estado==='activo');
+  let lista=padronRematriculable(ciclo);
   if(fNivel) lista=lista.filter(a=>a.nivel===fNivel);
-  if(q) lista=lista.filter(a=>(a.nombre||'').toLowerCase().includes(q));
+  if(q) lista=lista.filter(a=>(a.nombre||'').toLowerCase().includes(q)||String(a.idColegio||'').toLowerCase().includes(q));
   if(fEst) lista=lista.filter(a=>_getRematEst(a.id,sig)===fEst);
   lista=lista.sort((a,b)=>(a.curso+a.nombre).localeCompare(b.curso+b.nombre));
   const tb=document.getElementById('remat-tabla'); if(!tb) return;
+
+  if(!lista.length){
+    tb.innerHTML='<div class="cbox"><p style="color:var(--tx3);padding:12px">Sin resultados.</p></div>';
+    return;
+  }
 
   const bySec={};
   lista.forEach(a=>{ const k=a.curso||'Sin sección'; if(!bySec[k]) bySec[k]=[]; bySec[k].push(a); });
 
   tb.innerHTML=Object.entries(bySec).map(([sec,alumnos])=>{
-    const cRM=alumnos.filter(a=>_getRematEst(a.id,sig)==='re_matricula').length;
-    const cNS=alumnos.filter(a=>_getRematEst(a.id,sig)==='no_sabe').length;
-    const cB=alumnos.filter(a=>_getRematEst(a.id,sig)==='baja').length;
+    const chips=REMAT_ORDEN.map(k=>{
+      const n=alumnos.filter(a=>_getRematEst(a.id,sig)===k).length;
+      if(!n) return '';
+      const e=REMAT_ESTADOS[k];
+      return `<span style="padding:2px 8px;border-radius:5px;background:${e.bg};color:${e.fg}">${e.icono} ${n}</span>`;
+    }).join('');
+
+    const bulk=REMAT_ORDEN.map(k=>{
+      const e=REMAT_ESTADOS[k];
+      return `<button class="btn btn-sm" title="Marcar toda la sección como ${e.lbl}"
+        style="background:${e.color};color:#fff;border-color:${e.color};font-size:11px;padding:3px 8px"
+        onclick="rematBulkSeccion('${sec.replace(/'/g,"\\'")}','${k}')">${e.icono}</button>`;
+    }).join('');
+
     return `<div class="cbox" style="margin-bottom:12px">
       <div class="cbox-h">
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-          <div class="cbox-t">${sec}</div>
-          <div style="display:flex;gap:5px;flex-wrap:wrap;font-size:11px">
-            ${cRM?`<span style="padding:2px 8px;border-radius:5px;background:#DCFCE7;color:#166534">✓ ${cRM} re-matriculan</span>`:''}
-            ${cNS?`<span style="padding:2px 8px;border-radius:5px;background:#FEF3C7;color:#92400E">? ${cNS} no saben</span>`:''}
-            ${cB?`<span style="padding:2px 8px;border-radius:5px;background:#FEE2E2;color:#991B1B">✗ ${cB} no continúan</span>`:''}
-          </div>
+          <div class="cbox-t">${esc(sec)}</div>
+          <div style="display:flex;gap:5px;flex-wrap:wrap;font-size:11px">${chips}</div>
         </div>
         <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center">
-          <span style="font-size:10px;color:var(--tx3)">Toda la sección:</span>
-          <button class="btn btn-sm" style="background:#16A34A;color:#fff;border-color:#16A34A;font-size:11px;padding:3px 8px" onclick="rematBulkSeccion('${sec}','re_matricula')">✓ Re-mat.</button>
-          <button class="btn btn-sm" style="background:#D97706;color:#fff;border-color:#D97706;font-size:11px;padding:3px 8px" onclick="rematBulkSeccion('${sec}','no_sabe')">? No saben</button>
-          <button class="btn btn-sm" style="background:#EF4444;color:#fff;border-color:#EF4444;font-size:11px;padding:3px 8px" onclick="rematBulkSeccion('${sec}','baja')">✗ No cont.</button>
+          <span style="font-size:10px;color:var(--tx3)">Toda la sección:</span>${bulk}
         </div>
       </div>
       <table><thead><tr>
+        <th style="width:90px">ID colegio</th>
         <th>Nombre</th>
-        <th style="width:220px;text-align:center">Re-matrícula ${sig}</th>
-        <th style="width:200px">Nota interna</th>
+        <th style="width:250px;text-align:center">Re-matrícula ${sig}</th>
+        <th style="width:190px">Nota interna</th>
       </tr></thead>
       <tbody>${alumnos.map(a=>{
         const est=_getRematEst(a.id,sig);
+        const cfg=REMAT_ESTADOS[est]||REMAT_ESTADOS.re_matricula;
         const obs=((DB.reMatricula||{})[a.id+'_'+sig]?.obs||'').replace(/"/g,'&quot;');
-        return `<tr style="${est==='baja'?'background:#FFF5F5':est==='no_sabe'?'background:#FFFBEB':''}">
+        const botones=REMAT_ORDEN.map(k=>{
+          const e=REMAT_ESTADOS[k];
+          const activo=est===k;
+          return `<button onclick="setRemat('${a.id}','${k}')" title="${e.lbl}"
+            style="padding:5px 11px;border:none;cursor:pointer;font-size:13px;font-weight:700;
+                   background:${activo?e.color:'var(--cr)'};color:${activo?'#fff':e.color}">${e.icono}</button>`;
+        }).join('');
+        return `<tr style="${cfg.fila?`background:${cfg.fila}`:''}">
+          <td style="font-size:12px;color:var(--tx3);font-family:monospace">${esc(a.idColegio||'—')}</td>
           <td><strong>${esc(a.nombre)}</strong></td>
           <td style="text-align:center">
-            <div style="display:inline-flex;gap:4px;border:1px solid var(--bd);border-radius:6px;overflow:hidden">
-              <button onclick="setRemat('${a.id}','re_matricula')" title="Re-matricula" style="padding:5px 10px;border:none;cursor:pointer;font-size:13px;font-weight:700;background:${est==='re_matricula'?'#16A34A':'var(--cr)'};color:${est==='re_matricula'?'#fff':'#16A34A'}">✓</button>
-              <button onclick="setRemat('${a.id}','no_sabe')" title="No sabe aún" style="padding:5px 10px;border:none;cursor:pointer;font-size:13px;font-weight:700;background:${est==='no_sabe'?'#D97706':'var(--cr)'};color:${est==='no_sabe'?'#fff':'#D97706'}">?</button>
-              <button onclick="setRemat('${a.id}','baja')" title="No continúa" style="padding:5px 10px;border:none;cursor:pointer;font-size:13px;font-weight:700;background:${est==='baja'?'#EF4444':'var(--cr)'};color:${est==='baja'?'#fff':'#EF4444'}">✗</button>
-            </div>
+            <div style="display:inline-flex;gap:3px;border:1px solid var(--bd);border-radius:6px;overflow:hidden">${botones}</div>
           </td>
           <td><input class="fi" value="${obs}" placeholder="Nota interna..." style="font-size:12px;padding:4px 8px;width:100%;box-sizing:border-box" onblur="setRematObs('${a.id}',this.value)"></td>
         </tr>`;
@@ -4945,102 +5239,181 @@ function setRematObs(alumnoId, obs){
 function attachRematEvents(){ filtrarRemat(); }
 
 // ─── PDF RE-MATRÍCULA ────────────────────────────────
-function exportarRematPDF(tipo){
+// Filas de re-matriculación listas para exportar: la misma base para Excel y PDF,
+// así los dos archivos siempre dicen lo mismo.
+function _filasRemat(tipo){
   const ciclo=_ocCiclo, sig=ciclo+1;
-  const padron=(DB.padron||[]).filter(a=>a.ciclo===ciclo&&a.estado==='activo');
-  let lista=padron;
-  let titulo='Lista completa de alumnos';
-  if(tipo==='re_matricula'){ lista=padron.filter(a=>_getRematEst(a.id,sig)==='re_matricula'); titulo='Alumnos que Re-matriculan'; }
-  if(tipo==='baja'){ lista=padron.filter(a=>_getRematEst(a.id,sig)==='baja'); titulo='Alumnos que No continúan'; }
-
-  // Group by section
-  const bySec={};
-  lista.forEach(a=>{ const k=a.curso||'Sin sección'; if(!bySec[k]) bySec[k]=[]; bySec[k].push(a); });
-
-  const logoSvg=`<div style="display:flex;align-items:center;gap:10px;margin-right:4px">
-    <div style="width:48px;height:48px;background:linear-gradient(135deg,#2C4A5E 0%,#1a3347 100%);border-radius:10px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(44,74,94,.25)">
-      <span style="color:#fff;font-family:Georgia,serif;font-size:18px;font-weight:900;letter-spacing:-1px">A</span>
-    </div>
-  </div>`;
-
-  const seccionesHTML=Object.entries(bySec).map(([sec,alumnos])=>`
-    <div style="margin-bottom:20px;page-break-inside:avoid">
-      <div style="background:#2C4A5E;color:#fff;padding:8px 14px;border-radius:6px 6px 0 0;font-size:13px;font-weight:700;display:flex;justify-content:space-between;align-items:center">
-        <span>${sec}</span>
-        <span style="font-size:11px;opacity:.8">${alumnos.length} alumno${alumnos.length!==1?'s':''}</span>
-      </div>
-      <table style="width:100%;border-collapse:collapse">
-        <thead><tr style="background:#F0F4F0">
-          <th style="padding:6px 12px;text-align:left;font-size:12px;border-bottom:1px solid #ddd">#</th>
-          <th style="padding:6px 12px;text-align:left;font-size:12px;border-bottom:1px solid #ddd">Nombre y Apellido</th>
-          <th style="padding:6px 12px;text-align:left;font-size:12px;border-bottom:1px solid #ddd">Nivel</th>
-          ${tipo==='all'?'<th style="padding:6px 12px;text-align:center;font-size:12px;border-bottom:1px solid #ddd">Estado</th>':''}
-        </tr></thead>
-        <tbody>${alumnos.map((a,i)=>{
-          const est=_getRematEst(a.id,sig);
-          const estLabel=est==='re_matricula'?'Re-matricula':est==='no_sabe'?'No sabe':'No continúa';
-          const estColor=est==='re_matricula'?'#16A34A':est==='no_sabe'?'#D97706':'#EF4444';
-          return `<tr style="border-bottom:1px solid #eee;${i%2===1?'background:#FAFAF8':''}">
-            <td style="padding:7px 12px;font-size:12px;color:#666">${i+1}</td>
-            <td style="padding:7px 12px;font-size:13px;font-weight:600">${esc(a.nombre)}</td>
-            <td style="padding:7px 12px;font-size:12px;color:#555">${a.nivel||'—'}</td>
-            ${tipo==='all'?`<td style="padding:7px 12px;text-align:center"><span style="font-size:11px;font-weight:700;color:${estColor};background:${estColor}1A;padding:2px 8px;border-radius:4px">${estLabel}</span></td>`:''}
-          </tr>`;
-        }).join('')}</tbody>
-      </table>
-    </div>`).join('');
-
-  const html=`<!DOCTYPE html><html><head><meta charset="utf-8">
-  <title>Re-matriculación ${sig} — Austin EBS</title>
-  <style>
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;padding:36px 44px;color:#111;background:#fff;font-size:13px}
-    @page{size:A4 portrait;margin:15mm 12mm}
-    @media print{body{padding:0}.no-print{display:none!important}}
-    table{width:100%;border-collapse:collapse}
-    th{background:#F4F6F8;font-size:11px;font-weight:700;color:#444;padding:7px 12px;text-align:left;border-bottom:2px solid #DDE3EA}
-    td{padding:7px 12px;font-size:12.5px;border-bottom:1px solid #EAECEF}
-    tr:last-child td{border-bottom:none}
-    tr:nth-child(even) td{background:#FAFBFC}
-  </style></head><body>
-  <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:18px;border-bottom:3px solid #2C4A5E;margin-bottom:20px">
-    <div style="display:flex;align-items:center;gap:14px">
-      ${logoSvg}
-      <div>
-        <div style="font-size:11px;color:#888;font-weight:700;letter-spacing:.1em;text-transform:uppercase">Austin Eco Bilingual School</div>
-        <div style="font-size:22px;font-weight:800;color:#2C4A5E;line-height:1.15;margin-top:2px">Re-matriculación ${sig}</div>
-      </div>
-    </div>
-    <div style="text-align:right">
-      <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.06em">Generado</div>
-      <div style="font-size:12px;color:#444;margin-top:2px">${new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'long',year:'numeric'})}</div>
-    </div>
-  </div>
-  <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:#EDF2F7;border-radius:8px;margin-bottom:24px;border-left:4px solid #2C4A5E">
-    <div>
-      <span style="font-weight:700;color:#2C4A5E;font-size:14px">${titulo}</span>
-      <span style="color:#666;font-size:12px;margin-left:12px">Ciclo ${ciclo} → ${sig}</span>
-    </div>
-    <div style="font-size:14px;font-weight:800;color:#2C4A5E">${lista.length} alumno${lista.length!==1?'s':''}</div>
-  </div>
-  ${seccionesHTML}
-  <div style="margin-top:32px;padding-top:12px;border-top:1px solid #DDE3EA;display:flex;justify-content:space-between;font-size:10px;color:#999">
-    <span>Austin Eco Bilingual School — Sistema de Admisiones</span>
-    <span>Ciclo lectivo ${ciclo} → ${sig}</span>
-  </div>
-  <div class="no-print" style="margin-top:24px;text-align:center;padding:16px;background:#F4F6F8;border-radius:10px">
-    <button onclick="window.print()" style="background:#2C4A5E;color:#fff;border:none;padding:11px 28px;border-radius:8px;font-size:14px;cursor:pointer;font-weight:600">Imprimir / Guardar PDF</button>
-    <div style="margin-top:8px;font-size:12px;color:#666">En el diálogo de impresión elegí "Guardar como PDF"</div>
-  </div>
-</body></html>`;
-
-  const w=window.open('','_blank','width=900,height=700');
-  w.document.write(html);
-  w.document.close();
-  setTimeout(()=>{ try{ w.print(); }catch(e){} }, 600);
+  let lista=padronRematriculable(ciclo);
+  if(tipo && tipo!=='all') lista=lista.filter(a=>_getRematEst(a.id,sig)===tipo);
+  return lista
+    .sort((a,b)=>(a.curso+a.nombre).localeCompare(b.curso+b.nombre))
+    .map(function(a){
+      const est=_getRematEst(a.id,sig);
+      const reg=(DB.reMatricula||{})[a.id+'_'+sig]||{};
+      return {
+        a: a,
+        idColegio: a.idColegio||'',
+        nombre: a.nombre||'',
+        seccion: a.curso||'Sin sección',
+        nivel: a.nivel||'',
+        estado: est,
+        estadoLbl: (REMAT_ESTADOS[est]||REMAT_ESTADOS.re_matricula).lbl,
+        nota: reg.obs||'',
+        fecha: reg.fecha||''
+      };
+    });
 }
 
-// ─── PADRÓN MULTI-AÑO ──────────────────────────────
+function exportarRematExcel(){
+  const ciclo=_ocCiclo, sig=ciclo+1;
+  const filas=_filasRemat('all');
+  if(!filas.length){ toast('No hay alumnos para exportar','err'); return; }
+  const columnas=[
+    {titulo:'ID colegio', ancho:13},
+    {titulo:'Alumno', ancho:32},
+    {titulo:'Sección', ancho:17},
+    {titulo:'Nivel', ancho:14},
+    {titulo:'Re-matrícula '+sig, ancho:19},
+    {titulo:'Nota interna', ancho:42},
+    {titulo:'Definido el', ancho:13}
+  ];
+  const datos=filas.map(f=>[f.idColegio,f.nombre,f.seccion,f.nivel,f.estadoLbl,f.nota,f.fecha]);
+  descargarExcel(`rematricula_${sig}_austin.xlsx`, `Re-matrícula ${sig}`, columnas, datos);
+  toast(`Excel generado — ${filas.length} alumnos`,'ok');
+}
+
+function exportarPadronExcel(){
+  const ciclo=_ocCiclo;
+  const lista=(DB.padron||[]).filter(a=>a.ciclo===ciclo)
+    .sort((a,b)=>((a.curso||'')+(a.nombre||'')).localeCompare((b.curso||'')+(b.nombre||'')));
+  if(!lista.length){ toast(`No hay padrón cargado para ${ciclo}`,'err'); return; }
+  const columnas=[
+    {titulo:'ID colegio', ancho:13},
+    {titulo:'Alumno', ancho:32},
+    {titulo:'Sección', ancho:17},
+    {titulo:'Nivel', ancho:14},
+    {titulo:'Estado', ancho:12},
+    {titulo:'Fecha alta', ancho:13},
+    {titulo:'Fecha baja', ancho:13},
+    {titulo:'Motivo de baja', ancho:34}
+  ];
+  const datos=lista.map(a=>[
+    a.idColegio||'', a.nombre||'', a.curso||'', a.nivel||'',
+    a.estado==='activo'?'Activo':'Baja',
+    a.fechaAlta||'', a.fechaBaja||'', a.motivoBaja||''
+  ]);
+  descargarExcel(`padron_${ciclo}_austin.xlsx`, `Padrón ${ciclo}`, columnas, datos);
+  toast(`Excel generado — ${lista.length} alumnos`,'ok');
+}
+
+function exportarRematPDF(tipo){
+  const ciclo=_ocCiclo, sig=ciclo+1;
+  const filas=_filasRemat(tipo);
+  if(!filas.length){ toast('No hay alumnos para exportar','err'); return; }
+
+  const titulos={
+    all:'Listado completo',
+    re_matricula:'Alumnos que re-matriculan',
+    baja:'Alumnos que no continúan',
+    no_sabe:'Familias que aún no definieron',
+    austin_evalua:'Casos en evaluación'
+  };
+  const titulo=titulos[tipo]||titulos.all;
+
+  // Resumen por estado, solo con los que aparecen
+  const resumen=REMAT_ORDEN.map(function(k){
+    const n=filas.filter(f=>f.estado===k).length;
+    if(!n) return '';
+    const e=REMAT_ESTADOS[k];
+    return `<div class="chip"><span class="dot" style="background:${e.color}"></span>${e.lbl}: <b>${n}</b></div>`;
+  }).join('');
+
+  // Agrupado por sección
+  const bySec={};
+  filas.forEach(function(f){ (bySec[f.seccion]=bySec[f.seccion]||[]).push(f); });
+
+  const secciones=Object.keys(bySec).sort().map(function(sec){
+    const alumnos=bySec[sec];
+    const filasHtml=alumnos.map(function(f,i){
+      const e=REMAT_ESTADOS[f.estado]||REMAT_ESTADOS.re_matricula;
+      return `<tr class="${i%2?'alt':''}">
+        <td class="id">${_pdfEsc(f.idColegio)||'—'}</td>
+        <td class="nom">${_pdfEsc(f.nombre)}</td>
+        <td><span class="est" style="background:${e.bg};color:${e.fg}">${e.lbl}</span></td>
+        <td class="nota">${_pdfEsc(f.nota)}</td>
+      </tr>`;
+    }).join('');
+    return `<div class="sec">
+      <div class="sec-h"><span class="sec-n">${_pdfEsc(sec)}</span><span class="sec-c">${alumnos.length} alumno${alumnos.length!==1?'s':''}</span></div>
+      <table>
+        <thead><tr><th style="width:12%">ID</th><th style="width:38%">Alumno</th><th style="width:20%">Situación ${sig}</th><th style="width:30%">Nota</th></tr></thead>
+        <tbody>${filasHtml}</tbody>
+      </table>
+    </div>`;
+  }).join('');
+
+  const hoy=new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'long',year:'numeric'});
+  const html=`<!doctype html><html lang="es"><head><meta charset="utf-8">
+<title>Re-matrícula ${sig} — ${titulo}</title>
+<style>
+  @page { size:A4; margin:14mm 12mm; }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Helvetica Neue',Arial,sans-serif;color:#252520;font-size:10.5px}
+  .cab{display:flex;align-items:center;gap:14px;border-bottom:2.5px solid #E8621A;padding-bottom:12px;margin-bottom:4px}
+  .cab img{width:52px;height:auto;display:block}
+  .cab .t1{font:700 17px Georgia,serif;color:#2C4A5E;line-height:1.2}
+  .cab .t2{font-size:11px;color:#95958E;letter-spacing:.09em;text-transform:uppercase;margin-top:2px}
+  .cab .der{margin-left:auto;text-align:right}
+  .cab .der .doc{font:700 13px Georgia,serif;color:#2C4A5E}
+  .cab .der .fec{font-size:10px;color:#95958E;margin-top:2px}
+  .resumen{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 14px}
+  .chip{font-size:10px;background:#F8F6F0;border:1px solid #E3DED3;border-radius:20px;padding:4px 11px;display:flex;align-items:center;gap:5px}
+  .dot{width:7px;height:7px;border-radius:50%;display:inline-block}
+  .sec{margin-bottom:13px;page-break-inside:avoid}
+  .sec-h{display:flex;align-items:baseline;gap:8px;background:#2C4A5E;color:#fff;padding:6px 11px;border-radius:5px 5px 0 0}
+  .sec-n{font-weight:700;font-size:11.5px}
+  .sec-c{font-size:9.5px;opacity:.75;margin-left:auto}
+  table{width:100%;border-collapse:collapse}
+  thead th{background:#F8F6F0;font-size:9px;text-transform:uppercase;letter-spacing:.05em;color:#5A5A54;
+           text-align:left;padding:5px 9px;border-bottom:1px solid #E3DED3;font-weight:600}
+  tbody td{padding:5px 9px;border-bottom:1px solid #EFEBE3;vertical-align:top}
+  tbody tr.alt{background:#FCFBF8}
+  .id{font-family:'Courier New',monospace;font-size:9.5px;color:#5A5A54}
+  .nom{font-weight:600}
+  .nota{color:#5A5A54;font-size:9.5px}
+  .est{display:inline-block;padding:2px 8px;border-radius:10px;font-size:9px;font-weight:600;white-space:nowrap}
+  .pie{margin-top:16px;padding-top:9px;border-top:1px solid #E3DED3;font-size:9px;color:#95958E;
+       display:flex;justify-content:space-between}
+</style></head><body>
+  <div class="cab">
+    <img src="${MAIL_LOGO}" alt="">
+    <div>
+      <div class="t1">Austin Eco Bilingual School</div>
+      <div class="t2">Re-matriculación ${sig}</div>
+    </div>
+    <div class="der">
+      <div class="doc">${titulo}</div>
+      <div class="fec">${filas.length} alumnos · ${hoy}</div>
+    </div>
+  </div>
+  <div class="resumen">${resumen}</div>
+  ${secciones}
+  <div class="pie">
+    <span>Austin Eco Bilingual School — Admisiones</span>
+    <span>Generado el ${hoy}</span>
+  </div>
+<script>window.onload=function(){setTimeout(function(){window.print();},350);};<\/script>
+</body></html>`;
+
+  const w=window.open('','_blank');
+  if(!w){ toast('El navegador bloqueó la ventana emergente','err'); return; }
+  w.document.write(html); w.document.close();
+}
+
+function _pdfEsc(v){
+  return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
 function pasarAlAnoSiguienteModal(){
   const ciclo=_ocCiclo, sig=ciclo+1;
   const padronAct=(DB.padron||[]).filter(a=>a.ciclo===ciclo&&a.estado==='activo');
@@ -5107,6 +5480,103 @@ function ejecutarMoverSeccion(alumnoId){
   toast(`${a.nombre} → ${nuevaCurso}`,'ok');
 }
 
+// Altas del pipeline que entran al padrón de un ciclo: los marcados como
+// "Nuevo alumno" para ese año. Antes sólo se tomaban los de Inicial (curso que
+// empieza con K), así que un ingresante de Primaria o Secundaria quedaba afuera.
+function altasPipelineParaCiclo(ciclo){
+  return DB.postulantes.filter(function(p){
+    const relevante = (p.estado==='nuevo'||p.estado==='matriculado') && p.anio===ciclo;
+    const yaEsta = (DB.padron||[]).some(function(a){
+      return a.admisionId===String(p.id) && a.ciclo===ciclo;
+    });
+    return relevante && !yaEsta;
+  });
+}
+
+// Resumen de lo que va a pasar en el traspaso. Se usa para el modal y para
+// generar el padrón, así que los números que se muestran son los mismos que se aplican.
+function calcularTraspaso(cicloDestino){
+  const cicloAnt = cicloDestino-1;
+  const activos  = (DB.padron||[]).filter(a=>a.ciclo===cicloAnt && a.estado==='activo');
+  const remat    = DB.reMatricula||{};
+  const est      = a => remat[a.id+'_'+cicloDestino]?.estado || 're_matricula';
+
+  const egresan   = activos.filter(esEgresado);
+  const noEgresan = activos.filter(a=>!esEgresado(a));
+  const bajas     = noEgresan.filter(a=>est(a)==='baja');
+  const pendientes= noEgresan.filter(a=>est(a)==='no_sabe'||est(a)==='austin_evalua');
+  const continuan = noEgresan.filter(a=>est(a)!=='baja');
+  const altas     = altasPipelineParaCiclo(cicloDestino);
+  const sinMapeo  = continuan.filter(a=>!Object.prototype.hasOwnProperty.call(SECTION_ADVANCE,a.curso));
+
+  return {
+    cicloAnt, cicloDestino,
+    activos: activos.length,
+    egresan: egresan.length,
+    bajas: bajas.length,
+    pendientes: pendientes.length,
+    continuan: continuan.length,
+    altas: altas.length,
+    sinMapeo: sinMapeo.length,
+    total: continuan.length + altas.length,
+    listaContinuan: continuan,
+    listaAltas: altas
+  };
+}
+
+function abrirTraspasoModal(cicloDestino){
+  const r = calcularTraspaso(cicloDestino);
+  if(!r.activos){ toast(`No hay padrón activo en ${r.cicloAnt}`,'err'); return; }
+
+  const fila = (lbl, val, color, nota) =>
+    `<div style="display:flex;justify-content:space-between;align-items:baseline;padding:9px 0;border-bottom:1px solid var(--bd)">
+       <div><div style="font-size:13px;color:var(--tx)">${lbl}</div>
+       ${nota?`<div style="font-size:11px;color:var(--tx3)">${nota}</div>`:''}</div>
+       <div style="font-size:19px;font-weight:800;color:${color};white-space:nowrap">${val}</div>
+     </div>`;
+
+  document.getElementById('mt').textContent = `Traspaso ${r.cicloAnt} → ${cicloDestino}`;
+  document.getElementById('mb').innerHTML = `
+    ${r.pendientes ? `<div class="warn-box" style="margin-bottom:14px">
+      ⚠️ Hay <strong>${r.pendientes}</strong> alumno${r.pendientes!==1?'s':''} sin definir
+      (familia no sabe o Austin evalúa). Si seguís, <strong>pasan igual</strong> al padrón ${cicloDestino}.
+      Podés cerrar, definirlos y volver.
+    </div>` : ''}
+
+    <div style="background:var(--cr);border-radius:10px;padding:4px 16px 12px;margin-bottom:14px">
+      ${fila(`Activos en ${r.cicloAnt}`, r.activos, 'var(--td)')}
+      ${fila('Re-matriculan', '+'+r.continuan, '#16A34A', 'incluye los pendientes de definir')}
+      ${fila('Altas del pipeline', '+'+r.altas, '#16A34A', 'postulantes en estado "Nuevo alumno"')}
+      ${fila('No continúan', '−'+r.bajas, '#EF4444', 'marcados como baja en re-matrícula')}
+      ${fila('Egresan', '−'+r.egresan, '#7C3AED', 'último año: no se re-matriculan')}
+      <div style="display:flex;justify-content:space-between;align-items:baseline;padding:12px 0 4px">
+        <div style="font-size:14px;font-weight:700;color:var(--td)">Padrón ${cicloDestino}</div>
+        <div style="font-size:28px;font-weight:800;color:var(--or)">${r.total}</div>
+      </div>
+    </div>
+
+    ${r.sinMapeo ? `<div class="warn-box" style="margin-bottom:12px">
+      ${r.sinMapeo} alumno${r.sinMapeo!==1?'s':''} está${r.sinMapeo!==1?'n':''} en una sección sin avance definido:
+      queda${r.sinMapeo!==1?'n':''} en la misma sección. Revisalos después en el Padrón.
+    </div>` : ''}
+
+    <div style="font-size:12px;color:var(--tx3);line-height:1.65">
+      Cada alumno avanza a la sección que le corresponde. Se conservan los descuentos
+      y el ID del colegio. El padrón ${r.cicloAnt} queda intacto: vas a poder
+      seguir consultándolo cambiando el ciclo.
+    </div>`;
+
+  document.getElementById('mf').innerHTML = `
+    <button class="btn btn-out" onclick="closeM()">Cancelar</button>
+    <button class="btn btn-pri" onclick="ejecutarTraspaso(${cicloDestino})">Confirmar traspaso a ${cicloDestino}</button>`;
+  openM();
+}
+
+function ejecutarTraspaso(cicloDestino){
+  closeM();
+  generarPadronDesdeRemat(cicloDestino);
+}
+
 function generarPadronDesdeRemat(cicloNuevo){
   const cicloAnt=cicloNuevo-1;
   const padronAnt=(DB.padron||[]).filter(a=>a.ciclo===cicloAnt&&a.estado==='activo');
@@ -5133,7 +5603,8 @@ function generarPadronDesdeRemat(cicloNuevo){
       id:newId, nombre:a.nombre, nivel:nuevaNivel, curso:nuevaCurso,
       ciclo:cicloNuevo, estado:'activo',
       fechaAlta:today(), fechaBaja:null, motivoBaja:null, notaBaja:'',
-      admisionId:a.admisionId||null
+      admisionId:a.admisionId||null,
+      idColegio:a.idColegio||''
     });
     if((DB.descuentos||{})[a.id]) descCarry[newId]=DB.descuentos[a.id];
   });
@@ -5142,13 +5613,10 @@ function generarPadronDesdeRemat(cicloNuevo){
     DB.descuentos=DB.descuentos||{};
     Object.assign(DB.descuentos,descCarry);
   }
-  // Add new Inicial students from admissions pipeline for cicloNuevo
-  const nuevosPipeline=DB.postulantes.filter(p=>{
-    const esRelevante=(p.estado==='nuevo'||p.estado==='matriculado')&&p.anio===cicloNuevo;
-    const yaEnPadron=(DB.padron||[]).some(a=>a.admisionId===String(p.id)&&a.ciclo===cicloNuevo);
-    const esInicial=(p.curso||'').startsWith('K');
-    return esRelevante&&!yaEnPadron&&esInicial;
-  });
+  // Altas del pipeline: todos los "Nuevo alumno" del ciclo, de cualquier nivel.
+  // Antes se filtraba por curso que empieza con K, así que un ingresante de
+  // Primaria o Secundaria nunca llegaba al padrón.
+  const nuevosPipeline=altasPipelineParaCiclo(cicloNuevo);
   nuevosPipeline.forEach((p,i)=>{
     const seccion=p.seccion||(PIPELINE_TO_SECTIONS[p.curso]||[])[0]||'';
     const nivel=seccion?SCHOOL_NIVEL(seccion):'Inicial';
@@ -5161,6 +5629,8 @@ function generarPadronDesdeRemat(cicloNuevo){
   });
   const egresados=padronAnt.filter(a=>SECTION_ADVANCE[a.curso]===null).length;
   saveDB();
+  // El ciclo nuevo pasa a ser el que se ve por defecto de acá en adelante
+  DB.config=DB.config||{}; DB.config.cicloActivo=cicloNuevo;
   _ocCiclo=cicloNuevo;
   const sel=document.getElementById('oc-ciclo-sel'); if(sel) sel.value=String(cicloNuevo);
   renderOcupacion(); ocTab('padron');

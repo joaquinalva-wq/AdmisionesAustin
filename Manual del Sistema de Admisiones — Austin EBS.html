@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manual del Sistema de Admisiones · Austin EBS</title>
+<style>
+  /* ── Variables ────────────────────────────────────── */
+  :root {
+    --teal:       #1C3F4E;
+    --teal-mid:   #2A5A6E;
+    --teal-light: #D5E8F0;
+    --teal-pale:  #EEF6FA;
+    --green:      #4A8C1C;
+    --green-bg:   #EBF7D4;
+    --green-bdr:  #5C9E2E;
+    --gold:       #F59E0B;
+    --gold-bg:    #FFFBEB;
+    --text:       #1A2B33;
+    --text2:      #4A6070;
+    --border:     #D0E4EC;
+    --bg:         #F4F8FA;
+    --white:      #FFFFFF;
+    --radius:     12px;
+    --shadow:     0 2px 12px rgba(28,63,78,.10);
+  }
+
+  /* ── Reset ───────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    font-size: 15px;
+  }
+
+  /* ── Cover ───────────────────────────────────────── */
+  .cover {
+    background: linear-gradient(155deg, #0F2A36 0%, var(--teal) 45%, #2E6B82 100%);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 60px 32px;
+    position: relative;
+    overflow: hidden;
+  }
+  .cover::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  }
+  .cover-badge {
+    background: rgba(255,255,255,.12);
+    border: 1px solid rgba(255,255,255,.2);
+    border-radius: 100px;
+    color: rgba(255,255,255,.85);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    padding: 6px 18px;
+    margin-bottom: 40px;
+  }
+  .cover-school {
+    color: #7EC8D8;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    margin-bottom: 18px;
+  }
+  .cover h1 {
+    color: #fff;
+    font-size: clamp(32px, 6vw, 58px);
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -.02em;
+    margin-bottom: 18px;
+  }
+  .cover h1 span { color: #7EC8D8; }
+  .cover-sub {
+    color: rgba(255,255,255,.7);
+    font-size: 18px;
+    font-weight: 400;
+    margin-bottom: 56px;
+    font-style: italic;
+  }
+  .cover-divider {
+    width: 60px;
+    height: 3px;
+    background: linear-gradient(90deg, #5AC8DE, #4A9C2C);
+    border-radius: 2px;
+    margin: 0 auto 48px;
+  }
+  .cover-meta {
+    display: flex;
+    gap: 32px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .cover-meta-item {
+    text-align: center;
+  }
+  .cover-meta-item .label {
+    color: rgba(255,255,255,.5);
+    font-size: 11px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .cover-meta-item .value {
+    color: rgba(255,255,255,.9);
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .cover-scroll {
+    position: absolute;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: rgba(255,255,255,.4);
+    font-size: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  .cover-scroll::after {
+    content: '';
+    width: 1px;
+    height: 32px;
+    background: linear-gradient(to bottom, rgba(255,255,255,.3), transparent);
+  }
+
+  /* ── Nav bar ─────────────────────────────────────── */
+  .topnav {
+    background: var(--teal);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,.2);
+  }
+  .topnav-inner {
+    max-width: 960px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding: 0 16px;
+  }
+  .topnav-inner::-webkit-scrollbar { display: none; }
+  .topnav-logo {
+    color: #7EC8D8;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    white-space: nowrap;
+    padding: 14px 20px 14px 0;
+    border-right: 1px solid rgba(255,255,255,.12);
+    margin-right: 4px;
+    flex-shrink: 0;
+  }
+  .topnav a {
+    color: rgba(255,255,255,.65);
+    text-decoration: none;
+    font-size: 12.5px;
+    font-weight: 500;
+    padding: 14px 12px;
+    white-space: nowrap;
+    transition: color .15s;
+    flex-shrink: 0;
+  }
+  .topnav a:hover { color: #fff; }
+
+  /* ── Page layout ─────────────────────────────────── */
+  .page {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 24px 80px;
+  }
+
+  /* ── Section wrapper ─────────────────────────────── */
+  .section {
+    margin-top: 64px;
+    scroll-margin-top: 60px;
+  }
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+  .section-num {
+    background: var(--teal);
+    color: #fff;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .section h2 {
+    color: var(--teal);
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: -.01em;
+  }
+  .section-divider {
+    border: none;
+    border-top: 2px solid var(--teal-light);
+    margin-bottom: 28px;
+  }
+
+  /* ── Sub-headings ────────────────────────────────── */
+  .section h3 {
+    color: var(--teal-mid);
+    font-size: 17px;
+    font-weight: 700;
+    margin: 28px 0 10px;
+  }
+  .section h4 {
+    color: var(--green);
+    font-size: 15px;
+    font-weight: 700;
+    margin: 20px 0 8px;
+  }
+
+  /* ── Body text ───────────────────────────────────── */
+  p { margin-bottom: 12px; color: var(--text); }
+  .lead { font-size: 16px; color: var(--text2); line-height: 1.75; margin-bottom: 20px; }
+
+  /* ── Lists ───────────────────────────────────────── */
+  ul, ol { padding-left: 22px; margin-bottom: 14px; }
+  li { margin-bottom: 6px; color: var(--text); }
+  li strong { color: var(--teal); }
+
+  /* ── Cards grid ──────────────────────────────────── */
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin: 20px 0;
+  }
+  .card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    box-shadow: var(--shadow);
+    transition: box-shadow .2s, transform .2s;
+  }
+  .card:hover { box-shadow: 0 6px 20px rgba(28,63,78,.14); transform: translateY(-2px); }
+  .card-icon { font-size: 28px; margin-bottom: 10px; }
+  .card-title { font-size: 14px; font-weight: 700; color: var(--teal); margin-bottom: 6px; }
+  .card-body { font-size: 13px; color: var(--text2); line-height: 1.6; }
+
+  /* ── Steps ───────────────────────────────────────── */
+  .steps { margin: 20px 0; }
+  .step {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 20px;
+    align-items: flex-start;
+  }
+  .step-num {
+    background: linear-gradient(135deg, var(--teal), var(--teal-mid));
+    color: #fff;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .step-content { flex: 1; }
+  .step-title { font-weight: 700; color: var(--teal); margin-bottom: 4px; }
+  .step-desc { font-size: 14px; color: var(--text2); }
+
+  /* ── Callout boxes ───────────────────────────────── */
+  .callout {
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    margin: 20px 0;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+  .callout-icon { font-size: 20px; flex-shrink: 0; margin-top: 2px; }
+  .callout-body { flex: 1; }
+  .callout-title { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
+  .callout-text { font-size: 14px; line-height: 1.6; }
+  .callout.green {
+    background: var(--green-bg);
+    border-left: 4px solid var(--green-bdr);
+  }
+  .callout.green .callout-title { color: var(--green); }
+  .callout.green .callout-text { color: #2D4A1E; }
+  .callout.teal {
+    background: var(--teal-pale);
+    border-left: 4px solid var(--teal);
+  }
+  .callout.teal .callout-title { color: var(--teal); }
+  .callout.teal .callout-text { color: var(--teal-mid); }
+  .callout.gold {
+    background: var(--gold-bg);
+    border-left: 4px solid var(--gold);
+  }
+  .callout.gold .callout-title { color: #92400E; }
+  .callout.gold .callout-text { color: #78350F; }
+
+  /* ── Tables ──────────────────────────────────────── */
+  .table-wrap { overflow-x: auto; margin: 20px 0; border-radius: var(--radius); box-shadow: var(--shadow); }
+  table { width: 100%; border-collapse: collapse; background: var(--white); font-size: 14px; }
+  thead th {
+    background: var(--teal);
+    color: #fff;
+    font-weight: 600;
+    text-align: left;
+    padding: 12px 16px;
+    font-size: 13px;
+    letter-spacing: .03em;
+  }
+  thead th:first-child { border-radius: var(--radius) 0 0 0; }
+  thead th:last-child { border-radius: 0 var(--radius) 0 0; }
+  tbody tr:nth-child(even) { background: var(--teal-pale); }
+  tbody tr:hover { background: #E0EFF5; }
+  tbody td { padding: 11px 16px; color: var(--text); border-bottom: 1px solid var(--border); vertical-align: top; }
+  tbody td:first-child { font-weight: 600; color: var(--teal); }
+  tbody td.plain { font-weight: 400; color: var(--text); }
+
+  /* ── Status badges ───────────────────────────────── */
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 100px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .badge-teal { background: var(--teal-light); color: var(--teal); }
+  .badge-green { background: var(--green-bg); color: var(--green); }
+  .badge-gray { background: #E5E7EB; color: #4B5563; }
+  .badge-orange { background: #FEF3C7; color: #92400E; }
+  .badge-red { background: #FEE2E2; color: #991B1B; }
+
+  /* ── Credential box ──────────────────────────────── */
+  .creds {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin: 16px 0;
+    box-shadow: var(--shadow);
+    max-width: 480px;
+  }
+  .creds-header {
+    background: var(--teal);
+    color: rgba(255,255,255,.8);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    padding: 10px 16px;
+  }
+  .creds-row {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    gap: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .creds-row:last-child { border-bottom: none; }
+  .creds-label { color: var(--text2); font-size: 13px; width: 80px; flex-shrink: 0; }
+  .creds-value {
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--teal);
+    background: var(--teal-pale);
+    padding: 4px 10px;
+    border-radius: 6px;
+    flex: 1;
+  }
+
+  /* ── View cards (panel sections) ─────────────────── */
+  .views { display: flex; flex-direction: column; gap: 16px; margin: 20px 0; }
+  .view-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  .view-card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    background: linear-gradient(90deg, var(--teal-pale), var(--white));
+    border-bottom: 1px solid var(--border);
+  }
+  .view-card-icon { font-size: 22px; }
+  .view-card-title { font-size: 16px; font-weight: 700; color: var(--teal); }
+  .view-card-body { padding: 16px 20px; }
+  .view-card-body p { font-size: 14px; margin-bottom: 8px; color: var(--text2); }
+  .view-card-body ul { padding-left: 18px; }
+  .view-card-body li { font-size: 14px; color: var(--text2); margin-bottom: 5px; }
+
+  /* ── FAQ ─────────────────────────────────────────── */
+  .faq { display: flex; flex-direction: column; gap: 12px; margin: 20px 0; }
+  .faq-item {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  .faq-q {
+    padding: 16px 20px;
+    font-weight: 700;
+    color: var(--teal);
+    font-size: 15px;
+    cursor: default;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .faq-q::before { content: 'Q'; background: var(--teal); color: #fff; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 4px; flex-shrink: 0; margin-top: 2px; }
+  .faq-a {
+    padding: 0 20px 16px 52px;
+    font-size: 14px;
+    color: var(--text2);
+    line-height: 1.7;
+  }
+
+  /* ── Contact card ────────────────────────────────── */
+  .contact-card {
+    background: linear-gradient(135deg, var(--teal), var(--teal-mid));
+    border-radius: var(--radius);
+    padding: 32px;
+    text-align: center;
+    color: #fff;
+    margin: 20px 0;
+  }
+  .contact-card p { color: rgba(255,255,255,.8); }
+  .contact-card a {
+    color: #7EC8D8;
+    font-weight: 600;
+    text-decoration: none;
+    font-size: 16px;
+  }
+
+  /* ── Footer ──────────────────────────────────────── */
+  footer {
+    background: var(--teal);
+    color: rgba(255,255,255,.5);
+    text-align: center;
+    padding: 24px;
+    font-size: 13px;
+    margin-top: 80px;
+  }
+  footer strong { color: rgba(255,255,255,.8); }
+
+  /* ── Responsive ──────────────────────────────────── */
+  @media (max-width: 640px) {
+    .page { padding: 0 16px 60px; }
+    .cover h1 { font-size: 32px; }
+    .cover-meta { gap: 20px; }
+    table { font-size: 13px; }
+    thead th, tbody td { padding: 10px 12px; }
+  }
+
+  /* ── Print ───────────────────────────────────────── */
+  @media print {
+    .topnav, .cover-scroll { display: none; }
+    .section { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══ COVER ══════════════════════════════════════════════════════ -->
+<div class="cover">
+  <div class="cover-badge">Uso exclusivo · Equipo de Admisiones</div>
+  <div class="cover-school">Austin Eco Bilingual School</div>
+  <h1>Manual del Sistema<br><span>de Admisiones</span></h1>
+  <div class="cover-sub">Guía completa para el equipo</div>
+  <div class="cover-divider"></div>
+  <div class="cover-meta">
+    <div class="cover-meta-item">
+      <div class="label">Versión</div>
+      <div class="value">1.0 · Junio 2026</div>
+    </div>
+    <div class="cover-meta-item">
+      <div class="label">Sistema</div>
+      <div class="value">Admisiones Digital</div>
+    </div>
+    <div class="cover-meta-item">
+      <div class="label">Acceso</div>
+      <div class="value">Online · Cualquier PC</div>
+    </div>
+  </div>
+  <div class="cover-scroll">Deslizá para leer</div>
+</div>
+
+<!-- ══ NAV ════════════════════════════════════════════════════════ -->
+<nav class="topnav" aria-label="Secciones">
+  <div class="topnav-inner">
+    <div class="topnav-logo">Austin EBS</div>
+    <a href="#s1">Qué es</a>
+    <a href="#s2">Acceso</a>
+    <a href="#s3">Formulario</a>
+    <a href="#s4">Pipeline</a>
+    <a href="#s5">Vistas</a>
+    <a href="#s6">Acciones</a>
+    <a href="#s7">Emails</a>
+    <a href="#s8">Sync</a>
+    <a href="#s9">FAQ</a>
+    <a href="#s10">Soporte</a>
+  </div>
+</nav>
+
+<!-- ══ BODY ═══════════════════════════════════════════════════════ -->
+<div class="page">
+
+  <!-- S1 ─ QUE ES -->
+  <div class="section" id="s1">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <h2>¿Qué es este sistema?</h2>
+    </div>
+    <hr class="section-divider">
+    <p class="lead">El Sistema de Admisiones de Austin EBS es una herramienta digital completa que reemplaza planillas, papeles y correos dispersos. Todo el proceso de admisión — desde el primer contacto de una familia hasta la matriculación — ocurre en un solo lugar.</p>
+
+    <h3>Dos partes que trabajan juntas</h3>
+    <div class="cards">
+      <div class="card">
+        <div class="card-icon">🌐</div>
+        <div class="card-title">Formulario público para familias</div>
+        <div class="card-body">El primer paso que hace cada familia interesada. Es la página que pueden encontrar en la web del colegio o recibir por link. Ahí se postulan, ven tarifas y agendan su entrevista.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🔒</div>
+        <div class="card-title">Panel de administración</div>
+        <div class="card-body">El tablero interno donde ven todos los postulantes, gestionan el proceso, registran resultados de entrevistas y hacen seguimiento de cada caso.</div>
+      </div>
+    </div>
+
+    <h3>Todo en la nube, en tiempo real</h3>
+    <p>Los datos viven en la nube (Google Firestore). Eso significa:</p>
+    <ul>
+      <li>Cualquier computadora con internet puede acceder al sistema — no hay nada que instalar.</li>
+      <li>Si alguien del equipo hace un cambio, todos lo ven en segundos.</li>
+      <li>No se puede "perder" información — todo queda guardado automáticamente.</li>
+    </ul>
+    <div class="callout teal">
+      <div class="callout-icon">☁</div>
+      <div class="callout-body">
+        <div class="callout-title">Sin instalación necesaria</div>
+        <div class="callout-text">El sistema es un sitio web. Solo necesitás el link y el usuario. Funciona en cualquier navegador (Chrome, Firefox, Edge, Safari) desde cualquier computadora.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- S2 ─ ACCESO -->
+  <div class="section" id="s2">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <h2>Cómo acceder al panel de admisiones</h2>
+    </div>
+    <hr class="section-divider">
+    <p class="lead">Para ingresar al panel de gestión, seguí estos pasos:</p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <div class="step-title">Abrí el navegador y entrá al enlace del sistema</div>
+          <div class="step-desc"><a href="https://joaquinalva-wq.github.io/AdmisionesAustin/" style="color:var(--teal);font-weight:600">https://joaquinalva-wq.github.io/AdmisionesAustin/</a></div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <div class="step-title">Hacé clic en "Equipo Austin"</div>
+          <div class="step-desc">Está disponible en la pantalla principal del sitio.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <div class="step-title">Ingresá las credenciales del equipo</div>
+          <div class="step-desc">Usá los datos que aparecen a continuación.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="creds">
+      <div class="creds-header">🔑 Credenciales de acceso</div>
+      <div class="creds-row">
+        <div class="creds-label">Email</div>
+        <div class="creds-value">admisiones@austinebs-ah.edu.ar</div>
+      </div>
+      <div class="creds-row">
+        <div class="creds-label">Contraseña</div>
+        <div class="creds-value">austin2026</div>
+      </div>
+    </div>
+
+    <div class="callout green">
+      <div class="callout-icon">🔄</div>
+      <div class="callout-body">
+        <div class="callout-title">Sincronización automática al ingresar</div>
+        <div class="callout-text">Al hacer login, el sistema se conecta con la nube y trae los datos más recientes. Si otra persona del equipo hizo cambios mientras no estabas, los vas a ver al instante.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- S3 ─ FORMULARIO -->
+  <div class="section" id="s3">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <h2>El formulario de postulación</h2>
+    </div>
+    <hr class="section-divider">
+    <p class="lead">Cuando una familia llega al enlace del colegio, ve una página pública con el formulario de postulación. El proceso está dividido en 5 pasos claros y guiados.</p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <div class="step-title">Tarifas</div>
+          <div class="step-desc">Antes de completar cualquier dato, las familias ven las tarifas del colegio y tienen que confirmar que las leyeron. Esto evita sorpresas más adelante y ahorra tiempo al equipo.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <div class="step-title">Datos del estudiante</div>
+          <div class="step-desc">Nombre y apellido, fecha de nacimiento, DNI, año para el que necesita la vacante, curso o nivel, escuela actual, y si tiene hermanos en el colegio. Se pueden postular varios hermanos juntos en un mismo formulario.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <div class="step-title">Datos del padre/madre/tutor</div>
+          <div class="step-desc">Nombre completo, email y teléfono. El email es clave: a esa dirección llegan todos los mails automáticos del sistema.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-content">
+          <div class="step-title">Agendar la entrevista</div>
+          <div class="step-desc">La familia elige el día y horario para visitar el colegio desde un calendario con los turnos disponibles. Si todavía no pueden comprometerse, pueden hacer clic en <strong>"Aún no sé — agendar más adelante"</strong> y continuar igual.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">5</div>
+        <div class="step-content">
+          <div class="step-title">Confirmación</div>
+          <div class="step-desc">Un resumen de todo lo completado. La familia revisa y hace clic en "Confirmar postulación". En ese momento los datos entran al sistema, se envía el mail automático y (si agendaron) el turno queda bloqueado en Google Calendar.</div>
+        </div>
+      </div>
+    </div>
+
+    <h3>¿Qué pasa después del envío?</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Escenario</th><th>Qué ocurre en el sistema</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>La familia eligió una fecha de entrevista</td>
+            <td class="plain">Entra al sistema como <strong>"Citado a entrevista"</strong>. Recibe mail de confirmación con fecha, hora y lugar. El turno queda reservado en Google Calendar.</td>
+          </tr>
+          <tr>
+            <td>La familia eligió "Aún no sé"</td>
+            <td class="plain">Entra al sistema como <strong>"Contactado"</strong>. Recibe mail de bienvenida con el link al calendario para agendar cuando estén listos.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- S4 ─ PIPELINE -->
+  <div class="section" id="s4">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <h2>El pipeline: el corazón del sistema</h2>
+    </div>
+    <hr class="section-divider">
+    <p class="lead">El pipeline es el tablero principal de admisiones. Funciona como un tablero Kanban: cada familia es una tarjeta, y cada columna representa en qué etapa del proceso se encuentra. Solo con ver el pipeline, el equipo sabe exactamente el estado de cada caso.</p>
+
+    <h3>Los 11 estados del proceso</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Estado</th><th>Qué significa</th><th>Mail automático que se envía</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="badge badge-teal">Contactado</span></td>
+            <td class="plain">La familia completó el formulario pero aún no agendó entrevista.</td>
+            <td class="plain">"Postulación Austin EBS" — bienvenida + link al calendario.</td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-teal">Citado a entrevista</span></td>
+            <td class="plain">Tienen día y hora de entrevista confirmados.</td>
+            <td class="plain">"Tu entrevista está confirmada" — fecha, hora y lugar.</td>
+          </tr>
+          <tr>
+            <td><span class="badge" style="background:#EDE9FE;color:#5B21B6">Entrevistado</span></td>
+            <td class="plain">Ya visitaron el colegio. Se espera la decisión del equipo.</td>
+            <td class="plain">Mail de seguimiento post-entrevista.</td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-orange">Postulado</span></td>
+            <td class="plain">Presentaron la documentación. Expediente en evaluación.</td>
+            <td class="plain">Mail de recepción de postulación.</td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-orange">EOE Inglés</span></td>
+            <td class="plain">En evaluación de nivel de inglés (Evaluación de Orientación Escolar).</td>
+            <td class="plain">Sin mail automático. Gestionado desde la vista EOE.</td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-red">Pendiente DG</span></td>
+            <td class="plain">Pendiente de decisión de la Dirección General. Deadline automático de 48 hs.</td>
+            <td class="plain">Sin mail automático.</td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-green">Matriculado</span></td>
+            <td class="plain">¡Confirmados! La familia pagó la matrícula y el alumno ya es parte del colegio.</td>
+            <td class="plain">"¡Bienvenidos a Austin EBS!" — próximos pasos y documentación.</td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-gray">Lista de espera</span></td>
+            <td class="plain">Interesados pero sin vacante disponible en el curso solicitado.</td>
+            <td class="plain">"Te tenemos en mente" — explica la situación y promete contactar si se abre vacante.</td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-red">Rechazado EOE</span></td>
+            <td class="plain">No aprobó la evaluación de nivel de inglés.</td>
+            <td class="plain">Mail con el resultado de la evaluación.</td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-gray">Desiste</span></td>
+            <td class="plain">La familia decidió no continuar con el proceso.</td>
+            <td class="plain">Sin mail automático.</td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-gray">No incorporado</span></td>
+            <td class="plain">El colegio tomó la decisión de no avanzar con este postulante.</td>
+            <td class="plain">Sin mail automático.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Cómo mover un postulante de estado</h3>
+    <p>Hay dos formas de cambiar el estado de un postulante:</p>
+    <ul>
+      <li><strong>Desde el pipeline:</strong> arrastrar la tarjeta a la nueva columna.</li>
+      <li><strong>Desde el perfil del postulante:</strong> hacer clic en el postulante, buscar el selector de estado y elegir el nuevo.</li>
+    </ul>
+    <div class="callout green">
+      <div class="callout-icon">✉️</div>
+      <div class="callout-body">
+        <div class="callout-title">Los mails son automáticos</div>
+        <div class="callout-text">No necesitás acordarte de mandar ningún correo. Cada vez que cambiás el estado de un postulante, el sistema envía el mail correspondiente de forma automática. Los nombres del alumno y del padre se insertan solos en cada mensaje.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- S5 ─ VISTAS -->
+  <div class="section" id="s5">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <h2>Las vistas del panel</h2>
+    </div>
+    <hr class="section-divider">
+    <p class="lead">El panel de administración tiene un menú lateral con ocho secciones. Cada una cumple una función específica.</p>
+
+    <div class="views">
+      <div class="view-card">
+        <div class="view-card-header">
+          <div class="view-card-icon">📊</div>
+          <div class="view-card-title">Dashboard — Pantalla de inicio</div>
+        </div>
+        <div class="view-card-body">
+          <p>La pantalla que aparece al hacer login. De un vistazo, el equipo ve el estado general del proceso.</p>
+          <ul>
+            <li>Total de postulantes activos y distribución por estado.</li>
+            <li>Cuántos tienen entrevista agendada esta semana.</li>
+            <li>Alertas de postulantes inactivos (sin acción hace más de 7 días).</li>
+            <li>Distribución por nivel (Kindergarten / Elementary / High School) y por ciclo (2026 / 2027).</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="view-card">
+        <div class="view-card-header">
+          <div class="view-card-icon">🗂</div>
+          <div class="view-card-title">Pipeline — Tablero Kanban principal</div>
+        </div>
+        <div class="view-card-body">
+          <p>Cada columna es un estado, cada tarjeta es un postulante. En cada tarjeta se ve el nombre del alumno, nivel, padre/madre y hace cuántos días fue la última acción.</p>
+          <ul>
+            <li>Las tarjetas con más de 7 días sin acción se destacan visualmente como alerta.</li>
+            <li>Hacer clic en una tarjeta abre el perfil completo del postulante.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="view-card">
+        <div class="view-card-header">
+          <div class="view-card-icon">📋</div>
+          <div class="view-card-title">Tabla — Lista filtrable completa</div>
+        </div>
+        <div class="view-card-body">
+          <p>Todos los postulantes en formato tabla, con columnas ordenables y filtros por estado, nivel, ciclo y búsqueda por nombre o email.</p>
+          <ul>
+            <li>Botón <strong>"⬇ Exportar CSV"</strong> para descargar todos los datos en Excel.</li>
+            <li>Botones de acción rápida por fila.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="view-card">
+        <div class="view-card-header">
+          <div class="view-card-icon">📅</div>
+          <div class="view-card-title">Entrevistas — Calendario semanal</div>
+        </div>
+        <div class="view-card-body">
+          <p>Vista semanal de todas las entrevistas programadas. Las entrevistas pasadas sin resultado registrado aparecen marcadas con ⚠.</p>
+          <ul>
+            <li><strong>Registrar resultado:</strong> la familia quiere avanzar, pasa a lista de espera, o desiste.</li>
+            <li><strong>Marcar "No asistió":</strong> el sistema envía automáticamente un mail para reprogramar.</li>
+            <li><strong>Editar fecha/hora:</strong> si la familia llamó para cambiar el turno.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="view-card">
+        <div class="view-card-header">
+          <div class="view-card-icon">📦</div>
+          <div class="view-card-title">Vacantes — Gestión de cupos</div>
+        </div>
+        <div class="view-card-body">
+          <p>Gestión del cupo disponible por curso. Para cada nivel y año se ve: capacidad total, lugares usados y lugares disponibles. Cuando un curso llega al tope, las nuevas postulaciones van automáticamente a lista de espera.</p>
+        </div>
+      </div>
+
+      <div class="view-card">
+        <div class="view-card-header">
+          <div class="view-card-icon">🗑</div>
+          <div class="view-card-title">Bajas — Archivo de salidas</div>
+        </div>
+        <div class="view-card-body">
+          <p>Archivo de postulantes que desistieron o no fueron incorporados. Filtrable por año y nivel.</p>
+          <ul>
+            <li>Ver el historial completo de cada caso.</li>
+            <li>Recontactar a una familia con el botón especial que envía el mail <em>"Seguimos pensando en ustedes"</em>.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="view-card">
+        <div class="view-card-header">
+          <div class="view-card-icon">🧪</div>
+          <div class="view-card-title">EOE — Evaluación de inglés</div>
+        </div>
+        <div class="view-card-body">
+          <p>Seguimiento de los postulantes que necesitan la evaluación de nivel de inglés (Evaluación de Orientación Escolar). El sistema se sincroniza con la plataforma EOE externa para traer los resultados automáticamente.</p>
+        </div>
+      </div>
+
+      <div class="view-card">
+        <div class="view-card-header">
+          <div class="view-card-icon">⚙️</div>
+          <div class="view-card-title">Configuración — Ajustes del sistema</div>
+        </div>
+        <div class="view-card-body">
+          <p>Desde acá se pueden modificar: nombre del colegio, email de admisiones, link de Google Calendar para familias, link de Google Drive, y las plantillas de texto de cada mail automático.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout gold">
+      <div class="callout-icon">⚠️</div>
+      <div class="callout-body">
+        <div class="callout-title">No modificar el campo "Apps Script URL" en Configuración</div>
+        <div class="callout-text">Ese campo ya está configurado y es lo que permite que los mails se envíen solos. Si se modifica o borra, los mails automáticos dejan de funcionar. Solo tocarlo si se actualiza deliberadamente con una nueva URL.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- S6 ─ ACCIONES -->
+  <div class="section" id="s6">
+    <div class="section-header">
+      <div class="section-num">6</div>
+      <h2>Gestión de postulantes — Acciones clave</h2>
+    </div>
+    <hr class="section-divider">
+
+    <h3>Abrir el perfil completo de un postulante</h3>
+    <p>Desde el pipeline o la tabla, haciendo clic en cualquier postulante se abre su perfil completo. Ahí se encuentra:</p>
+    <ul>
+      <li>Todos los datos personales del alumno y la familia.</li>
+      <li>Historial completo: cada cambio de estado, con fecha, hora y si el mail fue enviado.</li>
+      <li>Sección de notas internas (visible solo para el equipo, nunca para la familia).</li>
+      <li>Detalle de la entrevista agendada.</li>
+      <li>Botones de acción directa: cambiar estado, enviar mail, editar datos.</li>
+    </ul>
+
+    <h3>Agregar un postulante manualmente (sin formulario)</h3>
+    <p>Para familias que llamaron por teléfono o visitaron el colegio directamente:</p>
+    <ol>
+      <li>Hacer clic en <strong>"+ Agregar postulante"</strong> (arriba a la derecha del panel).</li>
+      <li>Completar: nombre del alumno, padre/madre, email, teléfono, nivel y año.</li>
+      <li>El sistema lo agrega como "Citado" y envía automáticamente un mail de bienvenida.</li>
+    </ol>
+
+    <h3>Registrar el resultado de una entrevista</h3>
+    <ol>
+      <li>Ir a la vista <strong>Entrevistas</strong>.</li>
+      <li>Encontrar la entrevista (las pasadas sin resultado tienen el ícono ⚠).</li>
+      <li>Hacer clic en <strong>"Registrar resultado"</strong>.</li>
+      <li>Elegir el resultado: <strong>Quiere avanzar</strong> → pasa a Postulado · <strong>Lista de espera</strong> · <strong>Desiste</strong>.</li>
+    </ol>
+    <p>El mail correspondiente se envía automáticamente al confirmar.</p>
+
+    <h3>Si una familia no asistió a la entrevista</h3>
+    <p>En la vista de Entrevistas, hacer clic en <strong>"No asistió"</strong>. El sistema envía automáticamente un mail a la familia con un link para reprogramar. El postulante mantiene el estado "Citado" hasta que confirmen nuevo turno.</p>
+
+    <h3>Agregar notas internas</h3>
+    <p>Desde el perfil de cualquier postulante hay una sección de notas. Se puede escribir cualquier observación del equipo: resultado informal de la visita, comentarios de la entrevista, acuerdos especiales, etc. <strong>Estas notas son solo internas — jamás las ve la familia.</strong></p>
+
+    <h3>Exportar todos los datos</h3>
+    <p>Desde la vista <strong>Tabla</strong>, el botón <strong>"⬇ Exportar CSV"</strong> descarga en segundos un archivo compatible con Excel con todos los postulantes y sus datos actuales. Útil para reportes, reuniones de equipo o backup.</p>
+  </div>
+
+  <!-- S7 ─ EMAILS -->
+  <div class="section" id="s7">
+    <div class="section-header">
+      <div class="section-num">7</div>
+      <h2>Los emails automáticos</h2>
+    </div>
+    <hr class="section-divider">
+    <p class="lead">El sistema envía mails personalizados sin que el equipo tenga que hacer nada. Cada mail usa el nombre del alumno y del padre/madre automáticamente.</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Cuándo se envía</th><th>Asunto del mail</th><th>Qué dice</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Al completar el formulario sin entrevista agendada</td>
+            <td class="plain"><em>Postulación Austin EBS — información y próximos pasos</em></td>
+            <td class="plain">Bienvenida calida + link directo al calendario para agendar cuando estén listos.</td>
+          </tr>
+          <tr>
+            <td>Al completar el formulario con entrevista agendada</td>
+            <td class="plain"><em>Tu entrevista en Austin EBS está confirmada</em></td>
+            <td class="plain">Fecha, hora, dirección (planta alta de High School) y que llegará un recordatorio 24 hs antes.</td>
+          </tr>
+          <tr>
+            <td>Al pasar a Lista de espera</td>
+            <td class="plain"><em>Te tenemos en mente — Austin EBS</em></td>
+            <td class="plain">Explica que no hay vacante disponible ahora y que los contactarán si se abre un lugar.</td>
+          </tr>
+          <tr>
+            <td>Al matricularse</td>
+            <td class="plain"><em>¡Bienvenidos a Austin EBS!</em></td>
+            <td class="plain">Celebración de la bienvenida + próximos pasos e información sobre documentación.</td>
+          </tr>
+          <tr>
+            <td>Si no asistió a la entrevista</td>
+            <td class="plain"><em>¡Que lástima! Podemos reprogramar tu entrevista</em></td>
+            <td class="plain">Mensaje amable ofreciendo reagendar con link al calendario.</td>
+          </tr>
+          <tr>
+            <td>Al pasar a Rechazado EOE</td>
+            <td class="plain"><em>Resultado de evaluación de inglés</em></td>
+            <td class="plain">Comunica el resultado de la evaluación de nivel de inglés.</td>
+          </tr>
+          <tr>
+            <td>Al recontactar una baja</td>
+            <td class="plain"><em>Austin EBS — Seguimos pensando en ustedes</em></td>
+            <td class="plain">Mail para volver a conectar con familias que habían desistido.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout green">
+      <div class="callout-icon">✏️</div>
+      <div class="callout-body">
+        <div class="callout-title">Personalizar los textos</div>
+        <div class="callout-text">Todos los textos de estos mails se pueden editar desde <strong>Configuración → Plantillas de email</strong>. Los marcadores <code style="background:rgba(0,0,0,.06);padding:2px 5px;border-radius:4px">{{alumno}}</code> y <code style="background:rgba(0,0,0,.06);padding:2px 5px;border-radius:4px">{{padre}}</code> se reemplazan automáticamente con los nombres reales de cada familia.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- S8 ─ SYNC -->
+  <div class="section" id="s8">
+    <div class="section-header">
+      <div class="section-num">8</div>
+      <h2>Sincronización y acceso desde cualquier PC</h2>
+    </div>
+    <hr class="section-divider">
+    <p class="lead">El sistema no guarda nada en la computadora. Todos los datos viven en la nube (Google Firestore), la misma infraestructura que usan aplicaciones como Google Docs o Slack.</p>
+
+    <div class="cards">
+      <div class="card">
+        <div class="card-icon">💻</div>
+        <div class="card-title">Múltiples dispositivos</div>
+        <div class="card-body">El equipo puede trabajar desde cualquier computadora con internet. No hay nada que instalar ni configurar.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">⚡</div>
+        <div class="card-title">Cambios en tiempo real</div>
+        <div class="card-body">Dos personas del equipo pueden trabajar al mismo tiempo. Los cambios se suben a la nube en menos de 2 segundos.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🔒</div>
+        <div class="card-title">Sin pérdida de datos</div>
+        <div class="card-body">Aunque se cierre el navegador o se vaya la luz, todo queda guardado. Los datos están respaldados en Google.</div>
+      </div>
+    </div>
+
+    <h3>El indicador de sincronización</h3>
+    <p>En la esquina superior derecha del panel aparece un indicador que muestra el estado de la conexión con la nube:</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Indicador</th><th>Qué significa</th><th>Qué hacer</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>☁ Sincronizado</td>
+            <td class="plain">Todo guardado en la nube.</td>
+            <td class="plain">Nada — todo bien.</td>
+          </tr>
+          <tr>
+            <td>⏳ Guardando...</td>
+            <td class="plain">Se están subiendo cambios recientes.</td>
+            <td class="plain">Esperar unos segundos.</td>
+          </tr>
+          <tr>
+            <td>⚠ Sin conexión</td>
+            <td class="plain">No hay internet en este momento. Los cambios se guardan localmente.</td>
+            <td class="plain">Verificar la conexión. Al volver internet, se sube automático.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- S9 ─ FAQ -->
+  <div class="section" id="s9">
+    <div class="section-header">
+      <div class="section-num">9</div>
+      <h2>Preguntas frecuentes</h2>
+    </div>
+    <hr class="section-divider">
+
+    <div class="faq">
+      <div class="faq-item">
+        <div class="faq-q">¿Qué pasa si dos personas del equipo abren el sistema al mismo tiempo?</div>
+        <div class="faq-a">No hay ningún problema. El sistema puede tener múltiples usuarios activos simultáneamente. Si dos personas hacen un cambio a la vez, el sistema toma siempre la versión más reciente. Al volver a hacer login, siempre se bajan los datos más actualizados.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">¿Cómo sé si un mail se envió correctamente?</div>
+        <div class="faq-a">En el historial de cada postulante (dentro de su perfil) aparece cada cambio de estado. Cuando el mail fue enviado correctamente, se muestra una confirmación junto al cambio. Si por algún motivo no se envió, el historial lo indica y se puede reenviar manualmente desde el perfil.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">¿Se puede recuperar un postulante que pasó a "Desiste"?</div>
+        <div class="faq-a">Sí. Desde la vista "Bajas" se puede encontrar al postulante, ver su historial completo y cambiar su estado manualmente para retomar el proceso. También hay un botón de recontacto que envía el mail especial de "Seguimos pensando en ustedes".</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">¿Qué significa el número de días en cada tarjeta del pipeline?</div>
+        <div class="faq-a">Indica cuántos días pasaron desde la última acción registrada sobre ese postulante (cambio de estado, envío de mail, nota agregada). Si supera los 7 días, la tarjeta se destaca visualmente. Es una alerta para que ninguna familia quede sin seguimiento por olvido.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">¿Se pueden agregar notas internas sobre un postulante?</div>
+        <div class="faq-a">Sí. Desde el perfil de cualquier postulante hay una sección de notas internas. Son solo para el equipo de admisiones — las familias jamás las ven. Se pueden escribir observaciones de la entrevista, comentarios relevantes, acuerdos especiales, etc.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">¿Qué pasa cuando se llena el cupo de un curso?</div>
+        <div class="faq-a">El sistema controla las vacantes disponibles por nivel. Cuando un curso llega al tope, los nuevos postulantes para ese curso son dirigidos automáticamente a lista de espera. El equipo puede ajustar los cupos desde la vista "Vacantes".</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">¿Se puede usar el sistema desde el celular?</div>
+        <div class="faq-a">Sí, el sitio funciona desde cualquier navegador móvil. Sin embargo, el panel de administración está optimizado para uso en computadora. Desde el celular se puede consultar y hacer cambios, pero la experiencia es mejor en pantalla grande.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- S10 ─ SOPORTE -->
+  <div class="section" id="s10">
+    <div class="section-header">
+      <div class="section-num">10</div>
+      <h2>Soporte técnico</h2>
+    </div>
+    <hr class="section-divider">
+    <p>Para cualquier consulta técnica, problema con el sistema o solicitud de cambio en las configuraciones:</p>
+    <div class="contact-card">
+      <div style="font-size:40px;margin-bottom:12px">👨‍💻</div>
+      <div style="font-size:18px;font-weight:700;margin-bottom:6px">Joaquín Alva</div>
+      <p>Responsable técnico del sistema</p>
+      <a href="mailto:joaquin.alva@austinebs-ah.edu.ar">joaquin.alva@austinebs-ah.edu.ar</a>
+    </div>
+    <div class="callout teal">
+      <div class="callout-icon">📌</div>
+      <div class="callout-body">
+        <div class="callout-title">Guardá este manual</div>
+        <div class="callout-text">Este documento es la referencia del equipo de admisiones. Ante cualquier duda sobre cómo funciona el sistema, la respuesta probablemente está en alguna de estas secciones.</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<footer>
+  <strong>Austin Eco Bilingual School</strong> · Sistema de Admisiones · Junio 2026<br>
+  Uso exclusivo del equipo de Admisiones · Confidencial
+</footer>
+
+</body>
+</html>
