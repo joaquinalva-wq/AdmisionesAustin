@@ -816,7 +816,11 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
         <div class="fsuccess-ic">🎉</div>
         <div class="fsuccess-h">¡Todo listo!</div>
         <p class="fsuccess-p" id="fsuccess-p-main"></p>
-        <p class="fsuccess-p" style="font-size:12px;color:var(--tx3);margin-top:8px">Si no ves el mail, revisá la carpeta de <strong>spam</strong> o correo no deseado.</p>
+        <p class="fsuccess-p" style="margin-top:10px">Gracias por confiar en nosotros para este paso. Te vamos a escribir por mail con los próximos pasos.</p>
+        <div style="background:#FFFBEB;border:1.5px solid #FCD34D;border-radius:12px;padding:13px 16px;margin-top:14px;text-align:left">
+          <div style="font-size:13px;font-weight:700;color:#92400E;margin-bottom:4px">Revisá tu carpeta de spam</div>
+          <div style="font-size:12.5px;color:#78350F;line-height:1.65">A veces los correos de colegios terminan ahí por error. Si encontrás el nuestro en <strong>spam</strong> o <strong>correo no deseado</strong>, marcalo como <strong>&laquo;No es spam&raquo;</strong> y agregá <strong>admisiones@austinebs-ah.edu.ar</strong> a tus contactos. Así no te perdés ninguna novedad del proceso.</div>
+        </div>
         <div id="fsuccess-ent" style="background:linear-gradient(135deg,#EBF7D4,#D4F0A8);border-radius:12px;padding:13px 16px;margin:18px auto 0;max-width:360px;text-align:left;font-size:13px">
           <div style="font-weight:600;color:#3A6A0A;margin-bottom:3px">📅 Tu entrevista</div>
           <div style="color:var(--td);font-weight:600" id="fsuccess-ent-txt"></div>
@@ -5033,6 +5037,18 @@ function matriculaDeSeccion(curso){
   return 0;
 }
 
+// Permite elegir un archivo en vez de pegar. Se vuelca en el mismo textarea,
+// así el análisis y la vista previa son exactamente los mismos.
+function cargarArchivoIds(input){
+  const f = input && input.files && input.files[0]; if(!f) return;
+  const lector = new FileReader();
+  lector.onload = function(){
+    const ta = document.getElementById("ids-txt");
+    if(ta){ ta.value = String(lector.result||"").replace(/;|,(?=\s*[A-ZÁÉÍÓÚÑ])/g, "	"); previsualizarIds(); }
+  };
+  lector.readAsText(f, "utf-8");
+}
+
 function importarIdsModal(){
   document.getElementById('mt').textContent='Importar IDs del colegio';
   document.getElementById('mb').innerHTML=`
@@ -5042,7 +5058,13 @@ function importarIdsModal(){
       y <code style="background:var(--bd);padding:1px 5px;border-radius:3px">Nombre Completo</code> (Ctrl+C) y pegalas acá.<br>
       Se busca cada alumno por nombre en el padrón ${_ocCiclo} y se le asigna el ID.
     </div>
-    <div class="fg"><label class="flabel">Pegá acá (ID · tab · Nombre)</label>
+    <div class="fg">
+      <label class="flabel">Opción rápida: subir el archivo</label>
+      <input type="file" id="ids-file" accept=".txt,.tsv,.csv" onchange="cargarArchivoIds(this)"
+             style="font-size:12.5px;padding:6px 0">
+      <small style="color:var(--tx3);font-size:11px">Un alumno por línea: ID, tabulación, nombre.</small>
+    </div>
+    <div class="fg"><label class="flabel">O pegá acá (ID · tab · Nombre)</label>
       <textarea class="fi" id="ids-txt" rows="9" placeholder="1619838&#9;ALVAREZ FAUSTINO, Maitén&#10;1619841&#9;BARRENA GUZMAN, Mia" style="resize:vertical;font-family:monospace;font-size:12px"></textarea>
     </div>
     <div id="ids-preview" style="margin-top:10px;font-size:12.5px"></div>`;
