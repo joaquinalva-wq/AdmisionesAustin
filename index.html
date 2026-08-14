@@ -5076,6 +5076,65 @@ function importarIdsModal(){
 }
 
 // Analiza lo pegado contra el padrón del ciclo actual.
+// Separa "APELLIDOS, Nombres" en sus dos partes, ya normalizadas.
+function _partirNombre(s){
+  const t = String(s||'');
+  const i = t.indexOf(',');
+  return i >= 0
+    ? [_normNombre(t.slice(0,i)), _normNombre(t.slice(i+1))]
+    : [_normNombre(t), ''];
+}
+
+// Similitud 0..1 por distancia de edición. Sirve para detectar erratas
+// ("SEMENZATO" vs "SEMEZATO", "Joaquin" vs "Joquin").
+function _similitud(a, b){
+  if(a === b) return 1;
+  if(!a || !b) return 0;
+  const m = a.length, n = b.length;
+  let prev = new Array(n+1), cur = new Array(n+1);
+  for(let j=0;j<=n;j++) prev[j] = j;
+  for(let i=1;i<=m;i++){
+    cur[0] = i;
+    for(let j=1;j<=n;j++){
+      cur[j] = Math.min(prev[j]+1, cur[j-1]+1, prev[j-1] + (a[i-1]===b[j-1] ? 0 : 1));
+    }
+    const t = prev; prev = cur; cur = t;
+  }
+  return 1 - prev[n] / Math.max(m, n);
+}
+
+// Busca al alumno del padrón que corresponde a un nombre del listado del colegio,
+// cuando no hubo coincidencia exacta. Devuelve {alumno, motivo} o null.
+// La planilla del colegio suele traer un solo apellido donde el padrón tiene el
+// compuesto ("COHEN, Ciro" contra "COHEN CORTEZ, Ciro"), así que ese caso se
+// reconoce por separado en vez de confiar sólo en el parecido general.
+function _buscarProbable(nombreArchivo, padron){
+  const [apA, nomA] = _partirNombre(nombreArchivo);
+  if(!apA) return null;
+  let mejor = null;
+
+  for(const a of padron){
+    const [apP, nomP] = _partirNombre(a.nombre);
+    if(!apP) continue;
+
+    // Mismos nombres de pila y un apellido que es prefijo del otro
+    if(nomA && nomA === nomP){
+      const uno = (apP + ' ').indexOf(apA + ' ') === 0;
+      const otro = (apA + ' ').indexOf(apP + ' ') === 0;
+      if(uno || otro){
+        return {alumno:a, motivo:'apellido compuesto', confianza:0.97};
+      }
+    }
+
+    // Parecido general alto: cubre erratas de tipeo
+    const s = _similitud(_normNombre(nombreArchivo), _normNombre(a.nombre));
+    if(s >= 0.88 && (!mejor || s > mejor.confianza)){
+      mejor = {alumno:a, motivo:'nombre casi idéntico', confianza:s};
+    }
+  }
+  return mejor;
+}
+
 function _analizarIds(txt){
   const ciclo=_ocCiclo;
   const padron=(DB.padron||[]).filter(a=>a.ciclo===ciclo);
@@ -5085,7 +5144,7 @@ function _analizarIds(txt){
     (porNombre[k]=porNombre[k]||[]).push(a);
   });
 
-  const asignar=[], sinPadron=[], ambiguos=[];
+  const asignar=[], sinPadron=[], ambiguos=[], probables=[];
   const vistos={};
   String(txt||'').split('\n').forEach(function(linea){
     const t=linea.trim(); if(!t) return;
@@ -5103,14 +5162,17 @@ function _analizarIds(txt){
     if(vistos[k]) return;
     vistos[k]=true;
     const cand=porNombre[k];
-    if(!cand)            sinPadron.push({id,nombre});
-    else if(cand.length>1) ambiguos.push({id,nombre,n:cand.length});
-    else                 asignar.push({id,nombre,alumno:cand[0]});
+    if(cand && cand.length===1){ asignar.push({id,nombre,alumno:cand[0]}); return; }
+    if(cand && cand.length>1){ ambiguos.push({id,nombre,n:cand.length}); return; }
+    // Sin coincidencia exacta: se busca una probable para que la revise el usuario
+    const pr=_buscarProbable(nombre, padron);
+    if(pr && !pr.alumno.idColegio) probables.push({id,nombre,alumno:pr.alumno,motivo:pr.motivo});
+    else sinPadron.push({id,nombre});
   });
 
   const conId=asignar.filter(x=>x.alumno.idColegio&&x.alumno.idColegio!==x.id).length;
   const sinId=padron.filter(a=>!a.idColegio).length;
-  return {asignar, sinPadron, ambiguos, pisa:conId, padronSinId:sinId, totalPadron:padron.length};
+  return {asignar, probables, sinPadron, ambiguos, pisa:conId, padronSinId:sinId, totalPadron:padron.length};
 }
 
 function previsualizarIds(){
@@ -5120,35 +5182,69 @@ function previsualizarIds(){
   if(!prev) return;
   if(!txt.trim()){ prev.innerHTML=''; if(btn) btn.disabled=true; return; }
   const r=_analizarIds(txt);
-  if(btn) btn.disabled = r.asignar.length===0;
+  _idsProbables = r.probables;
+  if(btn) btn.disabled = (r.asignar.length===0 && r.probables.length===0);
 
   const linea=(color,txt2)=>`<div style="display:flex;align-items:center;gap:7px;padding:3px 0">
     <span style="width:8px;height:8px;border-radius:50%;background:${color};flex:none"></span>${txt2}</div>`;
 
+  const probHtml = r.probables.length ? `
+    <div style="margin-top:12px;border:1px solid #FCD34D;background:#FFFBEB;border-radius:8px;padding:11px 13px">
+      <div style="font-size:12.5px;font-weight:700;color:#92400E;margin-bottom:3px">
+        ${r.probables.length} coincidencia${r.probables.length!==1?'s':''} probable${r.probables.length!==1?'s':''} — revisá antes de aplicar
+      </div>
+      <div style="font-size:11.5px;color:#78350F;margin-bottom:9px">
+        El nombre no es idéntico pero parece la misma persona. Destildá el que no corresponda.
+      </div>
+      <div style="max-height:190px;overflow:auto">
+        ${r.probables.map((x,i)=>`
+          <label style="display:flex;gap:8px;align-items:flex-start;padding:5px 0;border-top:1px solid #FDE68A;cursor:pointer">
+            <input type="checkbox" data-prob="${i}" checked style="margin-top:3px;flex:none">
+            <span style="font-size:11.5px;line-height:1.5">
+              <strong>${esc(x.nombre)}</strong> <span style="opacity:.65">(${esc(x.id)})</span><br>
+              <span style="color:#78350F">padrón: ${esc(x.alumno.nombre)} · ${esc(x.alumno.curso||'')}</span>
+              <span style="opacity:.6"> — ${esc(x.motivo)}</span>
+            </span>
+          </label>`).join('')}
+      </div>
+    </div>` : '';
+
   prev.innerHTML=
-    linea('#16A34A', `<strong>${r.asignar.length}</strong> alumnos van a recibir su ID`) +
-    (r.pisa ? linea('#D97706', `${r.pisa} ya tenían un ID distinto y se va a reemplazar`) : '') +
-    (r.sinPadron.length ? linea('#EF4444', `<strong>${r.sinPadron.length}</strong> no están en el padrón ${_ocCiclo} y se omiten`) : '') +
-    (r.ambiguos.length ? linea('#EF4444', `${r.ambiguos.length} con nombre repetido en el padrón: hay que cargarlos a mano`) : '') +
+    linea('#16A34A', `<strong>${r.asignar.length}</strong> con coincidencia exacta`) +
+    (r.probables.length ? linea('#D97706', `<strong>${r.probables.length}</strong> probables (abajo)`) : '') +
+    (r.pisa ? linea('#D97706', `${r.pisa} ya tenían otro ID y se reemplaza`) : '') +
+    (r.sinPadron.length ? linea('#EF4444', `<strong>${r.sinPadron.length}</strong> sin coincidencia`) : '') +
+    (r.ambiguos.length ? linea('#EF4444', `${r.ambiguos.length} con nombre repetido en el padrón`) : '') +
     `<div style="margin-top:8px;color:var(--tx3);font-size:11.5px">
        Padrón ${_ocCiclo}: ${r.totalPadron} alumnos, ${r.padronSinId} sin ID.
      </div>` +
-    (r.sinPadron.length ? `<details style="margin-top:8px">
-       <summary style="cursor:pointer;font-size:12px;color:var(--tx3)">Ver los que no se encontraron</summary>
+    probHtml +
+    (r.sinPadron.length ? `<details style="margin-top:10px">
+       <summary style="cursor:pointer;font-size:12px;color:var(--tx3)">Ver los ${r.sinPadron.length} sin coincidencia</summary>
        <div style="max-height:130px;overflow:auto;font-size:11.5px;color:var(--tx3);margin-top:6px;line-height:1.7">
          ${r.sinPadron.map(x=>esc(x.nombre)+' <span style="opacity:.6">('+esc(x.id)+')</span>').join('<br>')}
        </div></details>` : '');
 }
 
+let _idsProbables = [];
+
 function ejecutarImportIds(){
   const txt=document.getElementById('ids-txt')?.value||'';
   const r=_analizarIds(txt);
-  if(!r.asignar.length){ toast('No hay IDs para asignar','err'); return; }
-  r.asignar.forEach(function(x){ x.alumno.idColegio = x.id; });
+  let n=0;
+  r.asignar.forEach(function(x){ x.alumno.idColegio = x.id; n++; });
+  // Sólo las probables que quedaron tildadas
+  document.querySelectorAll('#ids-preview input[data-prob]').forEach(function(cb){
+    if(!cb.checked) return;
+    const x=_idsProbables[Number(cb.getAttribute('data-prob'))];
+    if(x){ x.alumno.idColegio = x.id; n++; }
+  });
+  if(!n){ toast('No hay IDs para asignar','err'); return; }
   saveDB(); closeM();
   filtrarPadron();
-  toast(`✓ ${r.asignar.length} IDs asignados`+(r.sinPadron.length?` · ${r.sinPadron.length} sin coincidencia`:''),'ok');
+  toast(`✓ ${n} IDs asignados`+(r.sinPadron.length?` · ${r.sinPadron.length} sin coincidencia`:''),'ok');
 }
+
 
 // Excel para facturación: la matrícula se cobra en 3 cuotas iguales.
 // El valor se lee de Tarifas al exportar, así que siempre sale actualizado.
