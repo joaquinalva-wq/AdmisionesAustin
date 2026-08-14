@@ -4563,6 +4563,7 @@ function renderPadron(){
     <span style="font-size:12px;color:var(--tx3)">${activos} activos · ${bajas} bajas</span>
     <button class="btn btn-sm btn-out" onclick="abrirModalAgregarAlumno()">+ Agregar</button>
     <button class="btn btn-sm btn-out" onclick="exportarPadronExcel()">Excel</button>
+    <button class="btn btn-sm btn-out" onclick="importarIdsModal()">IDs del colegio</button>
     <button class="btn btn-sm" style="background:#7C3AED;color:#fff;border:none" onclick="importarPadronModal()">⬆ Importar</button>
     ${usePadron?`<button class="btn btn-sm" style="background:#2C4A5E;color:#fff;border:none" onclick="pasarAlAnoSiguienteModal()" title="Generar padrón ${sigCiclo} avanzando secciones">→ Pasar a ${sigCiclo}</button>`:''}
   </div>
@@ -4996,6 +4997,172 @@ function descargarExcel(nombreArchivo, nombreHoja, columnas, filas){
   setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 1000);
 }
 
+// ═══════════════════════════
+// IDs DEL COLEGIO Y FACTURACIÓN
+// ═══════════════════════════
+
+// Compara nombres sin depender de tildes, mayúsculas ni puntuación.
+// El listado del colegio y el padrón usan el mismo formato "APELLIDO, Nombre",
+// pero difieren en acentos y comas, así que se normaliza todo a lo mismo.
+function _normNombre(s){
+  return String(s||'')
+    .normalize('NFD').replace(/[̀-ͯ]/g,'')
+    .replace(/[^A-Za-z ]/g,' ')
+    .toUpperCase().split(/\s+/).filter(Boolean).join(' ');
+}
+
+// Matrícula que corresponde a cada sección, tomada de Tarifas en el momento.
+// Se lee siempre al exportar, así que si se actualiza el valor, el Excel sale
+// con el nuevo sin tener que tocar nada más.
+function matriculaDeSeccion(curso){
+  const t = DB.tarifas || {};
+  const c = String(curso||'');
+  if(c.indexOf('S2')===0) return parsePesos(t.k2_m);
+  if(c.indexOf('S3')===0) return parsePesos(t.k3_m);
+  if(c.indexOf('S4')===0 || c.indexOf('S5')===0) return parsePesos(t.k45_m);
+  if(c.indexOf('Prim')!==-1) return parsePesos(t.el_m);
+  if(c.indexOf('Sec')!==-1){
+    const n = parseInt(c,10);
+    return parsePesos((n>=1 && n<=3) ? t.hs13_m : t.hs46_m);
+  }
+  return 0;
+}
+
+function importarIdsModal(){
+  document.getElementById('mt').textContent='Importar IDs del colegio';
+  document.getElementById('mb').innerHTML=`
+    <div style="background:var(--cr);border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:13px;color:var(--tx3)">
+      <strong style="color:var(--td)">Cómo importar:</strong><br>
+      En la planilla del colegio, copiá las dos columnas <code style="background:var(--bd);padding:1px 5px;border-radius:3px">Usuario ID</code>
+      y <code style="background:var(--bd);padding:1px 5px;border-radius:3px">Nombre Completo</code> (Ctrl+C) y pegalas acá.<br>
+      Se busca cada alumno por nombre en el padrón ${_ocCiclo} y se le asigna el ID.
+    </div>
+    <div class="fg"><label class="flabel">Pegá acá (ID · tab · Nombre)</label>
+      <textarea class="fi" id="ids-txt" rows="9" placeholder="1619838&#9;ALVAREZ FAUSTINO, Maitén&#10;1619841&#9;BARRENA GUZMAN, Mia" style="resize:vertical;font-family:monospace;font-size:12px"></textarea>
+    </div>
+    <div id="ids-preview" style="margin-top:10px;font-size:12.5px"></div>`;
+  document.getElementById('mb').querySelector('#ids-txt').addEventListener('input', previsualizarIds);
+  document.getElementById('mf').innerHTML=`
+    <button class="btn btn-out" onclick="closeM()">Cancelar</button>
+    <button class="btn btn-pri" id="ids-btn" onclick="ejecutarImportIds()" disabled>Asignar IDs</button>`;
+  openM();
+}
+
+// Analiza lo pegado contra el padrón del ciclo actual.
+function _analizarIds(txt){
+  const ciclo=_ocCiclo;
+  const padron=(DB.padron||[]).filter(a=>a.ciclo===ciclo);
+  const porNombre={};
+  padron.forEach(function(a){
+    const k=_normNombre(a.nombre);
+    (porNombre[k]=porNombre[k]||[]).push(a);
+  });
+
+  const asignar=[], sinPadron=[], ambiguos=[];
+  const vistos={};
+  String(txt||'').split('\n').forEach(function(linea){
+    const t=linea.trim(); if(!t) return;
+    const cols=t.split('\t').length>1 ? t.split('\t') : t.split(/\s{2,}|;|,(?=\s*\d)/);
+    let id='', nombre='';
+    // El ID puede venir primero o segundo; se toma el que sea numérico
+    const c0=(cols[0]||'').trim(), c1=(cols.slice(1).join(' ')||'').trim();
+    if(/^\d+$/.test(c0.replace(/\./g,''))){ id=c0.replace(/\./g,''); nombre=c1; }
+    else if(/^\d+$/.test(c1.replace(/\./g,''))){ id=c1.replace(/\./g,''); nombre=c0; }
+    else return;
+    if(!id||!nombre) return;
+    if(/usuario|nombre completo/i.test(nombre)) return; // encabezado
+
+    const k=_normNombre(nombre);
+    if(vistos[k]) return;
+    vistos[k]=true;
+    const cand=porNombre[k];
+    if(!cand)            sinPadron.push({id,nombre});
+    else if(cand.length>1) ambiguos.push({id,nombre,n:cand.length});
+    else                 asignar.push({id,nombre,alumno:cand[0]});
+  });
+
+  const conId=asignar.filter(x=>x.alumno.idColegio&&x.alumno.idColegio!==x.id).length;
+  const sinId=padron.filter(a=>!a.idColegio).length;
+  return {asignar, sinPadron, ambiguos, pisa:conId, padronSinId:sinId, totalPadron:padron.length};
+}
+
+function previsualizarIds(){
+  const txt=document.getElementById('ids-txt')?.value||'';
+  const prev=document.getElementById('ids-preview');
+  const btn=document.getElementById('ids-btn');
+  if(!prev) return;
+  if(!txt.trim()){ prev.innerHTML=''; if(btn) btn.disabled=true; return; }
+  const r=_analizarIds(txt);
+  if(btn) btn.disabled = r.asignar.length===0;
+
+  const linea=(color,txt2)=>`<div style="display:flex;align-items:center;gap:7px;padding:3px 0">
+    <span style="width:8px;height:8px;border-radius:50%;background:${color};flex:none"></span>${txt2}</div>`;
+
+  prev.innerHTML=
+    linea('#16A34A', `<strong>${r.asignar.length}</strong> alumnos van a recibir su ID`) +
+    (r.pisa ? linea('#D97706', `${r.pisa} ya tenían un ID distinto y se va a reemplazar`) : '') +
+    (r.sinPadron.length ? linea('#EF4444', `<strong>${r.sinPadron.length}</strong> no están en el padrón ${_ocCiclo} y se omiten`) : '') +
+    (r.ambiguos.length ? linea('#EF4444', `${r.ambiguos.length} con nombre repetido en el padrón: hay que cargarlos a mano`) : '') +
+    `<div style="margin-top:8px;color:var(--tx3);font-size:11.5px">
+       Padrón ${_ocCiclo}: ${r.totalPadron} alumnos, ${r.padronSinId} sin ID.
+     </div>` +
+    (r.sinPadron.length ? `<details style="margin-top:8px">
+       <summary style="cursor:pointer;font-size:12px;color:var(--tx3)">Ver los que no se encontraron</summary>
+       <div style="max-height:130px;overflow:auto;font-size:11.5px;color:var(--tx3);margin-top:6px;line-height:1.7">
+         ${r.sinPadron.map(x=>esc(x.nombre)+' <span style="opacity:.6">('+esc(x.id)+')</span>').join('<br>')}
+       </div></details>` : '');
+}
+
+function ejecutarImportIds(){
+  const txt=document.getElementById('ids-txt')?.value||'';
+  const r=_analizarIds(txt);
+  if(!r.asignar.length){ toast('No hay IDs para asignar','err'); return; }
+  r.asignar.forEach(function(x){ x.alumno.idColegio = x.id; });
+  saveDB(); closeM();
+  filtrarPadron();
+  toast(`✓ ${r.asignar.length} IDs asignados`+(r.sinPadron.length?` · ${r.sinPadron.length} sin coincidencia`:''),'ok');
+}
+
+// Excel para facturación: la matrícula se cobra en 3 cuotas iguales.
+// El valor se lee de Tarifas al exportar, así que siempre sale actualizado.
+function exportarFacturacionExcel(){
+  const ciclo=_ocCiclo, sig=ciclo+1;
+  const lista=padronRematriculable(ciclo)
+    .sort((a,b)=>((a.curso||'')+(a.nombre||'')).localeCompare((b.curso||'')+(b.nombre||'')));
+  if(!lista.length){ toast('No hay alumnos para facturar','err'); return; }
+
+  const columnas=[
+    {titulo:'ID', ancho:12},
+    {titulo:'Estudiante', ancho:34},
+    {titulo:'Estado', ancho:18},
+    {titulo:'Cuota 1', ancho:14, tipo:'numero'},
+    {titulo:'Cuota 2', ancho:14, tipo:'numero'},
+    {titulo:'Cuota 3', ancho:14, tipo:'numero'},
+    {titulo:'Total matrícula', ancho:16, tipo:'numero'},
+    {titulo:'Sección', ancho:16}
+  ];
+
+  let sinId=0;
+  const filas=lista.map(function(a){
+    if(!a.idColegio) sinId++;
+    const est=_getRematEst(a.id,sig);
+    const total=matriculaDeSeccion(a.curso);
+    // Se reparte en 3 y la diferencia por redondeo va en la primera cuota,
+    // para que las tres sumen exactamente el total.
+    const base=Math.floor(total/3);
+    const c1=total-base*2, c2=base, c3=base;
+    return [
+      a.idColegio||'', a.nombre||'',
+      (REMAT_ESTADOS[est]||REMAT_ESTADOS.re_matricula).lbl,
+      c1, c2, c3, total, a.curso||''
+    ];
+  });
+
+  descargarExcel(`facturacion_matricula_${sig}_austin.xlsx`, `Matrícula ${sig}`, columnas, filas);
+  toast(`Excel generado — ${filas.length} alumnos`+(sinId?` · ${sinId} sin ID`:''),
+        sinId?'info':'ok');
+}
+
 function _getRematEst(id, siguiente){
   // '' (vacío) = re_matricula por defecto
   return (DB.reMatricula||{})[id+'_'+siguiente]?.estado || 're_matricula';
@@ -5071,6 +5238,7 @@ function renderReMatricula(){
       </select>
       <div style="flex:1"></div>
       <button class="btn btn-sm btn-out" onclick="exportarRematExcel()">Excel — listado completo</button>
+      <button class="btn btn-sm" style="background:#7CB518;color:#fff;border-color:#7CB518" onclick="exportarFacturacionExcel()">Excel — facturación</button>
       <button class="btn btn-sm btn-out" onclick="exportarRematPDF('all')">PDF — lista completa</button>
       <button class="btn btn-sm btn-out" onclick="exportarRematPDF('re_matricula')">PDF — re-matriculan</button>
       <button class="btn btn-sm btn-out" style="color:#EF4444" onclick="exportarRematPDF('baja')">PDF — no continúan</button>
