@@ -4576,12 +4576,108 @@ function renderPadron(){
     <button class="btn btn-sm" style="background:#7C3AED;color:#fff;border:none" onclick="importarPadronModal()">⬆ Importar</button>
     ${usePadron?`<button class="btn btn-sm" style="background:#2C4A5E;color:#fff;border:none" onclick="pasarAlAnoSiguienteModal()" title="Generar padrón ${sigCiclo} avanzando secciones">→ Pasar a ${sigCiclo}</button>`:''}
   </div>
+  ${panelDiagnosticoIds()}
   <div id="padron-tabla"></div>`;
   return html;
 }
 
 // ID interno del colegio para cada alumno. Se escribe a mano en el padrón y
 // se conserva al pasar de año, para poder cruzar con el sistema de facturación.
+// ═══════════════════════════
+// CICLO DE VIDA DEL ID DEL COLEGIO
+// ═══════════════════════════
+// El ID acompaña al alumno toda su escolaridad y no se reutiliza nunca: si un
+// alumno se da de baja, su ID se retira con él. Un ID reutilizado rompería el
+// historial de facturación, porque dos personas distintas compartirían legajo.
+//
+// Para garantizarlo se guarda una marca de agua en DB.config.ultimoIdColegio,
+// que sólo sube. Aunque se borre un registro del padrón, ese número no vuelve
+// a entregarse.
+
+function _numeroDeId(v){
+  const n = parseInt(String(v==null?'':v).replace(/\D/g,''), 10);
+  return isNaN(n) ? 0 : n;
+}
+
+// Todos los IDs entregados alguna vez: padrón completo, activos y bajas.
+function idsColegioEnUso(){
+  const set = new Set();
+  (DB.padron||[]).forEach(function(a){
+    const v = String(a.idColegio||'').trim();
+    if(v) set.add(v);
+  });
+  return set;
+}
+
+// Devuelve el próximo ID libre y sube la marca de agua.
+function proximoIdColegio(){
+  let max = _numeroDeId((DB.config||{}).ultimoIdColegio);
+  (DB.padron||[]).forEach(function(a){
+    const n = _numeroDeId(a.idColegio);
+    if(n > max) max = n;
+  });
+  const enUso = idsColegioEnUso();
+  let cand = max + 1;
+  // Por las dudas, saltear cualquier número que ya figure (IDs con formato raro)
+  while(enUso.has(String(cand))) cand++;
+  DB.config = DB.config || {};
+  DB.config.ultimoIdColegio = cand;
+  return String(cand);
+}
+
+// Estado de salud de los IDs del ciclo que se está viendo.
+function diagnosticoIds(ciclo){
+  const lista = (DB.padron||[]).filter(a=>a.ciclo===ciclo);
+  const activos = lista.filter(a=>a.estado==='activo');
+  const sinId = activos.filter(a=>!String(a.idColegio||'').trim());
+  const cuenta = {};
+  lista.forEach(function(a){
+    const v = String(a.idColegio||'').trim();
+    if(v) cuenta[v] = (cuenta[v]||0) + 1;
+  });
+  const duplicados = Object.keys(cuenta).filter(k=>cuenta[k]>1);
+  return {
+    total: lista.length,
+    activos: activos.length,
+    conId: activos.length - sinId.length,
+    sinId: sinId,
+    duplicados: duplicados.map(function(id){
+      return {id:id, alumnos:lista.filter(a=>String(a.idColegio||'').trim()===id).map(a=>a.nombre)};
+    })
+  };
+}
+
+function panelDiagnosticoIds(){
+  const d = diagnosticoIds(_ocCiclo);
+  if(!d.total) return '';
+  const problemas = d.sinId.length || d.duplicados.length;
+  if(!problemas){
+    return `<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;margin-bottom:10px;
+      background:#DCFCE7;border:1px solid #86EFAC;border-radius:8px;font-size:12.5px;color:#166534">
+      <span>✓</span><span>Los ${d.activos} alumnos activos de ${_ocCiclo} tienen su ID, sin repetidos.</span></div>`;
+  }
+  return `<div style="padding:10px 13px;margin-bottom:10px;background:#FFFBEB;
+    border:1px solid #FCD34D;border-radius:8px;font-size:12.5px;color:#78350F;line-height:1.6">
+    <strong>Revisar IDs de ${_ocCiclo}:</strong>
+    ${d.sinId.length ? `<br>· <strong>${d.sinId.length}</strong> alumno${d.sinId.length!==1?'s':''} activo${d.sinId.length!==1?'s':''} sin ID:
+       ${d.sinId.slice(0,6).map(a=>esc(a.nombre)).join(', ')}${d.sinId.length>6?` y ${d.sinId.length-6} más`:''}` : ''}
+    ${d.duplicados.length ? `<br>· <strong>${d.duplicados.length}</strong> ID${d.duplicados.length!==1?'s':''} repetido${d.duplicados.length!==1?'s':''}:
+       ${d.duplicados.slice(0,4).map(x=>esc(x.id)+' ('+x.alumnos.map(esc).join(' / ')+')').join(', ')}` : ''}
+    ${d.sinId.length ? `<br><button class="btn btn-sm btn-out" style="margin-top:7px" onclick="asignarIdsFaltantes()">Asignar IDs nuevos a los que faltan</button>` : ''}
+  </div>`;
+}
+
+// Da de alta un ID nuevo a cada activo que no tenga, sin repetir ninguno.
+function asignarIdsFaltantes(){
+  const faltan = (DB.padron||[]).filter(a=>a.ciclo===_ocCiclo && a.estado==='activo' && !String(a.idColegio||'').trim());
+  if(!faltan.length){ toast('Todos tienen ID','info'); return; }
+  if(!confirm(`Se van a generar ${faltan.length} IDs nuevos, correlativos y sin reutilizar ninguno anterior. ¿Continuar?`)) return;
+  faltan.forEach(function(a){ a.idColegio = proximoIdColegio(); });
+  saveDB();
+  filtrarPadron();
+  toast(`✓ ${faltan.length} IDs asignados`,'ok');
+}
+
 function setIdColegio(alumnoId, valor){
   const a=(DB.padron||[]).find(x=>String(x.id)===String(alumnoId)); if(!a) return;
   const v=(valor||'').trim();
@@ -4664,7 +4760,7 @@ function guardarAlumnoPadron(){
   const nivel=normalizarNivel(SCHOOL_NIVEL(curso));
   const id='pa_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
   DB.padron=DB.padron||[];
-  DB.padron.push({id,nombre,nivel,curso,ciclo,estado:'activo',fechaAlta,fechaBaja:null,motivoBaja:null,notaBaja:obs,admisionId:null});
+  DB.padron.push({id,nombre,nivel,curso,ciclo,estado:'activo',fechaAlta,fechaBaja:null,motivoBaja:null,notaBaja:obs,admisionId:null,idColegio:proximoIdColegio()});
   saveDB(); closeM(); renderOcupacion(); ocTab('padron'); toast('Alumno agregado al padrón','ok');
 }
 
@@ -4718,7 +4814,7 @@ function crearAlumnoPadron(p){
   const nivel=curso?normalizarNivel(SCHOOL_NIVEL(curso)):normalizarNivel(p.nivel)||'';
   const ciclo=p.anio||new Date().getFullYear();
   const id='pa_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
-  DB.padron.push({id,nombre:p.alumno||'',nivel,curso,ciclo,estado:'activo',fechaAlta:today(),fechaBaja:null,motivoBaja:null,notaBaja:'',admisionId:String(p.id)});
+  DB.padron.push({id,nombre:p.alumno||'',nivel,curso,ciclo,estado:'activo',fechaAlta:today(),fechaBaja:null,motivoBaja:null,notaBaja:'',admisionId:String(p.id),idColegio:proximoIdColegio()});
 }
 
 // ─── IMPORTAR PADRÓN ────────────────────────────────
@@ -5928,7 +6024,7 @@ function generarPadronDesdeRemat(cicloNuevo){
     DB.padron.push({
       id:'pa_new_'+cicloNuevo+'_'+ts+'_'+i,
       nombre:p.alumno||'',nivel,curso:seccion,ciclo:cicloNuevo,estado:'activo',
-      fechaAlta:today(),fechaBaja:null,motivoBaja:null,notaBaja:'',
+      fechaAlta:today(),fechaBaja:null,motivoBaja:null,notaBaja:'',idColegio:proximoIdColegio(),
       admisionId:String(p.id)
     });
   });
