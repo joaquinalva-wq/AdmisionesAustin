@@ -2679,14 +2679,19 @@ function renderTarifasInline(){
 // ── GENERADOR DE PDF (abre ventana de impresión) ───────────────
 function generarPDFTarifas(){
   const t = DB.tarifas;
+  // Tabla de valores: fondo blanco, filas separadas por un filete suave y el
+  // importe alineado a la derecha en tabular, para que las cifras se comparen de un vistazo.
   const fila = (lbl, val) =>
-    '<tr><td style="padding:5px 12px;font-size:13px;color:#444">'+lbl+'</td>' +
-    '<td style="padding:5px 12px;font-size:13px;font-weight:600;color:#222;text-align:right">'+val+'</td></tr>';
+    '<tr>' +
+      '<td style="padding:7px 14px;font-size:12.5px;color:#5A5A54;border-bottom:1px solid #EFEBE3">'+lbl+'</td>' +
+      '<td style="padding:7px 14px;font-size:13px;font-weight:700;color:#2C4A5E;text-align:right;'+
+        'white-space:nowrap;border-bottom:1px solid #EFEBE3;font-variant-numeric:tabular-nums">'+val+'</td>' +
+    '</tr>';
 
   const seccion = (titulo, filas) =>
-    '<div style="background:#8daa4f;border-radius:6px;padding:10px 14px;margin-bottom:14px">' +
-      '<div style="color:#fff;font-weight:700;font-size:13.5px;margin-bottom:8px">'+titulo+'</div>' +
-      '<table style="width:100%;border-collapse:collapse;background:rgba(255,255,255,.15);border-radius:5px;overflow:hidden">' +
+    '<div style="border:1px solid #E3DED3;border-radius:9px;overflow:hidden;margin-bottom:13px;page-break-inside:avoid">' +
+      '<div style="background:#2C4A5E;color:#fff;font-weight:700;font-size:12.5px;padding:9px 14px;letter-spacing:.01em">'+titulo+'</div>' +
+      '<table style="width:100%;border-collapse:collapse;background:#fff">' +
         filas.map(([l,v])=>fila(l,v)).join('') +
       '</table>' +
     '</div>';
