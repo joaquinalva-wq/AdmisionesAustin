@@ -5113,23 +5113,33 @@ function _buscarProbable(nombreArchivo, padron){
   if(!apA) return null;
   let mejor = null;
 
+  // Un apellido "contiene" al otro cuando todos sus tokens están en el otro,
+  // sin importar el orden: cubre tanto "COHEN" vs "COHEN CORTEZ" como
+  // "ARENA CONDE" vs "CONDE", donde el apellido de más va adelante.
+  const contiene = (largo, corto) => corto.length>0 && corto.every(t => largo.indexOf(t) !== -1);
+
   for(const a of padron){
     const [apP, nomP] = _partirNombre(a.nombre);
     if(!apP) continue;
+    const tokA = apA.split(' '), tokP = apP.split(' ');
+    const apellidoCompatible = contiene(tokP, tokA) || contiene(tokA, tokP);
 
-    // Mismos nombres de pila y un apellido que es prefijo del otro
-    if(nomA && nomA === nomP){
-      const uno = (apP + ' ').indexOf(apA + ' ') === 0;
-      const otro = (apA + ' ').indexOf(apP + ' ') === 0;
-      if(uno || otro){
-        return {alumno:a, motivo:'apellido compuesto', confianza:0.97};
+    if(apellidoCompatible){
+      // Nombres de pila iguales, o casi iguales por una errata de tipeo
+      if(nomA && nomP && (nomA === nomP || _similitud(nomA, nomP) >= 0.85)){
+        const exacto = nomA === nomP && apA === apP;
+        if(exacto) return {alumno:a, motivo:'coincidencia directa', confianza:1};
+        const cand = {alumno:a, motivo: nomA===nomP ? 'apellido compuesto' : 'apellido compuesto y errata',
+                      confianza: nomA===nomP ? 0.97 : 0.9};
+        if(!mejor || cand.confianza > mejor.confianza) mejor = cand;
+        continue;
       }
     }
 
-    // Parecido general alto: cubre erratas de tipeo
-    const s = _similitud(_normNombre(nombreArchivo), _normNombre(a.nombre));
-    if(s >= 0.88 && (!mejor || s > mejor.confianza)){
-      mejor = {alumno:a, motivo:'nombre casi idéntico', confianza:s};
+    // Parecido general alto: erratas donde el apellido también difiere
+    const sim = _similitud(_normNombre(nombreArchivo), _normNombre(a.nombre));
+    if(sim >= 0.88 && (!mejor || sim > mejor.confianza)){
+      mejor = {alumno:a, motivo:'nombre casi idéntico', confianza:sim};
     }
   }
   return mejor;
