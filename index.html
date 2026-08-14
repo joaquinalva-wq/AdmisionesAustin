@@ -2650,9 +2650,6 @@ function normalizarMonto(el){
 function renderTarifasInline(){
   const el = document.getElementById('tar-inline-display'); if(!el) return;
   const t = DB.tarifas;
-  // El ciclo sale del que se está viendo, no fijo: antes decía 2026 aunque
-  // se estuviera trabajando sobre otro año.
-  const anioTarifas = _ocCiclo;
   const bloque = (titulo, filas, color) => {
     const filasHtml = filas.map(([lbl,val])=>
       '<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.15)">' +
@@ -2686,6 +2683,9 @@ function renderTarifasInline(){
 // ── GENERADOR DE PDF (abre ventana de impresión) ───────────────
 function generarPDFTarifas(){
   const t = DB.tarifas;
+  // El ciclo sale del que se está viendo. Antes el título decía 2026 fijo,
+  // aunque se estuviera trabajando sobre otro año.
+  const anioTarifas = _ocCiclo || new Date().getFullYear();
   // Tabla de valores: fondo blanco, filas separadas por un filete suave y el
   // importe alineado a la derecha en tabular, para que las cifras se comparen de un vistazo.
   const fila = (lbl, val) =>
