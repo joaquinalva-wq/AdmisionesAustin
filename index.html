@@ -4039,11 +4039,20 @@ function exportBajasCSV(){
 // ═══════════════════════════
 function renderBajasEsc(){
   const q=(document.getElementById('bajasesc-q')?.value||'').toLowerCase();
-  const lista=(DB.bajasEscolares||[]).filter(b=>
+  // Las bajas se ven por ciclo, igual que el padrón y la ocupación. Los registros
+  // viejos no guardaban el ciclo: se deduce del alumno en el padrón, y si no se
+  // puede, se muestran igual para no esconder información.
+  const cicloDe = b => {
+    if(b.ciclo) return Number(b.ciclo);
+    const a = b.padronId ? (DB.padron||[]).find(x=>String(x.id)===String(b.padronId)) : null;
+    return a ? Number(a.ciclo) : null;
+  };
+  const delCiclo=(DB.bajasEscolares||[]).filter(b=>{ const c=cicloDe(b); return c===null || c===_ocCiclo; });
+  const lista=delCiclo.filter(b=>
     !q||b.alumno.toLowerCase().includes(q)||b.curso.toLowerCase().includes(q)||(b.motivo||'').toLowerCase().includes(q)
   ).sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
   const cnt=document.getElementById('bajasesc-cnt');
-  if(cnt) cnt.textContent=`${(DB.bajasEscolares||[]).length} baja${(DB.bajasEscolares||[]).length!==1?'s':''}`;
+  if(cnt) cnt.textContent=`${delCiclo.length} baja${delCiclo.length!==1?'s':''} en ${_ocCiclo}`;
   const tb=document.getElementById('bajasesc-tb');
   if(!tb) return;
   if(lista.length===0){
@@ -4122,7 +4131,7 @@ function guardarBajaEsc(){
   // Se conserva el registro en bajasEscolares para el listado y el export.
   DB.bajasEscolares=DB.bajasEscolares||[];
   DB.bajasEscolares.push({id:Date.now(),padronId:a.id,alumno:a.nombre,curso:a.curso,
-    nivel:a.nivel||SCHOOL_NIVEL(a.curso),fecha,motivo});
+    nivel:a.nivel||SCHOOL_NIVEL(a.curso),ciclo:a.ciclo,fecha,motivo});
 
   saveDB(); closeM(); _bajaSel=null;
   updateSidebarBadges(); renderBajasEsc(); renderOcupacion();
