@@ -1323,7 +1323,7 @@ let DB = {
     '1er año Elementary':{t:20,u:0},'2do año Elementary':{t:20,u:0},'3er año Elementary':{t:20,u:0},'4to año Elementary':{t:20,u:0},'5to año Elementary':{t:20,u:0},'6to año Elementary':{t:20,u:0},
     '1er año High School':{t:20,u:0},'2do año High School':{t:20,u:0},'3er año High School':{t:20,u:0},'4to año High School':{t:20,u:0},'5to año High School':{t:20,u:0},'6to año High School':{t:20,u:0}
   },
-  tarifas:{k2_m:660285,k2_s:528228,k2_c:703291,k3_m:797491,k3_s:528228,k3_c:637993,k45_m:797491,k45_c:637993,el_m:989835,el_c:791868,hs13_m:1128077,hs13_c:902462,hs46_m:1167976,hs46_c:934381},
+  tarifas:{k2_m:660285,k2_s:528228,k2_c:703291,k3_m:797491,k3_s:528228,k3_c:637993,k45_m:797491,k45_c:637993,el_m:989835,el_c:791868,hs13_m:1128077,hs13_c:902462,hs46_m:1167976,hs46_c:934381,rv_k2_js:669045,rv_k2_jc:890778,rv_k3_js:669045,rv_k3_jc:808072,rv_k45:808072,rv_prim:1002968,rv_sec13:1143044,rv_sec46:1183473},
   emails:{
     contactado:{subj:'Postulación Austin EBS — información y próximos pasos',body:'Hola {{padre}},\n\nSoy Laura Unamuno, parte del staff de Austin Eco Bilingual School y encargada del proceso de admisiones.\n\n¡Nos alegra muchísimo tu postulación para {{alumno}}! Para conocer el proyecto en detalle y las tarifas, podés ver el brochure y los aranceles aquí: https://drive.google.com/drive/folders/1c0vFf1MWUcSC8-lqBjBCGDQ-hbXxGQDA\n\nPara empezar con el proceso, ingresá al siguiente link: https://calendar.app.google/WrfYGGSiRH3smkxL8 y reservá un horario disponible de visita con entrevista para conocer el proyecto educativo en profundidad y las instalaciones del colegio.\n\nQuedo a disposición por cualquier consulta.\n\nSaludos cordiales,\nLaura Unamuno\nAdmisiones – Austin EBS'},
     citado:{subj:'Tu entrevista en Austin EBS está confirmada',body:'Hola {{padre}},\n\nTu entrevista en Austin Eco Bilingual School está confirmada. Te esperamos con gusto.\n\nSi necesitás reprogramar, respondenos este mail a admisiones@austinebs-ah.edu.ar y lo coordinamos.\n\nUn saludo,\nLaura Unamuno\nAdmisiones – Austin EBS'},
@@ -2587,6 +2587,17 @@ function renderTar(){
       <div class="tarrow"><span class="tarlbl">K4 y K5 – Matrícula</span><input class="tari" id="t-k45m" value="${fMonto(t.k45_m)}" onblur="normalizarMonto(this)"></div>
       <div class="tarrow"><span class="tarlbl">K4 y K5 – Jornada Completa</span><input class="tari" id="t-k45c" value="${fMonto(t.k45_c)}" onblur="normalizarMonto(this)"></div>
     </div></div>
+    <div class="tarc" style="border-left:3px solid var(--or)"><div class="tarh"><div class="tart">Reserva de vacante — re-matriculación</div></div><div class="tarb">
+      <div style="font-size:11.5px;color:var(--tx3);padding:0 0 8px;line-height:1.55">Es lo que paga cada familia para reservar el lugar del año siguiente. Se cobra en <strong>3 cuotas iguales</strong> y es el valor que usa el Excel de facturación.</div>
+      <div class="tarrow"><span class="tarlbl">Sala de 2 – Jornada Simple</span><input class="tari" id="t-rvk2js" value="${fMonto(t.rv_k2_js)}" onblur="normalizarMonto(this)"></div>
+      <div class="tarrow"><span class="tarlbl">Sala de 2 – Jornada Completa</span><input class="tari" id="t-rvk2jc" value="${fMonto(t.rv_k2_jc)}" onblur="normalizarMonto(this)"></div>
+      <div class="tarrow"><span class="tarlbl">Sala de 3 – Jornada Simple</span><input class="tari" id="t-rvk3js" value="${fMonto(t.rv_k3_js)}" onblur="normalizarMonto(this)"></div>
+      <div class="tarrow"><span class="tarlbl">Sala de 3 – Jornada Completa</span><input class="tari" id="t-rvk3jc" value="${fMonto(t.rv_k3_jc)}" onblur="normalizarMonto(this)"></div>
+      <div class="tarrow"><span class="tarlbl">Salas de 4 y 5</span><input class="tari" id="t-rvk45" value="${fMonto(t.rv_k45)}" onblur="normalizarMonto(this)"></div>
+      <div class="tarrow"><span class="tarlbl">Primaria (1ro a 6to)</span><input class="tari" id="t-rvprim" value="${fMonto(t.rv_prim)}" onblur="normalizarMonto(this)"></div>
+      <div class="tarrow"><span class="tarlbl">Secundaria (1ro a 3ro)</span><input class="tari" id="t-rvsec13" value="${fMonto(t.rv_sec13)}" onblur="normalizarMonto(this)"></div>
+      <div class="tarrow"><span class="tarlbl">Secundaria (4to a 6to)</span><input class="tari" id="t-rvsec46" value="${fMonto(t.rv_sec46)}" onblur="normalizarMonto(this)"></div>
+    </div></div>
     <div class="tarc"><div class="tarh"><div class="tart">Elementary School (1ro – 6to año)</div></div><div class="tarb">
       <div class="tarrow"><span class="tarlbl">Matrícula</span><input class="tari" id="t-elm" value="${fMonto(t.el_m)}" onblur="normalizarMonto(this)"></div>
       <div class="tarrow"><span class="tarlbl">Jornada Completa</span><input class="tari" id="t-elc" value="${fMonto(t.el_c)}" onblur="normalizarMonto(this)"></div>
@@ -2602,7 +2613,7 @@ function renderTar(){
 }
 function saveTar(){
   const g=id=>{const el=document.getElementById(id);return el?parsePesos(el.value):0;};
-  DB.tarifas={k2_m:g('t-k2m'),k2_s:g('t-k2s'),k2_c:g('t-k2c'),k3_m:g('t-k3m'),k3_s:g('t-k3s'),k3_c:g('t-k3c'),k45_m:g('t-k45m'),k45_c:g('t-k45c'),el_m:g('t-elm'),el_c:g('t-elc'),hs13_m:g('t-h13m'),hs13_c:g('t-h13c'),hs46_m:g('t-h46m'),hs46_c:g('t-h46c')};
+  DB.tarifas={rv_k2_js:g('t-rvk2js'),rv_k2_jc:g('t-rvk2jc'),rv_k3_js:g('t-rvk3js'),rv_k3_jc:g('t-rvk3jc'),rv_k45:g('t-rvk45'),rv_prim:g('t-rvprim'),rv_sec13:g('t-rvsec13'),rv_sec46:g('t-rvsec46'),k2_m:g('t-k2m'),k2_s:g('t-k2s'),k2_c:g('t-k2c'),k3_m:g('t-k3m'),k3_s:g('t-k3s'),k3_c:g('t-k3c'),k45_m:g('t-k45m'),k45_c:g('t-k45c'),el_m:g('t-elm'),el_c:g('t-elc'),hs13_m:g('t-h13m'),hs13_c:g('t-h13c'),hs46_m:g('t-h46m'),hs46_c:g('t-h46c')};
   saveDB(); toast('Tarifas actualizadas','ok');
 }
 
@@ -4869,11 +4880,14 @@ function reactivarAlumnoPadron(id){
 function crearAlumnoPadron(p){
   DB.padron=DB.padron||[];
   if(DB.padron.some(a=>a.admisionId===String(p.id))) return;
-  const curso=p.seccion||'';
-  const nivel=curso?normalizarNivel(SCHOOL_NIVEL(curso)):normalizarNivel(p.nivel)||'';
+  // El ciclo es SIEMPRE el año para el que postuló, no el año en curso.
   const ciclo=p.anio||new Date().getFullYear();
+  // Si Admisiones no le asignó sección a mano, se elige la división con menos
+  // alumnos de ese ciclo. Antes quedaba vacía y el alumno no contaba en Ocupación.
+  const curso=p.seccion || seccionConMenosAlumnos(p.curso, ciclo) || '';
+  const nivel=curso?normalizarNivel(SCHOOL_NIVEL(curso)):normalizarNivel(p.nivel)||'';
   const id='pa_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
-  DB.padron.push({id,nombre:p.alumno||'',nivel,curso,ciclo,estado:'activo',fechaAlta:today(),fechaBaja:null,motivoBaja:null,notaBaja:'',admisionId:String(p.id),idColegio:proximoIdColegio()});
+  DB.padron.push({id,nombre:p.alumno||'',nivel,curso,ciclo,estado:'activo',fechaAlta:today(),fechaBaja:null,motivoBaja:null,notaBaja:'',admisionId:String(p.id),idColegio:proximoIdColegio(),jornada:p.jornada||'Jornada Completa'});
 }
 
 // ─── IMPORTAR PADRÓN ────────────────────────────────
@@ -5178,6 +5192,60 @@ function _normNombre(s){
 // Matrícula que corresponde a cada sección, tomada de Tarifas en el momento.
 // Se lee siempre al exportar, así que si se actualiza el valor, el Excel sale
 // con el nuevo sin tener que tocar nada más.
+// ═══════════════════════════
+// RESERVA DE VACANTE (re-matriculación)
+// ═══════════════════════════
+// Es el importe que paga cada familia para reservar el lugar del año siguiente,
+// y se cobra en 3 cuotas iguales. En Inicial el valor depende de la jornada
+// (simple o completa); de Primaria en adelante hay un único valor por tramo.
+// Los montos se editan en Tarifas y se leen en el momento de exportar, así que
+// al actualizarlos el Excel y el PDF salen con el importe nuevo.
+
+// Devuelve la clave de tarifa que corresponde a una sección y jornada.
+function _claveRV(curso, jornada){
+  const c = String(curso||'');
+  const simple = String(jornada||'').toLowerCase().indexOf('simple') !== -1;
+  if(c.indexOf('S2') === 0) return simple ? 'rv_k2_js' : 'rv_k2_jc';
+  if(c.indexOf('S3') === 0) return simple ? 'rv_k3_js' : 'rv_k3_jc';
+  if(c.indexOf('S4') === 0 || c.indexOf('S5') === 0) return 'rv_k45';
+  if(c.indexOf('Prim') !== -1) return 'rv_prim';
+  if(c.indexOf('Sec') !== -1){
+    const n = parseInt(c, 10);
+    return (n >= 1 && n <= 3) ? 'rv_sec13' : 'rv_sec46';
+  }
+  return null;
+}
+
+// Importe de reserva de vacante de un alumno del padrón.
+function reservaDeVacante(alumno){
+  const k = _claveRV(alumno && alumno.curso, alumno && alumno.jornada);
+  return k ? parsePesos((DB.tarifas||{})[k]) : 0;
+}
+
+// Divide un importe en 3 cuotas que suman exactamente el total: el resto del
+// redondeo va en la primera, para no perder ni agregar pesos.
+function enTresCuotas(total){
+  const base = Math.floor(total / 3);
+  return [total - base * 2, base, base];
+}
+
+// De las divisiones posibles de un curso, la que tenga menos alumnos activos
+// en ese ciclo. Si hay empate, la primera. Así los cursos quedan parejos sin
+// que nadie tenga que mirar los números a mano.
+function seccionConMenosAlumnos(cursoPipeline, ciclo){
+  const opciones = PIPELINE_TO_SECTIONS[cursoPipeline] || [];
+  if(!opciones.length) return '';
+  if(opciones.length === 1) return opciones[0];
+  let elegida = opciones[0], menor = Infinity;
+  opciones.forEach(function(sec){
+    const n = (DB.padron||[]).filter(function(a){
+      return a.ciclo === ciclo && a.estado === 'activo' && a.curso === sec;
+    }).length;
+    if(n < menor){ menor = n; elegida = sec; }
+  });
+  return elegida;
+}
+
 function matriculaDeSeccion(curso){
   const t = DB.tarifas || {};
   const c = String(curso||'');
@@ -5426,29 +5494,31 @@ function exportarFacturacionExcel(){
     {titulo:'Cuota 1', ancho:14, tipo:'numero'},
     {titulo:'Cuota 2', ancho:14, tipo:'numero'},
     {titulo:'Cuota 3', ancho:14, tipo:'numero'},
-    {titulo:'Total matrícula', ancho:16, tipo:'numero'},
-    {titulo:'Sección', ancho:16}
+    {titulo:'Total reserva', ancho:15, tipo:'numero'},
+    {titulo:'Sección', ancho:16},
+    {titulo:'Jornada', ancho:17}
   ];
 
-  let sinId=0;
+  let sinId=0, sinValor=0;
   const filas=lista.map(function(a){
     if(!a.idColegio) sinId++;
     const est=_getRematEst(a.id,sig);
-    const total=matriculaDeSeccion(a.curso);
-    // Se reparte en 3 y la diferencia por redondeo va en la primera cuota,
-    // para que las tres sumen exactamente el total.
-    const base=Math.floor(total/3);
-    const c1=total-base*2, c2=base, c3=base;
+    const total=reservaDeVacante(a);
+    if(!total) sinValor++;
+    const c=enTresCuotas(total);
     return [
       a.idColegio||'', a.nombre||'',
       (REMAT_ESTADOS[est]||REMAT_ESTADOS.re_matricula).lbl,
-      c1, c2, c3, total, a.curso||''
+      c[0], c[1], c[2], total, a.curso||'', a.jornada||'Jornada Completa'
     ];
   });
 
-  descargarExcel(`facturacion_matricula_${sig}_austin.xlsx`, `Matrícula ${sig}`, columnas, filas);
-  toast(`Excel generado — ${filas.length} alumnos`+(sinId?` · ${sinId} sin ID`:''),
-        sinId?'info':'ok');
+  descargarExcel(`reserva_vacante_${sig}_austin.xlsx`, `Reserva ${sig}`, columnas, filas);
+  const avisos=[];
+  if(sinId) avisos.push(`${sinId} sin ID`);
+  if(sinValor) avisos.push(`${sinValor} sin valor de reserva`);
+  toast(`Excel generado — ${filas.length} alumnos`+(avisos.length?` · ${avisos.join(' · ')}`:''),
+        avisos.length?'info':'ok');
 }
 
 function _getRematEst(id, siguiente){
