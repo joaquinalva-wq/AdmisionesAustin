@@ -805,6 +805,7 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
         <div style="font-size:13px;font-weight:600;color:#92400E;margin-bottom:3px">📅 Sin entrevista agendada aún</div>
         <div style="font-size:12.5px;color:#78350F;line-height:1.6">Te enviaremos un mail con el link para agendar cuando estés listo/a. Podés coordinar la visita a tu ritmo.</div>
       </div>
+      <div id="fst3-error" style="display:none;background:#FEE2E2;border:1.5px solid #FCA5A5;border-radius:12px;padding:14px 16px;margin-bottom:16px;font-size:12.5px;color:#7F1D1D;line-height:1.65"></div>
       <div class="fbtns">
         <button class="sbtn sbtn-b" onclick="fBack(3)">← Volver</button>
         <button class="sbtn sbtn-ok" id="btn-submit-final" onclick="submitPost()">Enviar postulación ✓</button>
@@ -891,6 +892,7 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
       <div class="tb-t" id="tb-t">Dashboard</div>
       <div class="tb-a">
         <span class="sync-pill loading" id="sync-pill" style="display:none"><span class="sync-dot"></span><span id="sync-txt">Conectando...</span></span>
+        <button class="btn btn-out btn-sm" onclick="autoRefresh(false)" title="Traer postulaciones nuevas y cambios hechos desde otra sesión">⟳ Actualizar</button>
         <button class="btn btn-csv btn-sm" onclick="exportCSV()" title="Exportar todos los postulantes a CSV">⬇ Exportar CSV</button>
         <button class="btn btn-td" onclick="openNuevo()">+ Agregar postulante</button>
       </div>
@@ -1218,7 +1220,8 @@ const FIREBASE_CONFIG = {
 // Si sumás o quitás a alguien, hay que hacerlo en los dos lugares.
 const STAFF_EMAILS = [
   'admisiones@austinebs-ah.edu.ar',
-  'joaquin.alva@activelearning.com.ar'
+  'joaquin.alva@activelearning.com.ar',
+  'joaquin.alva@austinebs-ah.edu.ar'
 ];
 
 let _fbReady = false;
@@ -1447,20 +1450,28 @@ const FS_INBOX = 'postulaciones-inbox';
 // El formulario de familias deja acá cada postulación, como documento suelto.
 // Las reglas permiten SÓLO crear: nadie anónimo puede leer, editar ni borrar.
 // Así el público nunca toca el documento principal ni ve datos de otras familias.
+// Reintenta antes de darse por vencida: una postulación perdida es invisible para
+// todos (la familia cree que la mandó y el colegio nunca se entera de que existió),
+// así que un corte de red momentáneo no puede alcanzar para tirarla.
 async function enviarAInbox(postulantes, familyNote){
-  try{
-    const payload = JSON.stringify({postulantes, familyNote:familyNote||'', ts:Date.now()});
-    const res = await fetch(`${FS_BASE}/${FS_INBOX}`, {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({fields:{
-        data:      {stringValue: payload},
-        ts:        {integerValue: String(Date.now())},
-        procesado: {booleanValue: false}
-      }})
-    });
-    return res.ok;
-  }catch(e){ return false; }
+  const payload = JSON.stringify({postulantes, familyNote:familyNote||'', ts:Date.now()});
+  const body = JSON.stringify({fields:{
+    data:      {stringValue: payload},
+    ts:        {integerValue: String(Date.now())},
+    procesado: {booleanValue: false}
+  }});
+  for(let intento=0; intento<3; intento++){
+    if(intento>0) await new Promise(r=>setTimeout(r, intento*1500));
+    try{
+      const res = await fetch(`${FS_BASE}/${FS_INBOX}`, {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body
+      });
+      if(res.ok) return true;
+    }catch(e){}
+  }
+  return false;
 }
 
 // Al entrar el staff, incorpora las postulaciones pendientes al sistema y las borra
@@ -1484,6 +1495,21 @@ async function procesarInbox(){
     (body.postulantes||[]).forEach(p=>{
       // Si el drenaje ya corrió antes, no duplicar
       if(p.tmpId && DB.postulantes.some(x=>x.tmpId===p.tmpId)) return;
+      // Misma familia mandando el formulario dos veces. El navegador de la familia no
+      // puede detectarlo (no tiene la base cargada), así que el filtro va acá. En vez
+      // de descartar el reenvío en silencio, queda anotado en la ficha que ya existe.
+      const k = s => String(s||'').trim().toLowerCase();
+      const yaEsta = DB.postulantes.find(x=>k(x.email)===k(p.email) && k(x.alumno)===k(p.alumno) && x.estado!=='desiste');
+      if(yaEsta){
+        const ahora=new Date();
+        yaEsta.notas=yaEsta.notas||[];
+        yaEsta.notas.push({
+          txt:'La familia volvió a enviar el formulario de postulación. No se creó un registro duplicado.',
+          fecha:ahora.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}),
+          hora:ahora.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})
+        });
+        return;
+      }
       const nuevo = {...p, id: DB.nextId++};
       DB.postulantes.unshift(nuevo);
       DB.pendingNotif.push(nuevo.id);
@@ -1519,30 +1545,7 @@ async function syncFromCloud(){
   const localTs = parseInt(localStorage.getItem('austin_ebs_ts')||'0');
   const remoteTs = parseInt(remote.ts || 0);
   if(remoteTs > localTs){
-    // Remote is newer → load it
-    if(remote.nextId) DB.nextId = remote.nextId;
-    if(remote.postulantes) DB.postulantes = remote.postulantes;
-    if(remote.vacantes) DB.vacantes = {...DB.vacantes,...remote.vacantes};
-    if(remote.tarifas) DB.tarifas = {...DB.tarifas,...remote.tarifas};
-    if(remote.emails) DB.emails = {...DB.emails,...remote.emails};
-    if(remote.config){
-      const merged={...DB.config};
-      for(const k of Object.keys(remote.config)){
-        const v=remote.config[k];
-        if(v!==''&&v!==null&&v!==undefined) merged[k]=v;
-      }
-      DB.config=merged;
-    }
-    if(remote.pendingNotif) DB.pendingNotif = remote.pendingNotif;
-    if(remote.bajasEscolares) DB.bajasEscolares = remote.bajasEscolares;
-    if(remote.ocupacion) DB.ocupacion = {...OC_DEFAULT,...remote.ocupacion};
-    else if(!DB.ocupacion||!Object.keys(DB.ocupacion).length) DB.ocupacion={...OC_DEFAULT};
-    // Only overwrite local padron/reMatricula if remote has more data (prevent empty remote wiping local state)
-    if(remote.padron && remote.padron.length > (DB.padron||[]).length) DB.padron = remote.padron;
-    else if(remote.padron && remote.padron.length > 0 && (DB.padron||[]).length === 0) DB.padron = remote.padron;
-    if(remote.reMatricula && Object.keys(remote.reMatricula).length >= Object.keys(DB.reMatricula||{}).length) DB.reMatricula = remote.reMatricula;
-    if(remote.descuentos) DB.descuentos = remote.descuentos;
-    if(remote.morosos) DB.morosos = remote.morosos;
+    aplicarRemoto(remote);
     saveLocalOnly();
     renderPanel();
     updateSyncStatus('synced');
@@ -1560,6 +1563,80 @@ async function syncFromCloud(){
       toast(`✉ ${n} postulación${n!==1?'es':''} nueva${n!==1?'s':''} incorporada${n!==1?'s':''}`,'ok');
     }
   }catch(e){}
+}
+
+// Vuelca sobre DB el documento de la nube. Se usa desde el sync inicial y desde el
+// refresco periódico, así hay un solo lugar donde se decide qué campo pisa a cuál.
+function aplicarRemoto(remote){
+  if(remote.nextId) DB.nextId = remote.nextId;
+  if(remote.postulantes) DB.postulantes = remote.postulantes;
+  if(remote.vacantes) DB.vacantes = {...DB.vacantes,...remote.vacantes};
+  if(remote.tarifas) DB.tarifas = {...DB.tarifas,...remote.tarifas};
+  if(remote.emails) DB.emails = {...DB.emails,...remote.emails};
+  if(remote.config){
+    const merged={...DB.config};
+    for(const k of Object.keys(remote.config)){
+      const v=remote.config[k];
+      if(v!==''&&v!==null&&v!==undefined) merged[k]=v;
+    }
+    DB.config=merged;
+  }
+  if(remote.pendingNotif) DB.pendingNotif = remote.pendingNotif;
+  if(remote.bajasEscolares) DB.bajasEscolares = remote.bajasEscolares;
+  if(remote.ocupacion) DB.ocupacion = {...OC_DEFAULT,...remote.ocupacion};
+  else if(!DB.ocupacion||!Object.keys(DB.ocupacion).length) DB.ocupacion={...OC_DEFAULT};
+  // Only overwrite local padron/reMatricula if remote has more data (prevent empty remote wiping local state)
+  if(remote.padron && remote.padron.length > (DB.padron||[]).length) DB.padron = remote.padron;
+  else if(remote.padron && remote.padron.length > 0 && (DB.padron||[]).length === 0) DB.padron = remote.padron;
+  if(remote.reMatricula && Object.keys(remote.reMatricula).length >= Object.keys(DB.reMatricula||{}).length) DB.reMatricula = remote.reMatricula;
+  if(remote.descuentos) DB.descuentos = remote.descuentos;
+  if(remote.morosos) DB.morosos = remote.morosos;
+}
+
+// ═══════════════════════════
+// REFRESCO PERIÓDICO
+// ═══════════════════════════
+// El panel se quedaba con la foto del momento del login: una postulación que entraba
+// a media mañana no aparecía hasta cerrar sesión y volver a entrar, y dos personas
+// trabajando a la vez se pisaban el documento entero sin enterarse. Cada minuto se
+// mira la nube y se drena la bandeja.
+let _autoRefreshInterval = null;
+
+async function autoRefresh(silencioso){
+  if(!_authUser) return;
+  if(!silencioso) updateSyncStatus('loading');
+  let refrescado = false;
+  try{
+    const remote = await fsGet();
+    if(remote){
+      const localTs  = parseInt(localStorage.getItem('austin_ebs_ts')||'0');
+      const remoteTs = parseInt(remote.ts || 0);
+      if(remoteTs > localTs){
+        aplicarRemoto(remote);
+        saveLocalOnly();
+        refrescado = true;
+      }
+    }
+  }catch(e){}
+
+  let nuevos = 0;
+  try{ nuevos = await procesarInbox(); }catch(e){}
+
+  if(refrescado || nuevos>0){
+    renderPanel();
+    refrescarVistasPostulantes();
+  }
+  if(nuevos>0) toast(`✉ ${nuevos} postulación${nuevos!==1?'es':''} nueva${nuevos!==1?'s':''} incorporada${nuevos!==1?'s':''}`,'ok');
+  else if(!silencioso) toast(refrescado?'☁ Datos actualizados desde la nube':'☁ Ya estabas al día','ok');
+  if(!silencioso) updateSyncStatus('synced');
+}
+
+function startAutoRefresh(){
+  stopAutoRefresh();
+  _autoRefreshInterval = setInterval(()=>autoRefresh(true), 60000);
+}
+function stopAutoRefresh(){
+  if(_autoRefreshInterval){ clearInterval(_autoRefreshInterval); _autoRefreshInterval=null; }
 }
 
 // ═══════════════════════════
@@ -1711,6 +1788,7 @@ async function doLogin(){
     go('s-panel'); renderPanel();
     await syncFromCloud();
     startEOEPolling();
+    startAutoRefresh();
   }catch(e){
     const code=e&&e.code||'';
     if(code==='auth/popup-closed-by-user'||code==='auth/cancelled-popup-request'){
@@ -1729,6 +1807,7 @@ async function doLogin(){
 
 async function doLogout(){
   stopEOEPolling();
+  stopAutoRefresh();
   _authUser=null;
   try{ if(_fbReady) await firebase.auth().signOut(); }catch(e){}
   go('s-login');
@@ -2010,7 +2089,11 @@ function openDetalle(id){
       <div class="detf"><div class="detfl">Postulado el</div><div class="detfv">${fDateFull(p.fecha)}</div></div>
       <div class="detf"><div class="detfl">Vacante en ${esc(p.curso)}</div><div class="detfv">${getVacDisp(p.curso, p.anio)}</div></div>
       ${p.colegio?`<div class="detf"><div class="detfl">Colegio anterior</div><div class="detfv">${esc(p.colegio)}</div></div>`:''}
-      ${p.dir?`<div class="detf"><div class="detfl">Localidad</div><div class="detfv">${p.dir}</div></div>`:''}
+      ${p.dni?`<div class="detf"><div class="detfl">DNI del estudiante</div><div class="detfv">${esc(p.dni)}</div></div>`:''}
+      ${p.nac?`<div class="detf"><div class="detfl">Fecha de nacimiento</div><div class="detfv">${fDateFull(p.nac)}</div></div>`:''}
+      ${p.dir?`<div class="detf"><div class="detfl">Localidad</div><div class="detfv">${esc(p.dir)}</div></div>`:''}
+      ${p.rel?`<div class="detf"><div class="detfl">Relación con el estudiante</div><div class="detfv">${esc(p.rel)}</div></div>`:''}
+      ${p.como?`<div class="detf"><div class="detfl">Cómo nos conoció</div><div class="detfv">${esc(p.como)}</div></div>`:''}
     </div>
 
     <div class="eabox">
@@ -2139,10 +2222,12 @@ function openDetalle(id){
 function renderNotas(p){
   const notas=p.notas||[];
   if(notas.length===0) return `<div style="font-size:12px;color:var(--tx3);padding:6px 0">Sin notas. Agregá la primera nota arriba.</div>`;
+  // esc() obligatorio: la primera nota de un postulante es el campo libre "Consultas"
+  // del formulario público, que cualquiera puede completar con markup.
   return notas.slice().reverse().map(n=>`
     <div class="nota-item">
-      <div class="nota-ts">${n.fecha} ${n.hora}</div>
-      <div class="nota-txt">${n.txt}</div>
+      <div class="nota-ts">${esc(n.fecha)} ${esc(n.hora)}</div>
+      <div class="nota-txt">${esc(n.txt)}</div>
     </div>`).join('');
 }
 
@@ -2183,11 +2268,11 @@ function prevMail(id){
   const destBadge=`<span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;background:${isTeam?'#EDE9FE':'#DCFCE7'};color:${isTeam?'#7C3AED':'#166534'};margin-left:6px">→ ${dest}</span>`;
   pe.innerHTML=`<div class="mprev">
     <div class="mph">
-      <div class="mphr"><span class="mphl">Para:</span> ${isTeam?`<em style="color:var(--tx2)">${dest}</em>`:p.email}${destBadge}</div>
+      <div class="mphr"><span class="mphl">Para:</span> ${isTeam?`<em style="color:var(--tx2)">${esc(dest)}</em>`:esc(p.email)}${destBadge}</div>
       <div class="mphr"><span class="mphl">Asunto:</span> ${esc(fillV(tmpl.subj,p))}</div>
-      <div class="mphr"><span class="mphl">De:</span> ${DB.config.nombre} &lt;${DB.config.email}&gt;</div>
+      <div class="mphr"><span class="mphl">De:</span> ${esc(DB.config.nombre)} &lt;${esc(DB.config.email)}&gt;</div>
     </div>
-    <div class="mpb">${body}</div>
+    <div class="mpb">${esc(body)}</div>
     <div class="mpedit"><span onclick="showV('emails');closeM()" style="cursor:pointer">✏ Editar esta plantilla →</span><span style="color:var(--tx3);font-size:11px">El contenido se guarda en Plantillas de mail</span></div>
   </div>`;
 }
@@ -2893,10 +2978,10 @@ async function testMailAppsScript(){
 // ═══════════════════════════
 function exportCSV(){
   if(DB.postulantes.length===0){ toast('No hay postulantes para exportar',''); return; }
-  const cols=['ID','Alumno','Padre/Tutor','Email','Teléfono','Curso','Nivel','Jornada','Ciclo','Estado','Colegio anterior','Hermano en Austin','Fecha postulación','Última acción','Días inactivo','Notas'];
+  const cols=['ID','Alumno','DNI','Fecha nacimiento','Padre/Tutor','Relación','Email','Teléfono','Localidad','Curso','Nivel','Jornada','Ciclo','Estado','Colegio anterior','Hermano en Austin','Cómo nos conoció','Fecha postulación','Última acción','Días inactivo','Notas'];
   const rows=DB.postulantes.map(p=>[
-    p.id,p.alumno,p.padre,p.email,p.tel||'',p.curso,p.nivel,p.jornada||'',p.anio,EL[p.estado]||p.estado,
-    p.colegio||'',p.hermano==='si'?'Sí':'No',p.fecha,p.ultAccion||p.fecha,
+    p.id,p.alumno,p.dni||'',p.nac||'',p.padre,p.rel||'',p.email,p.tel||'',p.dir||'',p.curso,p.nivel,p.jornada||'',p.anio,EL[p.estado]||p.estado,
+    p.colegio||'',p.hermano==='si'?'Sí':'No',p.como||'',p.fecha,p.ultAccion||p.fecha,
     diasDesde(p.ultAccion||p.fecha),
     (p.notas||[]).map(n=>`[${n.fecha} ${n.hora}] ${n.txt}`).join(' | ')
   ].map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(','));
@@ -3136,21 +3221,19 @@ function buildResumen(){
   rows+=`<div><span style="color:var(--tx3);font-size:10.5px;text-transform:uppercase;letter-spacing:.07em">Teléfono</span><br>${document.getElementById('pf-tel').value}</div>`;
   document.getElementById('pf-resumen').innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:5px 18px">${rows}</div>`;
 }
-function submitPost(){
+async function submitPost(){
   // Prevent double-submit
   const btn=document.getElementById('btn-submit-final');
+  const errBox=document.getElementById('fst3-error');
+  if(errBox) errBox.style.display='none';
   if(btn){ btn.disabled=true; btn.textContent='Enviando...'; }
 
   const padre=`${document.getElementById('pf-pn').value} ${document.getElementById('pf-pap').value}`.trim();
   const email=document.getElementById('pf-email').value.trim();
   const tel=document.getElementById('pf-tel').value;
   const obs=(document.getElementById('pf-obs').value||'').trim();
-
-  // Check duplicate email
-  if(DB.postulantes.find(p=>p.email.toLowerCase()===email.toLowerCase()&&p.estado!=='desiste')){
-    if(btn){ btn.disabled=false; btn.textContent='Enviar postulación ✓'; }
-    toast('Este email ya tiene una postulación activa en el sistema','err'); return;
-  }
+  const dir=(document.getElementById('pf-dir')?.value||'').trim();
+  const rel=document.getElementById('pf-rel')?.value||'';
 
   const now=new Date();
   const nowDate=now.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});
@@ -3182,6 +3265,13 @@ function submitPost(){
       jornada:est.jornada,
       anio:est.anio,
       colegio:est.cole||'',
+      // El formulario ya pedía estos datos pero se descartaban al armar el postulante:
+      // el DNI y la fecha de nacimiento son justamente los que usa administración para
+      // el alta, y sin ellos había que volver a pedírselos a la familia.
+      nac:est.nac||'',
+      dni:est.dni||'',
+      dir, rel,
+      como:est.como||'',
       hermano:est.hermano,
       personal:est.personal||'no',
       estado:estadoInicial,
@@ -3193,7 +3283,24 @@ function submitPost(){
     });
   });
   // Se deja en la bandeja de sólo-alta. El documento principal no se toca desde acá.
-  enviarAInbox(nuevosPostulantes, familyNote);
+  // Se espera la confirmación: antes esto era "fire and forget" y la pantalla de éxito
+  // salía igual aunque el guardado fallara, así que la postulación se perdía en silencio
+  // y ni la familia ni el colegio se enteraban.
+  const guardada = await enviarAInbox(nuevosPostulantes, familyNote);
+  if(!guardada){
+    if(btn){ btn.disabled=false; btn.textContent='Enviar postulación ✓'; }
+    const errBox=document.getElementById('fst3-error');
+    if(errBox){
+      errBox.innerHTML='<strong>No pudimos registrar tu postulación.</strong><br>'
+        +'Revisá tu conexión a internet y tocá <strong>Enviar postulación</strong> de nuevo. '
+        +'Tus datos siguen cargados acá, no se perdió nada.<br>'
+        +'Si vuelve a fallar, escribinos a <a href="mailto:admisiones@austinebs-ah.edu.ar" style="color:#991B1B;font-weight:600">admisiones@austinebs-ah.edu.ar</a> y lo resolvemos.';
+      errBox.style.display='block';
+      errBox.scrollIntoView({behavior:'smooth',block:'center'});
+    }
+    toast('No se pudo enviar la postulación. Intentá de nuevo.','err');
+    return;
+  }
 
   // Block slot in localStorage immediately
   if(calSlotSeleccionado){
@@ -3482,7 +3589,7 @@ function renderAdminCal(){
     const entsDia = DB.postulantes.filter(p=>p.entFecha===fechaStr).sort((a,b)=>(a.entHora||'').localeCompare(b.entHora||''));
     const entsHtml = entsDia.map(p=>`
       <div class="admin-cal-ent estado-${(p.entResultado||p.estado||'').replace(/\s+/g,'-')}" onclick="openDetalleEntrevista(${p.id})" title="${esc(p.alumno)} ${p.entHora||''}">
-        <strong>${p.entHora||'—'}</strong> ${p.alumno.split(' ')[0]}
+        <strong>${esc(p.entHora||'—')}</strong> ${esc(p.alumno.split(' ')[0])}
         ${p.entResultado?'✓':''}
       </div>`).join('');
     html += `<div class="admin-cal-dia${esHoy?' hoy':''}">
