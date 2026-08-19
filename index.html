@@ -2212,11 +2212,97 @@ function openDetalle(id){
     </div>`;
 
   document.getElementById('mf').innerHTML=`
-    <button class="btn btn-out" onclick="closeM()">Cerrar</button>
-    <button class="btn btn-danger btn-sm" onclick="eliminarPostulante(${id})" style="margin-right:auto">🗑 Eliminar</button>`;
+    <button class="btn btn-danger btn-sm" onclick="eliminarPostulante(${id})" style="margin-right:auto">🗑 Eliminar</button>
+    <button class="btn btn-out btn-sm" onclick="editarPostulante(${id})">✎ Editar datos</button>
+    <button class="btn btn-out" onclick="closeM()">Cerrar</button>`;
 
   openM();
   setTimeout(()=>prevMail(id),50);
+}
+
+// Hasta acá lo único editable de un postulante era el estado, la entrevista, la
+// sección y las notas. Un mail mal tipeado — que deja a la familia sin recibir
+// ningún aviso automático — sólo se arreglaba borrando y volviendo a cargar, con
+// lo que se perdía el historial. Esto corrige los datos sin tocar nada más.
+function editarPostulante(id){
+  const p=DB.postulantes.find(x=>x.id===id); if(!p) return;
+  const opts=CURSOS.map(c=>`<option value="${esc(c)}" ${p.curso===c?'selected':''}>${esc(c)}</option>`).join('');
+  const anios=[];
+  for(let y=new Date().getFullYear()-1; y<=new Date().getFullYear()+5; y++) anios.push(y);
+  document.getElementById('mt').textContent='Editar datos del postulante';
+  document.getElementById('mb').innerHTML=`
+    <div style="background:var(--cr);border-radius:9px;padding:10px 13px;font-size:12px;color:var(--tx2);margin-bottom:14px;line-height:1.6">
+      Corregí los datos del registro. No se envía ningún mail ni se cambia el estado.
+    </div>
+    <div class="fgm2">
+      <div class="fgm"><label class="flm">Nombre del estudiante *</label><input class="fim" id="ed-al" value="${esc(p.alumno)}"></div>
+      <div class="fgm"><label class="flm">Curso</label><select class="fsm" id="ed-cu">${opts}</select></div>
+    </div>
+    <div class="fgm2">
+      <div class="fgm"><label class="flm">Ciclo lectivo</label><select class="fsm" id="ed-an">${anios.map(y=>`<option value="${y}" ${Number(p.anio)===y?'selected':''}>${y}</option>`).join('')}</select></div>
+      <div class="fgm"><label class="flm">Jornada</label><select class="fsm" id="ed-jo"><option ${p.jornada==='Jornada Completa'?'selected':''}>Jornada Completa</option><option ${p.jornada==='Jornada Simple'?'selected':''}>Jornada Simple</option></select></div>
+    </div>
+    <div class="fgm2">
+      <div class="fgm"><label class="flm">DNI del estudiante</label><input class="fim" id="ed-dni" value="${esc(p.dni||'')}"></div>
+      <div class="fgm"><label class="flm">Fecha de nacimiento</label><input class="fim" id="ed-nac" type="date" value="${esc(p.nac||'')}"></div>
+    </div>
+    <div class="fgm"><label class="flm">Colegio anterior</label><input class="fim" id="ed-cole" value="${esc(p.colegio||'')}"></div>
+    <div class="ssm" style="margin:12px 0 10px">Familia</div>
+    <div class="fgm2">
+      <div class="fgm"><label class="flm">Padre/Madre/Tutor *</label><input class="fim" id="ed-pa" value="${esc(p.padre)}"></div>
+      <div class="fgm"><label class="flm">Email *</label><input class="fim" id="ed-em" type="email" value="${esc(p.email)}"></div>
+    </div>
+    <div class="fgm2">
+      <div class="fgm"><label class="flm">Teléfono</label><input class="fim" id="ed-tel" value="${esc(p.tel||'')}"></div>
+      <div class="fgm"><label class="flm">¿Hermano en Austin?</label><select class="fsm" id="ed-he"><option value="no" ${p.hermano!=='si'?'selected':''}>No</option><option value="si" ${p.hermano==='si'?'selected':''}>Sí ★ (tiene prioridad)</option></select></div>
+    </div>
+    <div class="fgm"><label class="flm">Barrio / Localidad</label><input class="fim" id="ed-dir" value="${esc(p.dir||'')}"></div>`;
+  document.getElementById('mf').innerHTML=`
+    <button class="btn btn-out" onclick="openDetalle(${id})">Cancelar</button>
+    <button class="btn btn-td" onclick="guardarEdicionPostulante(${id})">Guardar cambios</button>`;
+  openM();
+}
+
+function guardarEdicionPostulante(id){
+  const p=DB.postulantes.find(x=>x.id===id); if(!p) return;
+  const v=i=>(document.getElementById(i)?.value||'').trim();
+  const alumno=v('ed-al'), padre=v('ed-pa'), email=v('ed-em');
+  if(!alumno||!padre||!email){ toast('Nombre, familia y email son obligatorios','err'); return; }
+  const cambios=[];
+  const setSi=(campo,nuevo,etiqueta)=>{
+    const viejo=p[campo]==null?'':String(p[campo]);
+    if(viejo!==String(nuevo)){ cambios.push(`${etiqueta}: ${viejo||'—'} → ${nuevo||'—'}`); p[campo]=nuevo; }
+  };
+  setSi('alumno',alumno,'Nombre');
+  setSi('curso',document.getElementById('ed-cu').value,'Curso');
+  setSi('anio',parseInt(document.getElementById('ed-an').value),'Ciclo');
+  setSi('jornada',document.getElementById('ed-jo').value,'Jornada');
+  setSi('dni',v('ed-dni'),'DNI');
+  setSi('nac',v('ed-nac'),'Fecha de nacimiento');
+  setSi('colegio',v('ed-cole'),'Colegio anterior');
+  setSi('padre',padre,'Familia');
+  setSi('email',email,'Email');
+  setSi('tel',v('ed-tel'),'Teléfono');
+  setSi('hermano',document.getElementById('ed-he').value,'Hermano en Austin');
+  setSi('dir',v('ed-dir'),'Localidad');
+  p.nivel=NIVEL(p.curso); // el nivel se deriva del curso, nunca se carga a mano
+
+  if(!cambios.length){ toast('No hubo cambios para guardar',''); openDetalle(id); return; }
+
+  // Queda registrado qué se cambió: si mañana un mail no llegó, se puede ver si el
+  // dato de contacto fue corregido y cuándo.
+  const ahora=new Date();
+  p.notas=p.notas||[];
+  p.notas.push({
+    txt:'Datos corregidos desde el panel — '+cambios.join(' · '),
+    fecha:ahora.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}),
+    hora:ahora.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})
+  });
+  p.ultAccion=today();
+  saveDB();
+  refrescarVistasPostulantes();
+  openDetalle(id);
+  toast(`✓ ${cambios.length} dato${cambios.length!==1?'s':''} actualizado${cambios.length!==1?'s':''}`,'ok');
 }
 
 function renderNotas(p){
