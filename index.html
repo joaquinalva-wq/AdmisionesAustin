@@ -1358,7 +1358,11 @@ let DB = {
   padron:[],
   reMatricula:{},
   descuentos:{},
-  morosos:[]
+  morosos:[],
+  // Marca de tiempo por registro y lápidas de los borrados. Es lo que permite combinar
+  // el trabajo de dos sesiones en vez de que la última que guarda pise a la otra.
+  _meta:{},
+  _del:{}
 };
 
 // ═══════════════════════════
@@ -1404,20 +1408,15 @@ async function fsSave(){
   const tk = await fsToken();
   if(!tk || !_authUser) return false;
 
-  // If local padron is empty, preserve whatever Firestore has (avoid wiping it from other sessions)
-  let padronToSave = DB.padron||[];
-  let rematToSave  = DB.reMatricula||{};
-  if(padronToSave.length === 0 || Object.keys(rematToSave).length === 0){
-    try{
-      const remote = await fsGet();
-      if(remote){
-        if(padronToSave.length === 0 && remote.padron && remote.padron.length > 0)
-          padronToSave = remote.padron;
-        if(Object.keys(rematToSave).length === 0 && remote.reMatricula && Object.keys(remote.reMatricula).length > 0)
-          rematToSave = remote.reMatricula;
-      }
-    }catch(e){}
-  }
+  // Se marca lo que cambió acá y se relee la nube antes de escribir, así lo que hizo
+  // otra sesión mientras tanto no se pierde. Esto reemplaza los parches que antes
+  // preservaban padrón y re-matrícula a mano: ahora lo cubre el merge para todo.
+  stampChanges();
+  try{
+    const remote = await fsGet();
+    if(remote){ mergeRemoto(remote); primeSig(); saveLocalOnly(); }
+  }catch(e){}
+
   const payload = JSON.stringify({
     nextId: DB.nextId,
     postulantes: DB.postulantes,
@@ -1428,10 +1427,12 @@ async function fsSave(){
     pendingNotif: DB.pendingNotif,
     bajasEscolares: DB.bajasEscolares||[],
     ocupacion: DB.ocupacion||{},
-    padron: padronToSave,
-    reMatricula: rematToSave,
+    padron: DB.padron||[],
+    reMatricula: DB.reMatricula||{},
     descuentos: DB.descuentos||{},
     morosos: DB.morosos||[],
+    _meta: DB._meta||{},
+    _del: DB._del||{},
     ts: Date.now()
   });
   try{
@@ -1546,20 +1547,16 @@ async function syncFromCloud(){
     if(ok) toast('☁ Datos del sistema subidos a la nube por primera vez','ok');
     return;
   }
-  // Compare timestamps
-  const localTs = parseInt(localStorage.getItem('austin_ebs_ts')||'0');
-  const remoteTs = parseInt(remote.ts || 0);
-  if(remoteTs > localTs){
-    aplicarRemoto(remote);
-    saveLocalOnly();
-    renderPanel();
-    updateSyncStatus('synced');
-    toast('☁ Datos actualizados desde la nube','ok');
-  } else {
-    // Local is newer or same → push to cloud
-    const ok = await fsSave();
-    updateSyncStatus(ok ? 'synced' : 'error');
-  }
+  // Ya no se compara un timestamp global para decidir quién pisa a quién: se combina
+  // registro por registro y después se sube el resultado.
+  stampChanges();
+  mergeRemoto(remote);
+  primeSig();
+  saveLocalOnly();
+  renderPanel();
+  const ok = await fsSave();
+  updateSyncStatus(ok ? 'synced' : 'error');
+  if(ok) toast('☁ Datos sincronizados con la nube','ok');
   // Incorporar las postulaciones que dejaron las familias mientras nadie estaba en el panel
   try{
     const n = await procesarInbox();
@@ -1570,8 +1567,141 @@ async function syncFromCloud(){
   }catch(e){}
 }
 
-// Vuelca sobre DB el documento de la nube. Se usa desde el sync inicial y desde el
-// refresco periódico, así hay un solo lugar donde se decide qué campo pisa a cuál.
+// ═══════════════════════════
+// MERGE POR REGISTRO
+// ═══════════════════════════
+// Todo el sistema vive en un único documento, así que hasta acá cada guardado pisaba
+// el documento entero con la foto local: si Sofi tocaba Ocupación y Lau Admisiones,
+// la última en guardar borraba el trabajo de la otra sin que nadie se enterara.
+// Ahora cada registro lleva su propia marca de tiempo y al guardar se relee la nube y
+// se combina registro por registro: gana el más reciente de cada uno, no el último
+// que apretó guardar.
+const MERGE_COLS = {
+  postulantes:    {tipo:'array', key:'id'},
+  padron:         {tipo:'array', key:'id'},
+  bajasEscolares: {tipo:'array', key:'id'},
+  morosos:        {tipo:'array', key:'apellido'},
+  reMatricula:    {tipo:'obj'},
+  descuentos:     {tipo:'obj'},
+  ocupacion:      {tipo:'obj'},
+  vacantes:       {tipo:'obj'},
+  tarifas:        {tipo:'obj'},
+  emails:         {tipo:'obj'},
+  config:         {tipo:'obj'}
+};
+const TOMBSTONE_DIAS = 120;
+
+// Convierte una colección a {clave: valor}, sea array con id o diccionario.
+function _mapaDe(coll, valor){
+  const def = MERGE_COLS[coll];
+  const out = {};
+  if(def.tipo === 'array'){
+    (valor||[]).forEach(function(r){
+      if(!r) return;
+      const k = String(r[def.key] ?? '').trim().toLowerCase();
+      if(k) out[k] = r;
+    });
+  } else {
+    Object.keys(valor||{}).forEach(function(k){ out[k] = valor[k]; });
+  }
+  return out;
+}
+
+// Foto de la última versión conocida de cada registro, para detectar qué cambió.
+let _sig = {};
+function primeSig(){
+  _sig = {};
+  Object.keys(MERGE_COLS).forEach(function(coll){
+    const cur = _mapaDe(coll, DB[coll]);
+    const f = {};
+    Object.keys(cur).forEach(function(k){ f[k] = JSON.stringify(cur[k]); });
+    _sig[coll] = f;
+  });
+}
+
+// Marca con la hora actual lo que cambió desde la última foto, y deja lápida de lo que
+// desapareció. Detectar los borrados por diferencia — en vez de instrumentar cada
+// función que borra — cubre también los borrados en bloque del padrón.
+function stampChanges(){
+  const now = Date.now();
+  DB._meta = DB._meta || {}; DB._del = DB._del || {};
+  Object.keys(MERGE_COLS).forEach(function(coll){
+    const cur  = _mapaDe(coll, DB[coll]);
+    const prev = _sig[coll] || {};
+    const meta = DB._meta[coll] = DB._meta[coll] || {};
+    const del  = DB._del[coll]  = DB._del[coll]  || {};
+    const foto = {};
+    Object.keys(cur).forEach(function(k){
+      const s = JSON.stringify(cur[k]);
+      foto[k] = s;
+      if(prev[k] !== s){ meta[k] = now; delete del[k]; }
+      else if(!meta[k]) meta[k] = meta[k] || 0;
+    });
+    Object.keys(prev).forEach(function(k){
+      if(!(k in cur)){ del[k] = now; delete meta[k]; }
+    });
+    _sig[coll] = foto;
+  });
+}
+
+// Combina el documento de la nube con lo que hay en memoria.
+function mergeRemoto(remote){
+  if(!remote) return;
+  const rMeta = remote._meta || {}, rDel = remote._del || {};
+  DB._meta = DB._meta || {}; DB._del = DB._del || {};
+  const corte = Date.now() - TOMBSTONE_DIAS*24*60*60*1000;
+
+  Object.keys(MERGE_COLS).forEach(function(coll){
+    const def = MERGE_COLS[coll];
+    const loc = _mapaDe(coll, DB[coll]);
+    const rem = _mapaDe(coll, remote[coll]);
+    const lm = DB._meta[coll] || {}, rm = rMeta[coll] || {};
+    const ld = DB._del[coll]  || {}, rd = rDel[coll]  || {};
+
+    // Lápidas: la más reciente de las dos, descartando las muy viejas.
+    const del = {};
+    Object.keys(ld).concat(Object.keys(rd)).forEach(function(k){
+      const t = Math.max(ld[k]||0, rd[k]||0);
+      if(t > corte) del[k] = t;
+    });
+
+    const out = {}, meta = {};
+    const claves = {};
+    Object.keys(loc).concat(Object.keys(rem)).forEach(function(k){ claves[k]=1; });
+    Object.keys(claves).forEach(function(k){
+      const lt = lm[k]||0, rt = rm[k]||0;
+      let val, ts;
+      if(k in loc && k in rem){
+        // Empate (los dos sin marca) → gana la nube, que es la versión compartida.
+        if(lt > rt){ val = loc[k]; ts = lt; } else { val = rem[k]; ts = rt; }
+      } else if(k in loc){ val = loc[k]; ts = lt; }
+      else { val = rem[k]; ts = rt; }
+      // Borrado después de la última edición conocida → se queda borrado.
+      if(del[k] && del[k] >= ts) return;
+      out[k] = val; meta[k] = ts;
+    });
+
+    DB[coll] = def.tipo === 'array' ? Object.keys(out).map(function(k){ return out[k]; }) : out;
+    DB._meta[coll] = meta;
+    DB._del[coll]  = del;
+  });
+
+  // El contador de IDs nunca puede retroceder: dos sesiones dando altas a la vez
+  // reusarían el mismo número y un postulante pisaría al otro.
+  DB.nextId = Math.max(Number(DB.nextId)||0, Number(remote.nextId)||0) || 1;
+
+  // Avisos pendientes: unión, limpiando los que ya no tienen postulante.
+  const ids = {};
+  (DB.postulantes||[]).forEach(function(p){ ids[p.id]=1; });
+  const notif = {};
+  (DB.pendingNotif||[]).concat(remote.pendingNotif||[]).forEach(function(x){ if(ids[x]) notif[x]=1; });
+  DB.pendingNotif = Object.keys(notif).map(function(x){ return isNaN(Number(x)) ? x : Number(x); });
+
+  if(!DB.ocupacion || !Object.keys(DB.ocupacion).length) DB.ocupacion = {...OC_DEFAULT};
+}
+
+// Vuelca sobre DB el documento de la nube pisando lo local. Sólo se usa cuando no hay
+// nada que preservar; el camino normal es mergeRemoto().
 function aplicarRemoto(remote){
   if(remote.nextId) DB.nextId = remote.nextId;
   if(remote.postulantes) DB.postulantes = remote.postulantes;
@@ -1614,13 +1744,14 @@ async function autoRefresh(silencioso){
   try{
     const remote = await fsGet();
     if(remote){
-      const localTs  = parseInt(localStorage.getItem('austin_ebs_ts')||'0');
-      const remoteTs = parseInt(remote.ts || 0);
-      if(remoteTs > localTs){
-        aplicarRemoto(remote);
-        saveLocalOnly();
-        refrescado = true;
-      }
+      // Combinar en vez de pisar: si estabas editando algo que todavía no subió,
+      // el refresco automático no te lo borra.
+      const antes = JSON.stringify(DB.postulantes)+JSON.stringify(DB.padron)+JSON.stringify(DB.bajasEscolares);
+      stampChanges();
+      mergeRemoto(remote);
+      primeSig();
+      saveLocalOnly();
+      refrescado = (JSON.stringify(DB.postulantes)+JSON.stringify(DB.padron)+JSON.stringify(DB.bajasEscolares)) !== antes;
     }
   }catch(e){}
 
@@ -1652,13 +1783,16 @@ function saveLocalOnly(){
     const ts = Date.now();
     localStorage.setItem('austin_ebs_v2', JSON.stringify({
       nextId:DB.nextId, postulantes:DB.postulantes, vacantes:DB.vacantes,
-      tarifas:DB.tarifas, emails:DB.emails, config:DB.config, pendingNotif:DB.pendingNotif, bajasEscolares:DB.bajasEscolares||[], ocupacion:DB.ocupacion||{}, padron:DB.padron||[], reMatricula:DB.reMatricula||{}, descuentos:DB.descuentos||{}, morosos:DB.morosos||[]
+      tarifas:DB.tarifas, emails:DB.emails, config:DB.config, pendingNotif:DB.pendingNotif, bajasEscolares:DB.bajasEscolares||[], ocupacion:DB.ocupacion||{}, padron:DB.padron||[], reMatricula:DB.reMatricula||{}, descuentos:DB.descuentos||{}, morosos:DB.morosos||[], _meta:DB._meta||{}, _del:DB._del||{}
     }));
     localStorage.setItem('austin_ebs_ts', String(ts));
   } catch(e){}
 }
 
 function saveDB(){
+  // Se marca acá y no sólo antes de subir: si el navegador se cierra dentro de los 2s
+  // del guardado diferido, el cambio ya quedó fechado y sigue ganando al recuperarse.
+  stampChanges();
   saveLocalOnly();
   // Debounced cloud save — 2s after last change
   clearTimeout(_fsSaveTimer);
@@ -1701,6 +1835,8 @@ function loadDB(){
     if(d.reMatricula) DB.reMatricula=d.reMatricula;
     if(d.descuentos) DB.descuentos=d.descuentos;
     if(d.morosos) DB.morosos=d.morosos;
+    if(d._meta) DB._meta=d._meta;
+    if(d._del) DB._del=d._del;
   } catch(e){}
   if(!DB.ocupacion||!Object.keys(DB.ocupacion).length) DB.ocupacion={...OC_DEFAULT};
   // Safety net: nunca sobreescribir con vacío — valores críticos del sistema
@@ -1708,6 +1844,9 @@ function loadDB(){
   if(!DB.config.emailAdmin) DB.config.emailAdmin='adm@austinebs-ah.edu.ar';
   if(!DB.config.emailDG) DB.config.emailDG='alejandra.luna@austinebs-ah.edu.ar';
   if(!DB.config.eoeApiUrl) DB.config.eoeApiUrl='https://eoe-austin.netlify.app/';
+  // Foto de partida: sin esto el primer stampChanges() marcaria todo como recien
+  // editado y la copia local le ganaria a la nube entera.
+  primeSig();
 }
 function resetDB(){
   if(!confirm('¿Borrar TODOS los postulantes y datos de la nube? Esta acción no se puede deshacer.')) return;
