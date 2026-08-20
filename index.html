@@ -942,12 +942,25 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
             <option value="2029">2029</option>
             <option value="2030">2030</option>
           </select>
-          <select class="fsel2" id="pipeline-niv" onchange="renderPipeline()">
+          <select class="fsel2" id="pipeline-niv" onchange="poblarCursosPipeline();renderPipeline()">
             <option value="">Todos los niveles</option>
             <option value="Kindergarten">Kindergarten</option>
             <option value="Elementary">Elementary</option>
             <option value="High School">High School</option>
           </select>
+          <select class="fsel2" id="pipeline-curso" onchange="renderPipeline()"><option value="">Todos los cursos</option></select>
+          <select class="fsel2" id="pipeline-sec" onchange="renderPipeline()"><option value="">Todas las salas</option></select>
+          <select class="fsel2" id="pipeline-mod" onchange="renderPipeline()">
+            <option value="">Cualquier fecha</option>
+            <option value="7">Modificados últimos 7 días</option>
+            <option value="15">Últimos 15 días</option>
+            <option value="30">Últimos 30 días</option>
+            <option value="i7">Sin tocar hace +7 días</option>
+            <option value="i30">Sin tocar hace +30 días</option>
+          </select>
+          <input class="fi" id="pipeline-q" placeholder="Buscar por alumno, familia, email o teléfono..." oninput="renderPipeline()"
+                 style="flex:1;min-width:200px;padding:7px 11px;font-size:12.5px;border:1.5px solid var(--bd2);border-radius:8px;background:#fff">
+          <button class="btn btn-out btn-sm" onclick="limpiarFiltrosPipeline()">Limpiar</button>
           <span id="pipeline-count" style="font-size:12px;color:var(--tx3)"></span>
         </div>
         <div class="pcols" id="pcols"></div>
@@ -1015,7 +1028,7 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
                 <option value="desiste">Desiste</option>
                 <option value="no_queremos">No incorporado</option>
               </select>
-              <select class="fsel2" id="fniv" onchange="filterT()">
+              <select class="fsel2" id="fniv" onchange="poblarCursosPost();filterT()">
                 <option value="">Todos los niveles</option>
                 <option value="Kindergarten">Kindergarten</option><option value="Elementary">Elementary</option><option value="High School">High School</option>
               </select>
@@ -1023,6 +1036,17 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
                 <option value="">Todos los ciclos</option>
                 <option value="2025">2025</option><option value="2026">2026</option><option value="2027">2027</option><option value="2028">2028</option><option value="2029">2029</option><option value="2030">2030</option>
               </select>
+              <select class="fsel2" id="fcurso" onchange="filterT()"><option value="">Todos los cursos</option></select>
+              <select class="fsel2" id="fsec" onchange="filterT()"><option value="">Todas las salas</option></select>
+              <select class="fsel2" id="fmod" onchange="filterT()">
+                <option value="">Cualquier fecha</option>
+                <option value="7">Modificados últimos 7 días</option>
+                <option value="15">Últimos 15 días</option>
+                <option value="30">Últimos 30 días</option>
+                <option value="i7">Sin tocar hace +7 días</option>
+                <option value="i30">Sin tocar hace +30 días</option>
+              </select>
+              <button class="btn btn-out btn-sm" onclick="limpiarFiltrosPost()">Limpiar</button>
             </div>
           </div>
           <table><thead><tr><th>Estudiante</th><th>Padre/Tutor</th><th>Curso</th><th>Ciclo</th><th>Estado</th><th>Email</th><th>Días</th><th></th></tr></thead>
@@ -1977,9 +2001,9 @@ function showV(v){
   const titles={dashboard:'Dashboard',pipeline:'Pipeline de admisiones',entrevistas:'Entrevistas',post:'Postulantes',bajas:'Desistieron',bajasesc:'Bajas de alumnos',ocupacion:'Ocupación del colegio',vac:'Vacantes por curso',emails:'Plantillas de mail',tar:'Tarifas 2026',cfg:'Configuración'};
   document.getElementById('tb-t').textContent=titles[v]||v;
   if(v==='dashboard') renderDashboard();
-  if(v==='pipeline') renderPipeline();
+  if(v==='pipeline'){ poblarCursosPipeline(); renderPipeline(); }
   if(v==='entrevistas') { renderAdminCal(); renderEntAdminLista('proximas'); }
-  if(v==='post') renderTable();
+  if(v==='post'){ poblarCursosPost(); filterT(); }
   if(v==='bajas') renderBajas();
   if(v==='bajasesc') renderBajasEsc();
   if(v==='ocupacion') renderOcupacion();
@@ -2159,17 +2183,71 @@ function dismissN(id){ DB.pendingNotif=DB.pendingNotif.filter(x=>x!==id); render
 // ═══════════════════════════
 // PIPELINE
 // ═══════════════════════════
+// Los cursos y las salas dependen del nivel elegido: mostrar los 16 cursos y las 31
+// secciones siempre volvía inservibles los desplegables.
+function poblarCursosPipeline(){
+  const niv=document.getElementById('pipeline-niv')?.value||'';
+  const selC=document.getElementById('pipeline-curso');
+  const selS=document.getElementById('pipeline-sec');
+  if(selC){
+    const prev=selC.value;
+    const cursos=CURSOS.filter(c=>!niv||NIVEL(c)===niv);
+    selC.innerHTML='<option value="">Todos los cursos</option>'+cursos.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
+    selC.value=cursos.indexOf(prev)!==-1?prev:'';
+  }
+  if(selS){
+    const prev=selS.value;
+    const secs=SCHOOL_CURSOS.filter(sc=>{
+      if(!niv) return true;
+      const n=SCHOOL_NIVEL(sc);
+      return niv==='Kindergarten' ? n==='Inicial' : n===niv;
+    });
+    selS.innerHTML='<option value="">Todas las salas</option>'+secs.map(sc=>`<option value="${esc(sc)}">${esc(sc)}</option>`).join('');
+    selS.value=secs.indexOf(prev)!==-1?prev:'';
+  }
+}
+
+function limpiarFiltrosPipeline(){
+  ['pipeline-anio','pipeline-niv','pipeline-curso','pipeline-sec','pipeline-mod','pipeline-q'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  poblarCursosPipeline();
+  renderPipeline();
+}
+
+// Filtro compartido por el pipeline y la tabla de postulantes, para que los dos
+// entiendan lo mismo por "nivel", "sala" o "modificado hace X".
+function filtraPostulante(p, f){
+  if(f.anio && String(p.anio)!==f.anio) return false;
+  if(f.niv && p.nivel!==f.niv) return false;
+  if(f.curso && p.curso!==f.curso) return false;
+  if(f.sec && p.seccion!==f.sec) return false;
+  if(f.mod){
+    const d=diasDesde(p.ultAccion||p.fecha);
+    if(f.mod.charAt(0)==='i'){ if(d < parseInt(f.mod.slice(1),10)) return false; }
+    else if(d > parseInt(f.mod,10)) return false;
+  }
+  if(f.q){
+    const q=f.q.toLowerCase();
+    const heno=[p.alumno,p.padre,p.email,p.tel,p.curso,p.colegio,p.dni].map(v=>String(v||'').toLowerCase()).join(' ');
+    if(heno.indexOf(q)===-1) return false;
+  }
+  return true;
+}
+
+function _filtrosPipeline(){
+  const v=id=>document.getElementById(id)?.value||'';
+  return {anio:v('pipeline-anio'), niv:v('pipeline-niv'), curso:v('pipeline-curso'),
+          sec:v('pipeline-sec'), mod:v('pipeline-mod'), q:v('pipeline-q').trim()};
+}
+
 function renderPipeline(){
-  const anioF=document.getElementById('pipeline-anio')?.value||'';
-  const nivF=document.getElementById('pipeline-niv')?.value||'';
+  const f=_filtrosPipeline();
+  const hayFiltro=Object.keys(f).some(k=>f[k]);
   const ACTIVE=['contactado','citado','entrevistado','postulado','eoe_ingles','pendiente_dg','matriculado','nuevo'];
   let total=0;
   document.getElementById('pcols').innerHTML=ESTADOS.map(e=>{
-    const ps=DB.postulantes.filter(p=>
-      p.estado===e&&
-      (!anioF||String(p.anio)===anioF)&&
-      (!nivF||p.nivel===nivF)
-    );
+    const ps=DB.postulantes.filter(p=>p.estado===e&&filtraPostulante(p,f));
     if(ACTIVE.includes(e)) total+=ps.length;
     return `<div class="pcol">
       <div class="pch ${EPCLS[e]}"><span class="pch-n" style="color:${ECOL[e]}">${EL[e]}</span><span class="pch-c" style="color:${ECOL[e]}">${ps.length}</span></div>
@@ -2184,7 +2262,10 @@ function renderPipeline(){
     </div>`;
   }).join('');
   const cnt=document.getElementById('pipeline-count');
-  if(cnt) cnt.textContent=(anioF||nivF)?`${total} activos con filtro`:'';
+  if(cnt){
+    const enPantalla=DB.postulantes.filter(p=>filtraPostulante(p,f)).length;
+    cnt.textContent=hayFiltro?`${enPantalla} de ${DB.postulantes.length} · ${total} activos`:'';
+  }
 }
 
 // ═══════════════════════════
@@ -2207,15 +2288,43 @@ function renderTable(list=null){
       <td onclick="event.stopPropagation()"><button class="btn btn-sm btn-td" onclick="openDetalle(${p.id})">Gestionar</button></td>
     </tr>`).join('');
 }
+// Mismos desplegables que el pipeline, poblados segun el nivel elegido.
+function poblarCursosPost(){
+  const niv=document.getElementById('fniv')?.value||'';
+  const selC=document.getElementById('fcurso');
+  const selS=document.getElementById('fsec');
+  if(selC){
+    const prev=selC.value;
+    const cursos=CURSOS.filter(c=>!niv||NIVEL(c)===niv);
+    selC.innerHTML='<option value="">Todos los cursos</option>'+cursos.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
+    selC.value=cursos.indexOf(prev)!==-1?prev:'';
+  }
+  if(selS){
+    const prev=selS.value;
+    const secs=SCHOOL_CURSOS.filter(sc=>{
+      if(!niv) return true;
+      const n=SCHOOL_NIVEL(sc);
+      return niv==='Kindergarten' ? n==='Inicial' : n===niv;
+    });
+    selS.innerHTML='<option value="">Todas las salas</option>'+secs.map(sc=>`<option value="${esc(sc)}">${esc(sc)}</option>`).join('');
+    selS.value=secs.indexOf(prev)!==-1?prev:'';
+  }
+}
+
+function limpiarFiltrosPost(){
+  ['fq','fest','fniv','fanio','fcurso','fsec','fmod'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  poblarCursosPost();
+  filterT();
+}
+
 function filterT(){
-  const q=document.getElementById('fq').value.toLowerCase();
-  const est=document.getElementById('fest').value;
-  const niv=document.getElementById('fniv').value;
-  const anio=document.getElementById('fanio').value;
-  renderTable(DB.postulantes.filter(p=>
-    (!q||p.alumno.toLowerCase().includes(q)||p.padre.toLowerCase().includes(q)||p.email.toLowerCase().includes(q)||p.curso.toLowerCase().includes(q))&&
-    (!est||p.estado===est)&&(!niv||p.nivel===niv)&&(!anio||String(p.anio)===anio)
-  ));
+  const v=id=>document.getElementById(id)?.value||'';
+  const est=v('fest');
+  const f={anio:v('fanio'), niv:v('fniv'), curso:v('fcurso'), sec:v('fsec'),
+           mod:v('fmod'), q:v('fq').trim()};
+  renderTable(DB.postulantes.filter(p=>(!est||p.estado===est)&&filtraPostulante(p,f)));
 }
 
 // ═══════════════════════════
