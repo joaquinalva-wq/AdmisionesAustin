@@ -2016,9 +2016,12 @@ function showV(v){
 // este archivo. Sin esta migracion, corregir el texto aca no cambiaba nada en
 // produccion. Solo se reemplaza si el cuerpo sigue siendo exactamente el viejo: si
 // Admisiones lo edito por su cuenta, se respeta lo que escribieron.
+// Sin bandera a propósito. Con bandera esto no llegaba nunca a producción: al entrar,
+// renderPanel() corre ANTES de bajar la nube, veía la plantilla nueva del código,
+// marcaba la migración como hecha, y cuando después bajaba la plantilla vieja de la
+// nube ya no volvía a intentarlo. Comparar contra el texto viejo alcanza como guarda:
+// una vez reemplazado deja de coincidir y no se repite.
 function migCitadoConFecha(){
-  if(DB.config.mig_citado_fecha_v1) return;
-  DB.config.mig_citado_fecha_v1 = true;
   const viejo = 'Hola {{padre}},\n\nTu entrevista en Austin Eco Bilingual School está confirmada. Te esperamos con gusto.\n\nSi necesitás reprogramar, respondenos este mail a admisiones@austinebs-ah.edu.ar y lo coordinamos.\n\nUn saludo,\nLaura Unamuno\nAdmisiones – Austin EBS';
   if(DB.emails && DB.emails.citado && DB.emails.citado.body === viejo){
     DB.emails.citado = {subj:'Tu entrevista en Austin EBS está confirmada — {{fecha_entrevista}}', body:'Hola {{padre}},\n\n¡Tu entrevista en Austin Eco Bilingual School está confirmada! Nos alegra mucho que vengan a conocernos.\n\n▸ LOS DATOS DE TU ENTREVISTA\nEstudiante: {{alumno}} — {{curso}}\nDía: {{fecha_entrevista}}\nHora: {{hora_entrevista}}\nLugar: {{lugar_entrevista}}\nDuración aproximada: 1 hora\n\nSi necesitás reprogramar, respondé este mail y lo coordinamos sin problema.\n\nMientras tanto, si querés ir conociendo el proyecto y los aranceles, están acá: {{link_drive}}\n\n¡Te esperamos!\n\nUn saludo,\nLaura Unamuno\nAdmisiones – Austin EBS'};
