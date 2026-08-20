@@ -1272,6 +1272,11 @@ const NIVEL = c => !c ? '' : c.startsWith('K') ? 'Kindergarten' : c.includes('El
 
 // Secciones reales del colegio (para ocupación)
 const SCHOOL_CURSOS = ['S2 · Puppies','S3 · Dolphins','S3 · Koalas','S4 · Foxes','S4 · Monkeys','S5 · Bears','S5 · Hippos','1° A Prim','1° B Prim','2° A Prim','2° B Prim','3° A Prim','3° B Prim','4° A Prim','4° B Prim','5° A Prim','5° B Prim','6° A Prim','6° B Prim','1° A Sec','1° B Sec','2° A Sec','2° B Sec','3° A Sec','3° B Sec','4° A Sec','4° B Sec','5° A Sec','5° B Sec','6° A Sec','6° B Sec'];
+// Orden progresivo de secciones (S2 → 6° Sec), no alfabetico. Ordenar por texto daba
+// "1° A Prim, 1° A Sec, 1° B Prim..." intercalando primaria con secundaria y dejando
+// todo el jardin al final, porque "S" va despues de los numeros.
+const ordenSeccion = sc => { const i = SCHOOL_CURSOS.indexOf(sc); return i === -1 ? 999 : i; };
+const cmpSeccionNombre = (a,b) => (ordenSeccion(a.curso) - ordenSeccion(b.curso)) || String(a.nombre||'').localeCompare(String(b.nombre||''));
 const SCHOOL_NIVEL = sc => sc.includes(' Sec') ? 'High School' : sc.includes(' Prim') ? 'Elementary' : 'Inicial';
 const PIPELINE_TO_SECTIONS = {'K2 (Puppies)':['S2 · Puppies'],'K3 (Koalas/Dolphins)':['S3 · Dolphins','S3 · Koalas'],'K4 (Foxes/Monkeys)':['S4 · Foxes','S4 · Monkeys'],'K5 (Bears/Hippos)':['S5 · Bears','S5 · Hippos'],'1er año Elementary':['1° A Prim','1° B Prim'],'2do año Elementary':['2° A Prim','2° B Prim'],'3er año Elementary':['3° A Prim','3° B Prim'],'4to año Elementary':['4° A Prim','4° B Prim'],'5to año Elementary':['5° A Prim','5° B Prim'],'6to año Elementary':['6° A Prim','6° B Prim'],'1er año High School':['1° A Sec','1° B Sec'],'2do año High School':['2° A Sec','2° B Sec'],'3er año High School':['3° A Sec','3° B Sec'],'4to año High School':['4° A Sec','4° B Sec'],'5to año High School':['5° A Sec','5° B Sec'],'6to año High School':['6° A Sec','6° B Sec']};
 // Maps each section to the next year section (null = graduates)
@@ -2582,11 +2587,46 @@ function openNuevo(){
       <div class="fgm"><label class="flm">Teléfono</label><input class="fim" id="nm-tel" placeholder="+54 11 0000-0000"></div>
       <div class="fgm"><label class="flm">¿Hermano en Austin?</label><select class="fsm" id="nm-he"><option value="no">No</option><option value="si">Sí ★ (tiene prioridad)</option></select></div>
     </div>
-    <div class="fgm"><label class="flm">Nota inicial</label><textarea class="ftm" id="nm-obs" style="min-height:55px" placeholder="Cómo llegaron, quién los recomendó, etc."></textarea></div>`;
+    <div class="fgm"><label class="flm">Nota inicial</label><textarea class="ftm" id="nm-obs" style="min-height:55px" placeholder="Cómo llegaron, quién los recomendó, etc."></textarea></div>
+    <div class="ssm" style="margin:12px 0 10px">Dónde entra y qué se le avisa</div>
+    <div class="fgm"><label class="flm">Estado en el pipeline</label>
+      <select class="fsm" id="nm-est" onchange="prevNuevoMail()">
+        ${ESTADOS.map(e=>`<option value="${e}" ${e==='citado'?'selected':''}>${EL[e]||e}</option>`).join('')}
+      </select>
+    </div>
+    <label style="display:flex;align-items:flex-start;gap:7px;font-size:12.5px;color:var(--tx2);cursor:pointer;background:var(--cr);border-radius:8px;padding:10px 12px">
+      <input type="checkbox" id="nm-nomail" style="margin-top:2px" onchange="prevNuevoMail()">
+      <span><strong>No enviar ningún mail</strong><br>
+      <span style="color:var(--tx3);font-size:11.5px">Para postulantes viejos o familias con las que ya venís hablando por otro canal. Entra al pipeline en silencio.</span></span>
+    </label>
+    <div id="nm-mailinfo" style="margin-top:9px"></div>`;
   document.getElementById('mf').innerHTML=`
     <button class="btn btn-out" onclick="closeM()">Cancelar</button>
-    <button class="btn btn-td" onclick="saveNuevo()">Guardar y enviar mail de bienvenida</button>`;
+    <button class="btn btn-td" id="nm-btn" onclick="saveNuevo()">Guardar y enviar mail</button>`;
   openM();
+  prevNuevoMail();
+}
+
+// Muestra qué mail va a salir según el estado elegido, y ajusta el botón cuando se
+// pide no enviar nada. Antes el alta manual siempre entraba como "citado" y siempre
+// disparaba un mail, así que cargar un postulante viejo le mandaba una bienvenida.
+function prevNuevoMail(){
+  const est=document.getElementById('nm-est')?.value||'citado';
+  const noMail=document.getElementById('nm-nomail')?.checked||false;
+  const info=document.getElementById('nm-mailinfo');
+  const btn=document.getElementById('nm-btn');
+  const sinPlantilla=['no_queremos','rechazado_eoe','pendiente_dg'];
+  const tmpl=DB.emails[est];
+  const hayMail=!!tmpl && !sinPlantilla.includes(est);
+  if(btn) btn.textContent=(noMail||!hayMail)?'Guardar sin enviar mail':'Guardar y enviar mail';
+  if(!info) return;
+  if(noMail){
+    info.innerHTML=`<div style="background:var(--cr2);border-radius:8px;padding:9px 12px;font-size:12px;color:var(--tx2)">✓ No se va a enviar ningún mail. El postulante entra directo a <strong>${esc(EL[est]||est)}</strong>.</div>`;
+  } else if(!hayMail){
+    info.innerHTML=`<div style="background:var(--cr2);border-radius:8px;padding:9px 12px;font-size:12px;color:var(--tx2)">ℹ <strong>${esc(EL[est]||est)}</strong> no tiene mail automático a la familia.</div>`;
+  } else {
+    info.innerHTML=`<div style="background:#DCFCE7;border:1px solid #86EFAC;border-radius:8px;padding:9px 12px;font-size:12px;color:#166534">✉ Se va a enviar: <strong>${esc(tmpl.subj)}</strong></div>`;
+  }
 }
 
 function saveNuevo(){
@@ -2599,6 +2639,8 @@ function saveNuevo(){
     toast('⚠ Este email ya tiene una postulación activa','err'); return;
   }
   if(!alumno||!padre||!email){ toast('Completá los campos obligatorios','err'); return; }
+  const estadoSel=document.getElementById('nm-est')?.value||'citado';
+  const noMail=document.getElementById('nm-nomail')?.checked||false;
   const obsVal=(document.getElementById('nm-obs').value||'').trim();
   const p={
     id:DB.nextId++,alumno,padre,email,
@@ -2608,20 +2650,27 @@ function saveNuevo(){
     anio:parseInt(document.getElementById('nm-an').value),
     colegio:document.getElementById('nm-cole').value,
     hermano:document.getElementById('nm-he').value,
-    estado:'citado',fecha:today(),ultAccion:today(),
+    estado:estadoSel,fecha:today(),ultAccion:today(),
     notas:obsVal?[{txt:obsVal,fecha:new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}),hora:new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})}]:[],
-    hist:[{e:'citado',f:today(),mailOk:false}]
+    hist:[{e:estadoSel,f:today(),mailOk:false}]
   };
   DB.postulantes.unshift(p);
   DB.pendingNotif.push(p.id);
   saveDB();
-  enviarMailAdmin(p,'citado',(ok,mode)=>{
+  closeM();
+  refrescarVistasPostulantes();
+
+  const sinPlantilla=['no_queremos','rechazado_eoe','pendiente_dg'];
+  if(noMail || !DB.emails[estadoSel] || sinPlantilla.includes(estadoSel)){
+    toast(`✓ ${alumno} agregado en ${EL[estadoSel]||estadoSel} · Sin mail`,'ok');
+    return;
+  }
+  enviarMailAdmin(p,estadoSel,(ok,mode)=>{
     if(ok){ p.hist[0].mailOk=true; saveDB(); }
     if(ok&&mode==='mailto') toast(`✓ ${alumno} agregado · Abriendo correo...`,'info');
-    else if(ok) toast(`✓ ${alumno} agregado · Mail de bienvenida enviado`,'ok');
+    else if(ok) toast(`✓ ${alumno} agregado · Mail enviado a ${p.email}`,'ok');
     else toast(`${alumno} agregado · Verificá la configuración de Apps Script`,'err');
   });
-  closeM(); renderDashboard();
 }
 
 // ═══════════════════════════
@@ -5088,20 +5137,41 @@ function registrarBajaPadronModal(id){
   openM();
 }
 
+const MOTIVOS_BAJA={familiar:'Familiar / personal',academico:'Académico',morosidad:'Morosidad',distancia:'Distancia / mudanza',otro:'Otro'};
+
 function guardarBajaPadron(id){
   const a=(DB.padron||[]).find(x=>x.id===id); if(!a) return;
   a.estado='baja';
   a.fechaBaja=document.getElementById('pbaja-fecha')?.value||today();
   a.motivoBaja=document.getElementById('pbaja-motivo')?.value||'otro';
   a.notaBaja=(document.getElementById('pbaja-nota')?.value||'').trim();
-  saveDB(); closeM(); renderOcupacion(); ocTab('padron'); toast('Baja registrada','ok');
+
+  // Este camino marcaba el padrón pero no dejaba rastro en la vista Bajas: quien daba
+  // de baja desde el padrón liberaba la vacante y el resto del equipo no se enteraba
+  // nunca. Es la misma baja, así que se registra igual que desde la vista Bajas.
+  DB.bajasEscolares=DB.bajasEscolares||[];
+  const yaRegistrada=DB.bajasEscolares.some(b=>String(b.padronId)===String(a.id));
+  if(!yaRegistrada){
+    const motivoTxt=[MOTIVOS_BAJA[a.motivoBaja]||a.motivoBaja, a.notaBaja].filter(Boolean).join(' — ');
+    DB.bajasEscolares.push({id:Date.now(),padronId:a.id,alumno:a.nombre,curso:a.curso,
+      nivel:a.nivel||SCHOOL_NIVEL(a.curso),ciclo:a.ciclo,fecha:a.fechaBaja,motivo:motivoTxt});
+  }
+
+  saveDB(); closeM();
+  updateSidebarBadges(); renderBajasEsc(); renderOcupacion(); ocTab('padron');
+  toast(`Baja registrada — ${a.nombre} aparece en Bajas y se liberó la vacante`,'ok');
 }
 
 function reactivarAlumnoPadron(id){
   const a=(DB.padron||[]).find(x=>x.id===id); if(!a) return;
   if(!confirm(`¿Reactivar a ${a.nombre}?`)) return;
-  a.estado='activo'; a.fechaBaja=null; a.motivoBaja=null;
-  saveDB(); renderOcupacion(); ocTab('padron'); toast('Alumno reactivado','ok');
+  a.estado='activo'; a.fechaBaja=null; a.motivoBaja=null; a.notaBaja=null;
+  // La baja también se saca del listado: si no, el alumno quedaba activo en el padrón
+  // y al mismo tiempo figurando como baja, con la cuenta de bajas inflada.
+  DB.bajasEscolares=(DB.bajasEscolares||[]).filter(b=>String(b.padronId)!==String(a.id));
+  saveDB();
+  updateSidebarBadges(); renderBajasEsc(); renderOcupacion(); ocTab('padron');
+  toast(`${a.nombre} reactivado — se quitó de Bajas`,'ok');
 }
 
 function crearAlumnoPadron(p){
@@ -5444,8 +5514,22 @@ function _claveRV(curso, jornada){
 }
 
 // Importe de reserva de vacante de un alumno del padrón.
+// La seccion que le va a corresponder al alumno el ciclo que viene.
+function seccionSiguiente(alumno){
+  const actual = alumno && alumno.curso;
+  if(!actual) return '';
+  if(!Object.prototype.hasOwnProperty.call(SECTION_ADVANCE, actual)) return actual;
+  return SECTION_ADVANCE[actual] || ''; // null = egresa
+}
+
+// La reserva se cobra por el nivel al que el alumno VA, no por el que esta cursando.
+// Antes se usaba la seccion actual, asi que en cada salto de nivel se cobraba de menos:
+// un 6° Prim que pasa a 1° Sec pagaba tarifa de primaria, y un S5 que pasa a 1° Prim
+// pagaba tarifa de jardin.
 function reservaDeVacante(alumno){
-  const k = _claveRV(alumno && alumno.curso, alumno && alumno.jornada);
+  const destino = seccionSiguiente(alumno);
+  if(!destino) return 0; // egresa: no hay reserva que cobrar
+  const k = _claveRV(destino, alumno && alumno.jornada);
   return k ? parsePesos((DB.tarifas||{})[k]) : 0;
 }
 
@@ -5711,7 +5795,7 @@ function ejecutarImportIds(){
 function exportarFacturacionExcel(){
   const ciclo=_ocCiclo, sig=ciclo+1;
   const lista=padronRematriculable(ciclo)
-    .sort((a,b)=>((a.curso||'')+(a.nombre||'')).localeCompare((b.curso||'')+(b.nombre||'')));
+    .sort(cmpSeccionNombre);
   if(!lista.length){ toast('No hay alumnos para facturar','err'); return; }
 
   const columnas=[
@@ -5722,8 +5806,10 @@ function exportarFacturacionExcel(){
     {titulo:'Cuota 2', ancho:14, tipo:'numero'},
     {titulo:'Cuota 3', ancho:14, tipo:'numero'},
     {titulo:'Total reserva', ancho:15, tipo:'numero'},
-    {titulo:'Sección', ancho:16},
-    {titulo:'Jornada', ancho:17}
+    {titulo:'Sección '+ciclo, ancho:16},
+    {titulo:'Sección '+sig, ancho:16},
+    {titulo:'Jornada', ancho:17},
+    {titulo:'Nota interna', ancho:42}
   ];
 
   let sinId=0, sinValor=0;
@@ -5733,10 +5819,14 @@ function exportarFacturacionExcel(){
     const total=reservaDeVacante(a);
     if(!total) sinValor++;
     const c=enTresCuotas(total);
+    const reg=(DB.reMatricula||{})[a.id+'_'+sig]||{};
+    const destino=seccionSiguiente(a);
     return [
       a.idColegio||'', a.nombre||'',
       (REMAT_ESTADOS[est]||REMAT_ESTADOS.re_matricula).lbl,
-      c[0], c[1], c[2], total, a.curso||'', a.jornada||'Jornada Completa'
+      c[0], c[1], c[2], total,
+      a.curso||'', destino||'Egresa', a.jornada||'Jornada Completa',
+      reg.obs||''
     ];
   });
 
@@ -5841,7 +5931,7 @@ function filtrarRemat(){
   if(fNivel) lista=lista.filter(a=>a.nivel===fNivel);
   if(q) lista=lista.filter(a=>(a.nombre||'').toLowerCase().includes(q)||String(a.idColegio||'').toLowerCase().includes(q));
   if(fEst) lista=lista.filter(a=>_getRematEst(a.id,sig)===fEst);
-  lista=lista.sort((a,b)=>(a.curso+a.nombre).localeCompare(b.curso+b.nombre));
+  lista=lista.sort(cmpSeccionNombre);
   const tb=document.getElementById('remat-tabla'); if(!tb) return;
 
   if(!lista.length){
@@ -6003,7 +6093,7 @@ function _filasRemat(tipo){
   let lista=padronRematriculable(ciclo);
   if(tipo && tipo!=='all') lista=lista.filter(a=>_getRematEst(a.id,sig)===tipo);
   return lista
-    .sort((a,b)=>(a.curso+a.nombre).localeCompare(b.curso+b.nombre))
+    .sort(cmpSeccionNombre)
     .map(function(a){
       const est=_getRematEst(a.id,sig);
       const reg=(DB.reMatricula||{})[a.id+'_'+sig]||{};
@@ -6042,7 +6132,7 @@ function exportarRematExcel(){
 function exportarPadronExcel(){
   const ciclo=_ocCiclo;
   const lista=(DB.padron||[]).filter(a=>a.ciclo===ciclo)
-    .sort((a,b)=>((a.curso||'')+(a.nombre||'')).localeCompare((b.curso||'')+(b.nombre||'')));
+    .sort(cmpSeccionNombre);
   if(!lista.length){ toast(`No hay padrón cargado para ${ciclo}`,'err'); return; }
   const columnas=[
     {titulo:'ID colegio', ancho:13},
@@ -6089,7 +6179,7 @@ function exportarRematPDF(tipo){
   const bySec={};
   filas.forEach(function(f){ (bySec[f.seccion]=bySec[f.seccion]||[]).push(f); });
 
-  const secciones=Object.keys(bySec).sort().map(function(sec){
+  const secciones=Object.keys(bySec).sort((x,y)=>ordenSeccion(x)-ordenSeccion(y)).map(function(sec){
     const alumnos=bySec[sec];
     const filasHtml=alumnos.map(function(f,i){
       const e=REMAT_ESTADOS[f.estado]||REMAT_ESTADOS.re_matricula;
@@ -6857,7 +6947,7 @@ function filtrarBajaPicker(){
   if(fNivel) lista=lista.filter(a=>a.nivel===fNivel);
   if(fCurso) lista=lista.filter(a=>a.curso===fCurso);
   if(q) lista=lista.filter(a=>(a.nombre||'').toLowerCase().includes(q));
-  lista=lista.sort((a,b)=>(a.curso+a.nombre).localeCompare(b.curso+b.nombre));
+  lista=lista.sort(cmpSeccionNombre);
 
   const el=document.getElementById('bp-lista');
   if(!el) return;
@@ -6928,11 +7018,30 @@ function syncVacantesFromOcupacion(){
 
 function exportOcupacionCSV(){
   const all=ocData();
-  const cols=['Sección','Nivel','Base','Nuevos (sistema)','Bajas','Total actual','Capacidad','Disponibles','% Ocupación'];
-  const rows=all.map(r=>[r.sc,r.nivel,r.base,r.nuevos,r.bajas,r.actual,r.cap,r.disp,Math.round(r.pct*100)+'%']);
-  const csv=cols.join(',')+'\n'+rows.map(r=>r.map(v=>'"'+String(v||'').replace(/"/g,'""')+'"').join(',')).join('\n');
-  const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,'+encodeURIComponent('﻿'+csv);
+  const esc_=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
+  const lineas=[];
+
+  lineas.push(esc_('RESUMEN POR SECCIÓN — ciclo '+_ocCiclo));
+  lineas.push(['Sección','Nivel','Base','Nuevos (sistema)','Bajas','Total actual','Capacidad','Disponibles','% Ocupación'].map(esc_).join(','));
+  all.forEach(r=>lineas.push([r.sc,r.nivel,r.base,r.nuevos,r.bajas,r.actual,r.cap,r.disp,Math.round(r.pct*100)+'%'].map(esc_).join(',')));
+
+  // El resumen es por sección y no llevaba ningún ID: para cruzar con administración
+  // hacía falta abrir otro archivo. Va el detalle alumno por alumno con su ID.
+  const detalle=(DB.padron||[]).filter(a=>a.ciclo===_ocCiclo).sort(cmpSeccionNombre);
+  if(detalle.length){
+    lineas.push('');
+    lineas.push(esc_('DETALLE POR ALUMNO'));
+    lineas.push(['ID colegio','Alumno','Sección','Nivel','Estado','Fecha alta','Fecha baja','Motivo de baja'].map(esc_).join(','));
+    detalle.forEach(a=>lineas.push([
+      a.idColegio||'', a.nombre||'', a.curso||'', a.nivel||SCHOOL_NIVEL(a.curso||''),
+      a.estado==='activo'?'Activo':'Baja', a.fechaAlta||'', a.fechaBaja||'', a.motivoBaja||''
+    ].map(esc_).join(',')));
+  }
+
+  const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,'+encodeURIComponent('﻿'+lineas.join('\n'));
   a.download='ocupacion_austin_'+today()+'.csv'; a.click();
+  const sinId=detalle.filter(x=>!x.idColegio).length;
+  toast(`CSV exportado — ${all.length} secciones · ${detalle.length} alumnos`+(sinId?` · ${sinId} sin ID`:''), sinId?'info':'ok');
 }
 
 </script>
