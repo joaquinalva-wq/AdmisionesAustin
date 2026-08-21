@@ -1383,6 +1383,7 @@ let DB = {
   reMatricula:{},
   descuentos:{},
   morosos:[],
+  bloqueos:[],
   // Marca de tiempo por registro y lápidas de los borrados. Es lo que permite combinar
   // el trabajo de dos sesiones en vez de que la última que guarda pise a la otra.
   _meta:{},
@@ -1455,6 +1456,7 @@ async function fsSave(){
     reMatricula: DB.reMatricula||{},
     descuentos: DB.descuentos||{},
     morosos: DB.morosos||[],
+    bloqueos: DB.bloqueos||[],
     _meta: DB._meta||{},
     _del: DB._del||{},
     ts: Date.now()
@@ -1605,6 +1607,7 @@ const MERGE_COLS = {
   padron:         {tipo:'array', key:'id'},
   bajasEscolares: {tipo:'array', key:'id'},
   morosos:        {tipo:'array', key:'apellido'},
+  bloqueos:       {tipo:'array', key:'_k'},
   reMatricula:    {tipo:'obj'},
   descuentos:     {tipo:'obj'},
   ocupacion:      {tipo:'obj'},
@@ -1622,8 +1625,10 @@ function _mapaDe(coll, valor){
   if(def.tipo === 'array'){
     (valor||[]).forEach(function(r){
       if(!r) return;
-      const k = String(r[def.key] ?? '').trim().toLowerCase();
-      if(k) out[k] = r;
+      // Los bloqueos no tienen id propio: los identifica la fecha y el horario.
+      const k = def.key==='_k' ? (String(r.fecha||'')+'|'+String(r.hora||'*'))
+                               : String(r[def.key] ?? '').trim().toLowerCase();
+      if(k && k!=='|*') out[k] = r;
     });
   } else {
     Object.keys(valor||{}).forEach(function(k){ out[k] = valor[k]; });
@@ -1750,6 +1755,7 @@ function aplicarRemoto(remote){
   if(remote.reMatricula && Object.keys(remote.reMatricula).length >= Object.keys(DB.reMatricula||{}).length) DB.reMatricula = remote.reMatricula;
   if(remote.descuentos) DB.descuentos = remote.descuentos;
   if(remote.morosos) DB.morosos = remote.morosos;
+  if(remote.bloqueos) DB.bloqueos = remote.bloqueos;
 }
 
 // ═══════════════════════════
@@ -1807,7 +1813,7 @@ function saveLocalOnly(){
     const ts = Date.now();
     localStorage.setItem('austin_ebs_v2', JSON.stringify({
       nextId:DB.nextId, postulantes:DB.postulantes, vacantes:DB.vacantes,
-      tarifas:DB.tarifas, emails:DB.emails, config:DB.config, pendingNotif:DB.pendingNotif, bajasEscolares:DB.bajasEscolares||[], ocupacion:DB.ocupacion||{}, padron:DB.padron||[], reMatricula:DB.reMatricula||{}, descuentos:DB.descuentos||{}, morosos:DB.morosos||[], _meta:DB._meta||{}, _del:DB._del||{}
+      tarifas:DB.tarifas, emails:DB.emails, config:DB.config, pendingNotif:DB.pendingNotif, bajasEscolares:DB.bajasEscolares||[], ocupacion:DB.ocupacion||{}, padron:DB.padron||[], reMatricula:DB.reMatricula||{}, descuentos:DB.descuentos||{}, morosos:DB.morosos||[], bloqueos:DB.bloqueos||[], _meta:DB._meta||{}, _del:DB._del||{}
     }));
     localStorage.setItem('austin_ebs_ts', String(ts));
   } catch(e){}
@@ -1859,6 +1865,7 @@ function loadDB(){
     if(d.reMatricula) DB.reMatricula=d.reMatricula;
     if(d.descuentos) DB.descuentos=d.descuentos;
     if(d.morosos) DB.morosos=d.morosos;
+    if(d.bloqueos) DB.bloqueos=d.bloqueos;
     if(d._meta) DB._meta=d._meta;
     if(d._del) DB._del=d._del;
   } catch(e){}
@@ -2839,6 +2846,19 @@ function openNuevo(){
       <div class="fgm"><label class="flm">¿Hermano en Austin?</label><select class="fsm" id="nm-he"><option value="no">No</option><option value="si">Sí ★ (tiene prioridad)</option></select></div>
     </div>
     <div class="fgm"><label class="flm">Nota inicial</label><textarea class="ftm" id="nm-obs" style="min-height:55px" placeholder="Cómo llegaron, quién los recomendó, etc."></textarea></div>
+    <div class="ssm" style="margin:12px 0 10px">Entrevista (opcional)</div>
+    <div class="fgm2">
+      <div class="fgm"><label class="flm">Fecha de entrevista</label><input class="fim" id="nm-entf" type="date" onchange="prevNuevoMail()"></div>
+      <div class="fgm"><label class="flm">Hora</label><input class="fim" id="nm-enth" type="time" value="09:30"></div>
+    </div>
+    <div style="font-size:11.5px;color:var(--tx3);margin:-6px 0 12px;line-height:1.6">
+      Horarios habituales: ${(function(){
+        const d=getDisponibilidadBase();
+        const dias={2:'Mar',3:'Mié',4:'Jue',5:'Vie',6:'Sáb',1:'Lun',0:'Dom'};
+        return Object.keys(d).map(k=>dias[k]+' '+d[k].map(s=>s.hora||s).join('/')).join(' · ');
+      })()}. Podés poner cualquier otro horario.<br>
+      Al guardar con fecha, el turno queda bloqueado para que ninguna familia lo tome.
+    </div>
     <div class="ssm" style="margin:12px 0 10px">Dónde entra y qué se le avisa</div>
     <div class="fgm"><label class="flm">Estado en el pipeline</label>
       <select class="fsm" id="nm-est" onchange="prevNuevoMail()">
@@ -2876,7 +2896,16 @@ function prevNuevoMail(){
   } else if(!hayMail){
     info.innerHTML=`<div style="background:var(--cr2);border-radius:8px;padding:9px 12px;font-size:12px;color:var(--tx2)">ℹ <strong>${esc(EL[est]||est)}</strong> no tiene mail automático a la familia.</div>`;
   } else {
-    info.innerHTML=`<div style="background:#DCFCE7;border:1px solid #86EFAC;border-radius:8px;padding:9px 12px;font-size:12px;color:#166534">✉ Se va a enviar: <strong>${esc(tmpl.subj)}</strong></div>`;
+    // Se resuelven las variables con lo que hay cargado en el formulario, así el
+    // asunto se ve como le va a llegar a la familia y no con los {{...}} crudos.
+    const asunto=fillV(tmpl.subj,{
+      alumno:document.getElementById('nm-al')?.value||'',
+      padre:document.getElementById('nm-pa')?.value||'',
+      curso:document.getElementById('nm-cu')?.value||'',
+      entFecha:document.getElementById('nm-entf')?.value||'',
+      entHora:document.getElementById('nm-enth')?.value||''
+    });
+    info.innerHTML=`<div style="background:#DCFCE7;border:1px solid #86EFAC;border-radius:8px;padding:9px 12px;font-size:12px;color:#166534">✉ Se va a enviar: <strong>${esc(asunto)}</strong></div>`;
   }
 }
 
@@ -2892,6 +2921,8 @@ function saveNuevo(){
   if(!alumno||!padre||!email){ toast('Completá los campos obligatorios','err'); return; }
   const estadoSel=document.getElementById('nm-est')?.value||'citado';
   const noMail=document.getElementById('nm-nomail')?.checked||false;
+  const entF=(document.getElementById('nm-entf')?.value||'').trim();
+  const entH=(document.getElementById('nm-enth')?.value||'').trim()||'09:30';
   const obsVal=(document.getElementById('nm-obs').value||'').trim();
   const p={
     id:DB.nextId++,alumno,padre,email,
@@ -2902,18 +2933,28 @@ function saveNuevo(){
     colegio:document.getElementById('nm-cole').value,
     hermano:document.getElementById('nm-he').value,
     estado:estadoSel,fecha:today(),ultAccion:today(),
+    entFecha:entF,entHora:entF?entH:'',
     notas:obsVal?[{txt:obsVal,fecha:new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}),hora:new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})}]:[],
     hist:[{e:estadoSel,f:today(),mailOk:false}]
   };
   DB.postulantes.unshift(p);
   DB.pendingNotif.push(p.id);
+
+  // Con fecha, el turno se bloquea para que ninguna familia lo tome desde el
+  // formulario. Se usa setBloqueo y no reservarTurno porque reservarTurno dispara
+  // su propio mail desde el Apps Script, y acá el mail lo decide quien carga.
+  if(entF) bloquearTurno(entF, entH, alumno);
+
   saveDB();
   closeM();
   refrescarVistasPostulantes();
+  // Con entrevista agendada se abre la ficha: ahí está el bloque de entrevista y el
+  // botón para mandarla al calendario de Admisiones.
+  if(entF) setTimeout(()=>openDetalle(p.id),120);
 
   const sinPlantilla=['no_queremos','rechazado_eoe','pendiente_dg'];
   if(noMail || !DB.emails[estadoSel] || sinPlantilla.includes(estadoSel)){
-    toast(`✓ ${alumno} agregado en ${EL[estadoSel]||estadoSel} · Sin mail`,'ok');
+    toast(`✓ ${alumno} agregado en ${EL[estadoSel]||estadoSel}`+(entF?` · Entrevista ${fDate(entF)} ${entH}`:'')+' · Sin mail','ok');
     return;
   }
   enviarMailAdmin(p,estadoSel,(ok,mode)=>{
@@ -4158,8 +4199,22 @@ function guardarFechaDesdeDetalle(id){
   const h=document.getElementById('det-enth-'+id);
   if(f&&f.value) p.entFecha=f.value;
   if(h&&h.value) p.entHora=h.value;
-  saveDB(); toast('Fecha de entrevista guardada','ok');
-  updateSidebarBadges(); renderDashboard();
+  bloquearTurno(p.entFecha, p.entHora, p.alumno);
+  p.ultAccion=today();
+  saveDB(); toast('Fecha de entrevista guardada — el turno quedó bloqueado','ok');
+  updateSidebarBadges(); renderDashboard(); openDetalle(id);
+}
+
+// Reserva el horario para que no lo tome una familia desde el formulario público.
+// Se usa setBloqueo y no reservarTurno porque reservarTurno manda su propio mail
+// desde el Apps Script, y acá el mail lo decide quien está cargando.
+function bloquearTurno(fecha, hora, alumno){
+  if(!fecha||!hora) return;
+  DB.bloqueos=DB.bloqueos||[];
+  if(DB.bloqueos.some(b=>b.fecha===fecha&&b.hora===hora)) return;
+  DB.bloqueos.push({fecha,hora,motivo:'Entrevista: '+(alumno||'')});
+  calBloqueos=DB.bloqueos;
+  if(DB.config.appsScriptUrl) apiCall('setBloqueo',{fecha,hora,motivo:'Entrevista: '+(alumno||'')});
 }
 
 function guardarUltContacto(id){
