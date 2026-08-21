@@ -2943,7 +2943,7 @@ function saveNuevo(){
   // Con fecha, el turno se bloquea para que ninguna familia lo tome desde el
   // formulario. Se usa setBloqueo y no reservarTurno porque reservarTurno dispara
   // su propio mail desde el Apps Script, y acá el mail lo decide quien carga.
-  if(entF) bloquearTurno(entF, entH, alumno);
+  if(entF) agendarEntrevista(p);
 
   saveDB();
   closeM();
@@ -4199,10 +4199,25 @@ function guardarFechaDesdeDetalle(id){
   const h=document.getElementById('det-enth-'+id);
   if(f&&f.value) p.entFecha=f.value;
   if(h&&h.value) p.entHora=h.value;
-  bloquearTurno(p.entFecha, p.entHora, p.alumno);
+  agendarEntrevista(p);
   p.ultAccion=today();
   saveDB(); toast('Fecha de entrevista guardada — el turno quedó bloqueado','ok');
   updateSidebarBadges(); renderDashboard(); openDetalle(id);
+}
+
+// Agenda la entrevista: bloquea el horario y pide al Apps Script que cree el evento
+// en el calendario de Admisiones. Lo segundo depende de que el Apps Script tenga la
+// acción 'crearEventoEntrevista'; si todavía no la tiene, el pedido se ignora solo y
+// el resto sigue funcionando igual (el botón manual del detalle no depende de esto).
+function agendarEntrevista(p){
+  if(!p || !p.entFecha) return;
+  bloquearTurno(p.entFecha, p.entHora, p.alumno);
+  if(!p.entHora || !DB.config.appsScriptUrl) return;
+  apiCall('crearEventoEntrevista',{
+    alumno:p.alumno||'', curso:p.curso||'', nivel:p.nivel||'', anio:p.anio||'',
+    padre:p.padre||'', email:p.email||'', tel:p.tel||'',
+    fecha:p.entFecha, hora:p.entHora, lugar:LUGAR_ENTREVISTA
+  });
 }
 
 // Reserva el horario para que no lo tome una familia desde el formulario público.
