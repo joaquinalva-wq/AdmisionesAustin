@@ -3772,7 +3772,7 @@ async function submitPost(){
       hora:calSlotSeleccionado.hora,
       familyNote
     }).then(res=>{
-      if(res.ok) calTurnosReservados.push({fecha:calSlotSeleccionado.fecha, hora:calSlotSeleccionado.hora});
+      if(res.ok) calTurnosReservados.push({Fecha:calSlotSeleccionado.fecha, Hora:calSlotSeleccionado.hora, Estado:'reservado'});
     }).catch(()=>{});
   }
   // Siempre enviar el mail de confirmación a la familia vía sendMail (independiente de reservarTurno)
@@ -3855,6 +3855,27 @@ let calSemanaOffset = 0;
 let calSlotSeleccionado = null;
 let calTurnosReservados = []; // cacheado desde Apps Script
 let calBloqueos = [];
+
+// Los turnos y bloqueos llegan de tres fuentes con formatos distintos: el Apps
+// Script (Fecha/Hora en mayúscula), DB.bloqueos (fecha/hora en minúscula) y el
+// cache viejo de localStorage, que puede tener fechas en formato ISO completo.
+// Estas dos funciones dejan todo como "yyyy-mm-dd" y "hh:mm" para poder comparar.
+function slotFecha(x){
+  const v = (x && (x.Fecha!==undefined ? x.Fecha : x.fecha)) || '';
+  const s = String(v).trim();
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? m[0] : s;
+}
+function slotHora(x){
+  const v = (x && (x.Hora!==undefined ? x.Hora : x.hora));
+  const s = String(v==null?'':v).trim();
+  if(s==='' || s==='*') return s;
+  const m = s.match(/(\d{1,2}):(\d{2})/);
+  if(m) return ('0'+m[1]).slice(-2)+':'+m[2];
+  const d = new Date(s);
+  if(!isNaN(d.getTime())) return ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);
+  return s;
+}
 
 // Disponibilidad base de Laura (editable desde el panel admin)
 function getDisponibilidadBase(){
@@ -3955,13 +3976,16 @@ function renderCalFormulario(){
   dias.innerHTML = diasConSlots.map(({fecha,dow,slots})=>{
     const fechaStr = toDateStr(fecha);
     const esPasada = fecha < hoy && !mismoDia(fecha,hoy);
-    const bloqueoDia = calBloqueos.some(b=>b.Fecha===fechaStr&&(!b.Hora||b.Hora==='*'));
+    const bloqueoDia = calBloqueos.some(b=>{
+      const h = slotHora(b);
+      return slotFecha(b)===fechaStr && (!h || h==='*');
+    });
     const nombre = ['','Lun','Mar','Mié','Jue','Vie','Sáb','Dom'][dow];
     const dia = fecha.getDate();
     const mes = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][fecha.getMonth()];
     const slotsHtml = slots.map(({hora})=>{
-      const ocupado = calTurnosReservados.some(t=>t.Fecha===fechaStr&&t.Hora===hora);
-      const bloq = calBloqueos.some(b=>b.Fecha===fechaStr&&b.Hora===hora);
+      const ocupado = calTurnosReservados.some(t=>slotFecha(t)===fechaStr&&slotHora(t)===hora);
+      const bloq = calBloqueos.some(b=>slotFecha(b)===fechaStr&&slotHora(b)===hora);
       // No mostrar si menos de 24hs
       const dt = new Date(fecha); const [hh,mm] = hora.split(':'); dt.setHours(Number(hh),Number(mm));
       const en24hs = dt - new Date() < 24*60*60*1000;
@@ -4214,7 +4238,7 @@ function agendarEntrevista(p){
   bloquearTurno(p.entFecha, p.entHora, p.alumno);
   if(!p.entHora || !DB.config.appsScriptUrl) return;
   apiCall('crearEventoEntrevista',{
-    alumno:p.alumno||'', curso:p.curso||'', nivel:p.nivel||'', anio:p.anio||'',
+    alumnoId:p.id, alumno:p.alumno||'', curso:p.curso||'', nivel:p.nivel||'', anio:p.anio||'',
     padre:p.padre||'', email:p.email||'', tel:p.tel||'',
     fecha:p.entFecha, hora:p.entHora, lugar:LUGAR_ENTREVISTA
   });
