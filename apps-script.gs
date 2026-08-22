@@ -22,7 +22,7 @@ const MAIL_LOGO = 'https://admisionesaustin.com.ar/logo-email.png';
 
 // Marca de versión: sirve para confirmar que la implementación se publicó.
 // Al abrir la URL del script con ?action=ping tiene que aparecer este valor.
-const API_VERSION = '2026-08-22-v3';
+const API_VERSION = '2026-08-22-v4';
 
 // ── Calendario ────────────────────────────────────────────────
 const CAL_ADMISIONES        = 'admisiones@austinebs-ah.edu.ar';
@@ -547,11 +547,25 @@ function setBloqueo_(data) {
 
 // ── CALENDARIO DE ADMISIONES ───────────────────────────────────
 
+// Guarda el motivo real por el que no se pudo abrir el calendario. Sin esto, el
+// error quedaba tapado por el try/catch y no se podia distinguir "falta el
+// permiso de Calendar" de "el calendario no esta compartido".
+let _calError = '';
+
 /** Abre el calendario de Admisiones. Si no lo encuentra, usa el del script. */
 function calAdmisiones_() {
+  _calError = '';
   let cal = null;
-  try { cal = CalendarApp.getCalendarById(CAL_ADMISIONES); } catch (_) {}
-  if (!cal) { try { cal = CalendarApp.getDefaultCalendar(); } catch (_) {} }
+  try { cal = CalendarApp.getCalendarById(CAL_ADMISIONES); }
+  catch (e) { _calError = String(e); }
+  if (!cal) {
+    try { cal = CalendarApp.getDefaultCalendar(); }
+    catch (e) { if (!_calError) _calError = String(e); }
+  }
+  if (!cal && !_calError) {
+    _calError = 'El calendario ' + CAL_ADMISIONES +
+                ' no existe o no esta compartido con la cuenta que ejecuta el script.';
+  }
   return cal;
 }
 
@@ -595,7 +609,7 @@ function crearEventoEntrevista(d) {
     if (!d || !d.fecha || !d.hora) return { ok: false, error: 'Falta fecha u hora' };
 
     const cal = calAdmisiones_();
-    if (!cal) return { ok: false, error: 'No se pudo abrir el calendario de Admisiones' };
+    if (!cal) return { ok: false, error: 'No se pudo abrir el calendario de Admisiones: ' + _calError };
 
     const fecha = aFecha_(d.fecha);
     const hora  = aHora_(d.hora);
@@ -810,7 +824,9 @@ function probarSistema() {
   out.push('Zona horaria de la planilla: ' + tz_());
 
   const cal = calAdmisiones_();
-  out.push('Calendario: ' + (cal ? cal.getName() + ' (' + cal.getId() + ')' : 'NO ACCESIBLE'));
+  out.push('Calendario: ' + (cal ? cal.getName() + ' (' + cal.getId() + ')'
+                                 : 'NO ACCESIBLE -> ' + _calError));
+  out.push('Ejecuta como: ' + (function(){ try { return Session.getEffectiveUser().getEmail(); } catch (e) { return '?'; } })());
 
   const t = getTurnos_();
   out.push('Turnos leidos: ' + (t.turnos ? t.turnos.length : 0));
