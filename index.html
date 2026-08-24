@@ -941,6 +941,8 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
             <option value="2028">2028</option>
             <option value="2029">2029</option>
             <option value="2030">2030</option>
+            <option value="2031">2031</option>
+            <option value="2032">2032</option>
           </select>
           <select class="fsel2" id="pipeline-niv" onchange="poblarCursosPipeline();renderPipeline()">
             <option value="">Todos los niveles</option>
@@ -963,6 +965,7 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
           <button class="btn btn-out btn-sm" onclick="limpiarFiltrosPipeline()">Limpiar</button>
           <span id="pipeline-count" style="font-size:12px;color:var(--tx3)"></span>
         </div>
+        <div id="pipeline-leyenda"></div>
         <div class="pcols" id="pcols"></div>
       </div>
 
@@ -1034,7 +1037,7 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
               </select>
               <select class="fsel2" id="fanio" onchange="filterT()">
                 <option value="">Todos los ciclos</option>
-                <option value="2025">2025</option><option value="2026">2026</option><option value="2027">2027</option><option value="2028">2028</option><option value="2029">2029</option><option value="2030">2030</option>
+                <option value="2025">2025</option><option value="2026">2026</option><option value="2027">2027</option><option value="2028">2028</option><option value="2029">2029</option><option value="2030">2030</option><option value="2031">2031</option><option value="2032">2032</option>
               </select>
               <select class="fsel2" id="fcurso" onchange="filterT()"><option value="">Todos los cursos</option></select>
               <select class="fsel2" id="fsec" onchange="filterT()"><option value="">Todas las salas</option></select>
@@ -1136,7 +1139,7 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
           <div class="cbox-h" style="flex-wrap:wrap;gap:10px">
             <div class="cbox-t" id="bajas-cnt">0 familias</div>
             <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-              <select class="fsel2" id="bajas-anio" onchange="renderBajas()"><option value="">Todos los ciclos</option><option value="2025">2025</option><option value="2026">2026</option><option value="2027">2027</option><option value="2028">2028</option><option value="2029">2029</option><option value="2030">2030</option></select>
+              <select class="fsel2" id="bajas-anio" onchange="renderBajas()"><option value="">Todos los ciclos</option><option value="2025">2025</option><option value="2026">2026</option><option value="2027">2027</option><option value="2028">2028</option><option value="2029">2029</option><option value="2030">2030</option><option value="2031">2031</option><option value="2032">2032</option></select>
               <select class="fsel2" id="bajas-niv" onchange="renderBajas()"><option value="">Todos los niveles</option><option value="Kindergarten">Kindergarten</option><option value="Elementary">Elementary</option><option value="High School">High School</option></select>
               <input class="fsrch" id="bajas-q" placeholder="🔍 Buscar..." oninput="renderBajas()">
             </div>
@@ -1188,6 +1191,8 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
               <option value="2028">2028</option>
               <option value="2029">2029</option>
               <option value="2030">2030</option>
+              <option value="2031">2031</option>
+              <option value="2032">2032</option>
             </select>
           </div>
         </div>
@@ -1292,6 +1297,34 @@ const ECLS = {nueva:'bg-n',contactado:'bg-co',citado:'bg-ci',entrevistado:'bg-en
 const EPCLS = {nueva:'ph-n',contactado:'ph-co',citado:'ph-ci',entrevistado:'ph-en',postulado:'ph-po',eoe_ingles:'ph-eoe',pendiente_dg:'ph-dg',rechazado_eoe:'ph-reoe',matriculado:'ph-ma',nuevo:'ph-nu','lista de espera':'ph-es',desiste:'ph-de',no_queremos:'ph-de'};
 const ECOL = {nueva:'var(--cn)',contactado:'#1A7A8E',hermanos:'#7C3AED',citado:'var(--cc)',entrevistado:'var(--ce)',postulado:'var(--cp)',eoe_ingles:'#7B52AB',pendiente_dg:'#B45309',rechazado_eoe:'#DC2626',matriculado:'var(--cm)',nuevo:'#166534','lista de espera':'var(--cs)',desiste:'var(--cd)',no_queremos:'var(--cd)'};
 const CURSOS = ['K2 (Puppies)','K3 (Koalas/Dolphins)','K4 (Foxes/Monkeys)','K5 (Bears/Hippos)','1er año Elementary','2do año Elementary','3er año Elementary','4to año Elementary','5to año Elementary','6to año Elementary','1er año High School','2do año High School','3er año High School','4to año High School','5to año High School','6to año High School'];
+
+// Color por cohorte (año al que postula) — para distinguir de un vistazo en el
+// pipeline quién es de 2026, 2027, 2028... y que un "Nuevo alumno" viejo no se
+// confunda con uno del año que viene. 2025 o antes va en gris.
+const COHORTE_COLORES = {
+  2026:{c:'#E8621A',bg:'#FDEEE3'}, // naranja marca
+  2027:{c:'#1A7A8E',bg:'#E1F0F3'}, // teal
+  2028:{c:'#16A34A',bg:'#E4F7EA'}, // verde
+  2029:{c:'#7C3AED',bg:'#EFE9FE'}, // violeta
+  2030:{c:'#DB2777',bg:'#FCE7F1'}, // rosa
+  2031:{c:'#B45309',bg:'#FBEEDC'}, // ámbar
+  2032:{c:'#0EA5E9',bg:'#E0F2FE'}  // celeste
+};
+const COHORTE_VIEJO = {c:'#78716C',bg:'#EFEDEA'}; // 2025 o anterior
+function cohorteColor(anio){
+  const y=parseInt(anio); if(!y) return COHORTE_VIEJO;
+  return COHORTE_COLORES[y] || (y<=2025 ? COHORTE_VIEJO : {c:'#475569',bg:'#EEF2F6'});
+}
+function cohorteBadge(anio){
+  const y=parseInt(anio)||''; const col=cohorteColor(anio);
+  return `<span style="display:inline-block;font-size:10px;font-weight:700;color:${col.c};background:${col.bg};padding:1px 7px;border-radius:20px;letter-spacing:.02em">${y||'—'}</span>`;
+}
+function leyendaCohortes(){
+  const años=[2026,2027,2028,2029,2030,2031,2032];
+  const items=[`<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:50%;background:${COHORTE_VIEJO.c}"></span>2025 o antes</span>`]
+    .concat(años.map(y=>`<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:50%;background:${COHORTE_COLORES[y].c}"></span>${y}</span>`));
+  return `<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;font-size:11px;color:var(--tx3);margin-bottom:10px"><span style="font-weight:600;color:var(--tx2)">Cohorte:</span>${items.join('')}</div>`;
+}
 const NIVEL = c => !c ? '' : c.startsWith('K') ? 'Kindergarten' : c.includes('Elementary') ? 'Elementary' : 'High School';
 
 // Secciones reales del colegio (para ocupación)
@@ -2263,11 +2296,16 @@ function renderPipeline(){
       <div class="pch ${EPCLS[e]}"><span class="pch-n" style="color:${ECOL[e]}">${EL[e]}</span><span class="pch-c" style="color:${ECOL[e]}">${ps.length}</span></div>
       <div class="pcb">
         ${ps.length===0?`<div style="font-size:11px;color:var(--tx3);padding:8px 5px;text-align:center">—</div>`:''}
-        ${ps.map(p=>`<div class="pcard${esInactivo(p)?' inactivo':''}" onclick="openDetalle(${p.id})">
+        ${ps.map(p=>{
+          const col=cohorteColor(p.anio);
+          return `<div class="pcard${esInactivo(p)?' inactivo':''}" onclick="openDetalle(${p.id})" style="${esInactivo(p)?'':`border-left:3px solid ${col.c}`}">
           <div class="pcard-n">${esc(p.alumno)}${p.hermano==='si'?' ★':''}</div>
           <div class="pcard-c">${esc(p.curso)}</div>
-          <div class="pcard-d">${esInactivo(p)?`⚠ ${diasDesde(p.ultAccion||p.fecha)}d inactivo`:fDate(p.ultAccion||p.fecha)}</div>
-        </div>`).join('')}
+          <div class="pcard-d" style="display:flex;justify-content:space-between;align-items:center;gap:6px">
+            <span>${esInactivo(p)?`⚠ ${diasDesde(p.ultAccion||p.fecha)}d inactivo`:fDate(p.ultAccion||p.fecha)}</span>
+            ${cohorteBadge(p.anio)}
+          </div>
+        </div>`;}).join('')}
       </div>
     </div>`;
   }).join('');
@@ -2276,6 +2314,8 @@ function renderPipeline(){
     const enPantalla=DB.postulantes.filter(p=>filtraPostulante(p,f)).length;
     cnt.textContent=hayFiltro?`${enPantalla} de ${DB.postulantes.length} · ${total} activos`:'';
   }
+  const ley=document.getElementById('pipeline-leyenda');
+  if(ley) ley.innerHTML=leyendaCohortes();
 }
 
 // ═══════════════════════════
@@ -2291,7 +2331,7 @@ function renderTable(list=null){
       <td><strong>${esc(p.alumno)}</strong>${p.hermano==='si'?` <span style="font-size:10px;background:#EBF7D4;color:#3A6A0A;padding:1px 5px;border-radius:10px">★hno</span>`:''}</td>
       <td style="color:var(--tx2)">${esc(p.padre)}</td>
       <td><small style="color:var(--tx3)">${p.nivel} ·</small> ${esc(p.curso)}</td>
-      <td><span class="pill">${p.anio}</span></td>
+      <td>${cohorteBadge(p.anio)}</td>
       <td>${badge(p.estado)}</td>
       <td style="color:var(--tx2);font-size:11.5px">${esc(p.email)}</td>
       <td style="font-size:11.5px">${esInactivo(p)?`<span class="inac-badge">⚠ ${diasDesde(p.ultAccion||p.fecha)}d</span>`:`<span style="color:var(--tx3)">${diasDesde(p.ultAccion||p.fecha)}d</span>`}</td>
@@ -2507,7 +2547,7 @@ function editarPostulante(id){
   const p=DB.postulantes.find(x=>x.id===id); if(!p) return;
   const opts=CURSOS.map(c=>`<option value="${esc(c)}" ${p.curso===c?'selected':''}>${esc(c)}</option>`).join('');
   const anios=[];
-  for(let y=new Date().getFullYear()-1; y<=new Date().getFullYear()+5; y++) anios.push(y);
+  for(let y=new Date().getFullYear()-1; y<=Math.max(new Date().getFullYear()+6,2032); y++) anios.push(y);
   document.getElementById('mt').textContent='Editar datos del postulante';
   document.getElementById('mb').innerHTML=`
     <div style="background:var(--cr);border-radius:9px;padding:10px 13px;font-size:12px;color:var(--tx2);margin-bottom:14px;line-height:1.6">
@@ -2832,7 +2872,7 @@ function openNuevo(){
       <div class="fgm"><label class="flm">Curso *</label><select class="fsm" id="nm-cu">${opts}</select></div>
     </div>
     <div class="fgm2">
-      <div class="fgm"><label class="flm">Ciclo lectivo</label><select class="fsm" id="nm-an"><option value="2025">2025</option><option value="2026">2026</option><option value="2027">2027</option><option value="2028">2028</option><option value="2029">2029</option><option value="2030">2030</option></select></div>
+      <div class="fgm"><label class="flm">Ciclo lectivo</label><select class="fsm" id="nm-an"><option value="2025">2025</option><option value="2026">2026</option><option value="2027">2027</option><option value="2028">2028</option><option value="2029">2029</option><option value="2030">2030</option><option value="2031">2031</option><option value="2032">2032</option></select></div>
       <div class="fgm"><label class="flm">Jornada</label><select class="fsm" id="nm-jo"><option>Jornada Completa</option><option>Jornada Simple</option></select></div>
     </div>
     <div class="fgm"><label class="flm">Colegio anterior</label><input class="fim" id="nm-cole" placeholder="¿De qué colegio viene?"></div>
@@ -3554,7 +3594,7 @@ function poblarAniosFormulario(){
   const sel=document.getElementById('pf-anio'); if(!sel) return;
   const desde=new Date().getFullYear();
   sel.innerHTML='';
-  for(let y=desde; y<=desde+5; y++){
+  for(let y=desde; y<=Math.max(desde+6,2032); y++){
     const o=document.createElement('option');
     o.value=String(y); o.textContent=String(y);
     sel.appendChild(o);
@@ -3810,8 +3850,16 @@ async function submitPost(){
 // ═══════════════════════════
 // API APPS SCRIPT
 // ═══════════════════════════
-// ── API APPS SCRIPT (sin CORS) ─────────────────────────────────
-// GET para lecturas (respuesta legible), no-cors POST para escrituras
+// ── API APPS SCRIPT ────────────────────────────────────────────
+// GET para lecturas, POST para escrituras. En ambos casos se lee la respuesta
+// real del Apps Script (JSON con {ok, error}).
+//
+// Antes el POST iba en mode:'no-cors' y devolvía {ok:true} a ciegas: si el mail
+// fallaba en el servidor (cuota de Gmail, destinatario vacío) el panel decía
+// "enviado" igual, y una doble-reserva de turno pasaba como éxito. El Apps
+// Script deployado devuelve Access-Control-Allow-Origin:* y el Content-Type
+// text/plain no dispara preflight, así que la respuesta SÍ es legible en CORS.
+// Verificado contra /exec: un POST {action:'ping'} vuelve type:'cors' y JSON.
 async function apiCall(action, data){
   const url = DB.config.appsScriptUrl;
   if(!url) return {ok:false, error:'Sin URL'};
@@ -3820,29 +3868,28 @@ async function apiCall(action, data){
   const isRead = READ_ACTIONS.includes(action);
 
   try{
+    let res;
     if(isRead){
-      // GET — sin CORS issues, respuesta legible
+      // GET — respuesta legible
       const params = new URLSearchParams({action: action});
       if(data) params.set('data', JSON.stringify(data));
-      const res = await fetch(url + '?' + params.toString(), {
+      res = await fetch(url + '?' + params.toString(), {
         method: 'GET',
         redirect: 'follow'
       });
-      const text = await res.text();
-      try{ return JSON.parse(text); }
-      catch(e){ return {ok:false, error:'Respuesta inválida: '+text.substring(0,100)}; }
     } else {
-      // POST no-cors — no hay preflight, pero la respuesta es opaca (no legible)
-      // El Apps Script recibe y ejecuta igual, nosotros asumimos ok:true
-      const payload = JSON.stringify({action, data});
-      await fetch(url, {
+      // POST con text/plain: sin preflight y con respuesta legible, así se
+      // conoce el resultado real (mail enviado, turno reservado, etc.).
+      res = await fetch(url, {
         method: 'POST',
-        mode: 'no-cors',
-        headers: {'Content-Type': 'text/plain'},
-        body: payload
+        headers: {'Content-Type': 'text/plain;charset=utf-8'},
+        body: JSON.stringify({action, data}),
+        redirect: 'follow'
       });
-      return {ok: true};
     }
+    const text = await res.text();
+    try{ return JSON.parse(text); }
+    catch(e){ return {ok:false, error:'Respuesta inválida: '+text.substring(0,100)}; }
   } catch(e){
     return {ok:false, error:e.message};
   }
@@ -5034,19 +5081,70 @@ function normalizarNivel(raw){
   return raw;
 }
 
+// ═══════════════════════════
+// MOTOR DE PROYECCIÓN DE PADRÓN
+// ═══════════════════════════
+// Un ciclo está "materializado" cuando su padrón se cargó de verdad: importado
+// (pa_imp_) o generado al pasar de año (pa_gen_), o cargado a mano (activo sin
+// admisionId). Un año que sólo tiene ingresantes de admisiones NO está
+// materializado: se proyecta desde el último año real avanzando las secciones.
+function esCicloMaterializado(ciclo){
+  const rows = DB.padron||[];
+  return rows.some(a=>a.ciclo===ciclo && (
+    String(a.id).startsWith('pa_imp_'+ciclo+'_') ||
+    String(a.id).startsWith('pa_gen_'+ciclo+'_') ||
+    (a.estado==='activo' && !a.admisionId)
+  ));
+}
+
+// Devuelve las filas de padrón a mostrar/computar para un ciclo. Si el año no
+// está materializado, proyecta desde el último año real: presume que todos
+// re-matriculan (respetando las bajas ya marcadas), avanza las secciones, saca
+// egresados y suma las altas reales (nuevos alumnos) de cada año. No persiste nada.
+function padronVista(ciclo){
+  const real = (DB.padron||[]).filter(a=>a.ciclo===ciclo);
+  if(esCicloMaterializado(ciclo)) return {rows:real, proyeccion:false, base:ciclo};
+  const ciclosMat = [...new Set((DB.padron||[]).filter(a=>a.estado==='activo').map(a=>a.ciclo))]
+    .filter(c=>c<ciclo && esCicloMaterializado(c));
+  if(!ciclosMat.length) return {rows:real, proyeccion:false, base:null};
+  const base = Math.max.apply(null, ciclosMat);
+  let cohorte = (DB.padron||[]).filter(a=>a.ciclo===base && a.estado==='activo').map(a=>({...a}));
+  for(let c=base; c<ciclo; c++){
+    const avanzados = cohorte
+      .filter(a=>!esEgresado(a))
+      .filter(a=>(DB.reMatricula||{})[a.id+'_'+(c+1)]?.estado !== 'baja')
+      .map(a=>{
+        const nuevaCurso = Object.prototype.hasOwnProperty.call(SECTION_ADVANCE,a.curso)
+          ? (SECTION_ADVANCE[a.curso]||a.curso) : a.curso;
+        return {...a, curso:nuevaCurso, nivel:SCHOOL_NIVEL(nuevaCurso), ciclo:c+1, proyectado:true};
+      });
+    // Ingresantes reales del año c+1 (nuevos alumnos ya cargados en el padrón)
+    const entrantes = (DB.padron||[]).filter(a=>a.ciclo===(c+1) && a.estado==='activo').map(a=>({...a}));
+    const idsEntr = new Set(entrantes.map(a=>a.admisionId).filter(Boolean));
+    const avanzadosOk = avanzados.filter(a=>!(a.admisionId && idsEntr.has(a.admisionId)));
+    cohorte = avanzadosOk.concat(entrantes);
+  }
+  return {rows:cohorte, proyeccion:true, base};
+}
+
 function ocData(cicloOverride){
   const ciclo = cicloOverride || _ocCiclo;
-  const padronCiclo = (DB.padron||[]).filter(a=>a.ciclo===ciclo);
+  const vista = padronVista(ciclo);
+  const padronCiclo = vista.rows;
   const usePadron = padronCiclo.length > 0;
 
   return SCHOOL_CURSOS.map(sc=>{
     const od = {...(OC_DEFAULT[sc]||{base:0,cap:27}), ...(DB.ocupacion[sc]||{})};
-    let actual, nuevos, bajas;
+    let actual, nuevos, bajas, noContinua=0;
     if(usePadron){
       const enSec = padronCiclo.filter(a=>a.curso===sc);
       bajas   = enSec.filter(a=>a.estado==='baja').length;
       // alumnos del padron activos en esta sección
-      const padronActivos = enSec.filter(a=>a.estado==='activo').length;
+      const activosSec = enSec.filter(a=>a.estado==='activo');
+      const padronActivos = activosSec.length;
+      // "No continúa" ya marcado en Re-Matrícula (decisión para el año siguiente):
+      // libera el lugar en la proyección en tiempo real.
+      noContinua = activosSec.filter(a=>(DB.reMatricula||{})[a.id+'_'+(ciclo+1)]?.estado==='baja').length;
       // postulantes "nuevo" de admisiones aún no registrados en padrón
       const nuevosSinPadron = DB.postulantes.filter(p=>
         p.estado==='nuevo' && p.seccion===sc && (p.anio===ciclo||!p.anio) &&
@@ -5061,9 +5159,10 @@ function ocData(cicloOverride){
       bajas   = (DB.bajasEscolares||[]).filter(b=>b.curso===sc).length;
       actual  = od.base + nuevos - bajas;
     }
-    const disp = od.cap - actual;
+    const disp     = od.cap - actual;               // vacantes hoy
+    const dispProy = od.cap - (actual - noContinua); // vacantes proyectadas (contempla Re-Matrícula)
     const pct  = od.cap>0 ? actual/od.cap : 0;
-    return {sc, nivel:SCHOOL_NIVEL(sc), base:od.base, cap:od.cap, nuevos, bajas, actual, disp, pct, usePadron};
+    return {sc, nivel:SCHOOL_NIVEL(sc), base:od.base, cap:od.cap, nuevos, bajas, noContinua, actual, disp, dispProy, pct, usePadron, proyeccion:vista.proyeccion};
   });
 }
 
@@ -5087,9 +5186,12 @@ function renderOcupacion(){
   if(sel) sel.value=String(_ocCiclo);
   // Update subtitle
   const sub=document.getElementById('oc-ph-sub');
-  const padronCnt=(DB.padron||[]).filter(a=>a.ciclo===_ocCiclo&&a.estado==='activo').length;
-  if(sub) sub.textContent=padronCnt>0
-    ? `Padrón ${_ocCiclo}: ${padronCnt} alumnos activos`
+  const vista=padronVista(_ocCiclo);
+  const activosVista=vista.rows.filter(a=>a.estado==='activo').length;
+  if(sub) sub.textContent=vista.proyeccion
+    ? `Proyección ${_ocCiclo}: ${activosVista} alumnos (presume que todos re-matriculan desde ${vista.base})`
+    : activosVista>0
+    ? `Padrón ${_ocCiclo}: ${activosVista} alumnos activos`
     : `Ciclo ${_ocCiclo} · Modo base (importá el padrón para datos reales)`;
   renderOcupacionCards();
   ocTab(_ocTab);
@@ -5107,16 +5209,22 @@ function renderOcupacionCards(){
     ? padronBajasTotal
     : all.reduce((s,r)=>s+r.bajas,0) + (DB.bajasEscolares||[]).length;
   const pctGen       = totalCap>0 ? totalAlumnos/totalCap : 0;
+  const totalNoCont  = all.reduce((s,r)=>s+(r.noContinua||0),0);
+  const dispHoy      = Math.max(0,totalCap-totalAlumnos);
+  const dispProy     = Math.max(0,totalCap-(totalAlumnos-totalNoCont));
   const sinSeccion   = DB.postulantes.filter(p=>p.estado==='nuevo'&&!p.seccion&&(p.anio===ciclo||!p.anio)&&
     !(DB.padron||[]).some(a=>a.admisionId===String(p.id))).length;
-  const padronCnt    = (DB.padron||[]).filter(a=>a.ciclo===ciclo&&a.estado==='activo').length;
+  const vista        = padronVista(ciclo);
+  const padronCnt    = vista.rows.filter(a=>a.estado==='activo').length;
 
   const cards = [
     {lbl:'Alumnos '+ciclo,val:totalAlumnos,sub:`de ${totalCap} capacidad total`,col:'#3B82F6'},
-    {lbl:'Ocupación',val:Math.round(pctGen*100)+'%',sub:`${Math.max(0,totalCap-totalAlumnos)} vacantes disponibles`,col:pctColor(pctGen)},
+    {lbl:'Ocupación',val:Math.round(pctGen*100)+'%',sub:`${dispHoy} vac. hoy${totalNoCont>0?` · ${dispProy} proy.`:''}`,col:pctColor(pctGen)},
     {lbl:'Altas '+ciclo,val:totalNuevos,sub:'ingresaron via admisiones',col:'#16A34A'},
     {lbl:'Bajas '+ciclo,val:totalBajas,sub:'dejaron el colegio',col:'#EF4444'},
-    padronCnt>0
+    vista.proyeccion
+      ? {lbl:'Proyección',val:padronCnt,sub:`alumnos (desde ${vista.base})`,col:'#0EA5E9'}
+      : padronCnt>0
       ? {lbl:'Padrón cargado',val:padronCnt,sub:'alumnos activos',col:'#8B5CF6'}
       : {lbl:'Sin sección asig.',val:sinSeccion,sub:'nuevos sin sección',col:sinSeccion>0?'#D97706':'#6B7280'},
   ];
@@ -5140,38 +5248,55 @@ function renderOcupacionBody(){
   if(_ocTab==='morosos'){ body.innerHTML=renderMorosos(); return; }
   // resumen: cards de sección agrupadas por nivel
   const niveles=['Inicial','Elementary','High School'];
-  body.innerHTML=niveles.map(n=>{
+  const vistaCiclo = padronVista(_ocCiclo);
+  const bannerProy = vistaCiclo.proyeccion
+    ? `<div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:10px;padding:11px 15px;margin-bottom:16px;font-size:12.5px;color:#1D4ED8;line-height:1.55">
+         <strong>⚠ Proyección ${_ocCiclo}</strong> — este año todavía no se cerró. Se muestra el padrón proyectado a partir de ${vistaCiclo.base}: <strong>presume que todos re-matriculan</strong>, avanza cada sección, suma los nuevos alumnos ya cargados para esos años y saca egresados y bajas marcadas. Se hace real recién al apretar <strong>Pasar de año</strong>.
+       </div>`
+    : '';
+  const leyenda = `<div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-bottom:14px;font-size:11.5px;color:var(--tx3)">
+      <span><strong style="color:var(--td)">Cap.</strong> = cupos totales (editable)</span>
+      <span><strong style="color:#16A34A">Hoy</strong> = cap − alumnos actuales</span>
+      <span><strong style="color:#0EA5E9">Proy.</strong> = suma los lugares que liberan los "No continúa" de Re-Matrícula</span>
+    </div>`;
+  body.innerHTML=bannerProy+leyenda+niveles.map(n=>{
     const rows=all.filter(r=>r.nivel===n);
     const totA=rows.reduce((s,r)=>s+r.actual,0);
     const totC=rows.reduce((s,r)=>s+r.cap,0);
     const totN=rows.reduce((s,r)=>s+r.nuevos,0);
     const totB=rows.reduce((s,r)=>s+r.bajas,0);
+    const totNC=rows.reduce((s,r)=>s+(r.noContinua||0),0);
+    const dispHoy=Math.max(0,totC-totA);
+    const dispProy=Math.max(0,totC-(totA-totNC));
     const pctT=totC>0?totA/totC:0;
     return `<div class="cbox" style="margin-bottom:20px">
       <div class="cbox-h">
         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
           <div class="cbox-t">${n}</div>
-          <span style="font-size:12px;color:var(--tx3)">${totA} alumnos · ${Math.max(0,totC-totA)} disponibles · <strong style="color:${pctColor(pctT)}">${Math.round(pctT*100)}%</strong></span>
+          <span style="font-size:12px;color:var(--tx3)">${totA} alumnos · <strong style="color:#16A34A">${dispHoy}</strong> vac. hoy${totNC>0?` · <strong style="color:#0EA5E9">${dispProy}</strong> proy.`:''} · <strong style="color:${pctColor(pctT)}">${Math.round(pctT*100)}%</strong></span>
         </div>
         <div style="display:flex;gap:6px">
           <span style="font-size:11px;color:var(--tx3);background:var(--cr);padding:3px 8px;border-radius:5px">+${totN} altas</span>
           <span style="font-size:11px;color:var(--tx3);background:var(--cr);padding:3px 8px;border-radius:5px">−${totB} bajas</span>
+          ${totNC>0?`<span style="font-size:11px;color:#0369A1;background:#E0F2FE;padding:3px 8px;border-radius:5px">${totNC} no continúa</span>`:''}
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;padding:12px 16px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:10px;padding:12px 16px">
         ${rows.map(r=>{
           const dispCol=r.disp<0?'#DC2626':r.disp===0?'#D97706':r.disp<=2?'#D97706':'#16A34A';
           const dispTxt=r.disp<0?String(r.disp):r.disp===0?'0':'+'+r.disp;
+          const hayProy=(r.noContinua||0)>0;
+          const proyTxt=r.dispProy<0?String(r.dispProy):'+'+r.dispProy;
           return `<div style="background:var(--cr);border-radius:10px;padding:12px 14px;border:1px solid var(--bd)">
-            <div style="font-size:11.5px;font-weight:700;color:var(--td);margin-bottom:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;title='${r.sc}'">${r.sc}</div>
+            <div style="font-size:11.5px;font-weight:700;color:var(--td);margin-bottom:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${r.sc}">${r.sc}</div>
             <div style="display:flex;align-items:baseline;gap:4px;margin-bottom:6px">
               <span style="font-size:28px;font-weight:800;line-height:1;color:var(--td)">${r.actual}</span>
-              <span style="font-size:11px;color:var(--tx3)">alumnos</span>
+              <span style="font-size:11px;color:var(--tx3)">alumnos${hayProy?` · <span style="color:#0369A1">−${r.noContinua} no cont.</span>`:''}</span>
             </div>
             ${pctBar(r.pct)}
             <div style="display:flex;justify-content:space-between;align-items:center;margin-top:7px">
-              <span style="font-size:10.5px;color:var(--tx3)">Cap: <span onclick="editarCursoOcupacion('${r.sc}')" style="font-weight:700;cursor:pointer;color:var(--td);text-decoration:underline dotted;text-underline-offset:2px" title="Editar capacidad">${r.cap}</span></span>
-              <span style="font-size:13px;font-weight:700;color:${dispCol}">${dispTxt} vac.</span>
+              <span style="font-size:10.5px;color:var(--tx3)">Cap: <span onclick="editarCursoOcupacion('${r.sc}')" style="font-weight:700;cursor:pointer;color:var(--td);text-decoration:underline dotted;text-underline-offset:2px" title="Editar capacidad (cupos totales)">${r.cap}</span></span>
+              <span style="font-size:12.5px;font-weight:700;color:${dispCol}">${dispTxt} hoy${hayProy?` <span style="color:#0EA5E9">· ${proyTxt} proy.</span>`:''}</span>
             </div>
           </div>`;
         }).join('')}
@@ -5232,21 +5357,21 @@ function renderOcTable(rows, withEdit){
 // ─── PADRÓN ───────────────────────────────────────────
 function renderPadron(){
   const ciclo=_ocCiclo;
-  const padron=(DB.padron||[]).filter(a=>a.ciclo===ciclo);
+  const vista=padronVista(ciclo);
+  const padron=vista.rows;
   const usePadron=padron.length>0;
-
-  const grps=[
-    {lbl:'Inicial (Kindergarten)',lvl:'Inicial'},
-    {lbl:'Elementary (Primaria)',lvl:'Elementary'},
-    {lbl:'High School (Secundaria)',lvl:'High School'},
-  ];
+  const esProy=vista.proyeccion;
 
   const activos=padron.filter(a=>a.estado==='activo').length;
   const bajas=padron.filter(a=>a.estado==='baja').length;
 
   const sigCiclo=ciclo+1;
-  const yaTieneSig=(DB.padron||[]).some(a=>a.ciclo===sigCiclo&&a.estado==='activo');
-  let html=`<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
+  const bannerProy=esProy
+    ? `<div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:10px;padding:11px 15px;margin-bottom:14px;font-size:12.5px;color:#1D4ED8;line-height:1.55">
+         <strong>⚠ Padrón proyectado ${ciclo}</strong> — todavía no se cerró este año. Es una simulación a partir de ${vista.base} que <strong>presume que todos re-matriculan</strong>. No es editable: se vuelve real al apretar <strong>Pasar de año</strong> desde el año en curso.
+       </div>`
+    : '';
+  let html=`${bannerProy}<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
     <input class="fi" id="padron-q" placeholder="Buscar alumno..." style="max-width:220px;padding:7px 12px" oninput="filtrarPadron()">
     <select class="fsel" id="padron-f-nivel" style="font-size:13px" onchange="filtrarPadron()">
       <option value="">Todos los niveles</option>
@@ -5261,13 +5386,13 @@ function renderPadron(){
     </select>
     <div style="flex:1"></div>
     <span style="font-size:12px;color:var(--tx3)">${activos} activos · ${bajas} bajas</span>
-    <button class="btn btn-sm btn-out" onclick="abrirModalAgregarAlumno()">+ Agregar</button>
+    ${!esProy?`<button class="btn btn-sm btn-out" onclick="abrirModalAgregarAlumno()">+ Agregar</button>
     <button class="btn btn-sm btn-out" onclick="exportarPadronExcel()">Excel</button>
     <button class="btn btn-sm btn-out" onclick="importarIdsModal()">IDs del colegio</button>
     <button class="btn btn-sm" style="background:#7C3AED;color:#fff;border:none" onclick="importarPadronModal()">⬆ Importar</button>
-    ${usePadron?`<button class="btn btn-sm" style="background:#2C4A5E;color:#fff;border:none" onclick="pasarAlAnoSiguienteModal()" title="Generar padrón ${sigCiclo} avanzando secciones">→ Pasar a ${sigCiclo}</button>`:''}
+    ${usePadron?`<button class="btn btn-sm" style="background:#2C4A5E;color:#fff;border:none" onclick="abrirTraspasoModal(${sigCiclo})" title="Cerrar ${ciclo} y generar el padrón ${sigCiclo}">→ Pasar de año</button>`:''}`:''}
   </div>
-  ${panelDiagnosticoIds()}
+  ${esProy?'':panelDiagnosticoIds()}
   <div id="padron-tabla"></div>`;
   return html;
 }
@@ -5382,7 +5507,9 @@ function filtrarPadron(){
   const fNivel=document.getElementById('padron-f-nivel')?.value||'';
   const fEst=document.getElementById('padron-f-estado')?.value||'';
   const ciclo=_ocCiclo;
-  let lista=(DB.padron||[]).filter(a=>a.ciclo===ciclo);
+  const vista=padronVista(ciclo);
+  const esProy=vista.proyeccion;
+  let lista=vista.rows;
   if(fNivel) lista=lista.filter(a=>a.nivel===fNivel);
   if(fEst) lista=lista.filter(a=>a.estado===fEst);
   if(q) lista=lista.filter(a=>(a.nombre||'').toLowerCase().includes(q)||(a.curso||'').toLowerCase().includes(q)||String(a.idColegio||'').toLowerCase().includes(q));
@@ -5405,7 +5532,7 @@ function filtrarPadron(){
       </div>
       <table><thead><tr><th style="width:100px">ID colegio</th><th>Nombre</th><th>Nivel</th><th>Estado</th><th>Fecha alta</th><th></th></tr></thead>
       <tbody>${alumnos.map(a=>`<tr style="${a.estado==='baja'?'opacity:.6':''}">
-        <td><input class="fi" value="${esc(a.idColegio||'')}" placeholder="—" style="font-size:12px;padding:3px 6px;width:88px;box-sizing:border-box;font-family:monospace" onblur="setIdColegio('${a.id}',this.value)"></td>
+        <td>${esProy?`<span style="font-size:12px;color:var(--tx3);font-family:monospace">${esc(a.idColegio||'—')}</span>`:`<input class="fi" value="${esc(a.idColegio||'')}" placeholder="—" style="font-size:12px;padding:3px 6px;width:88px;box-sizing:border-box;font-family:monospace" onblur="setIdColegio('${a.id}',this.value)">`}</td>
         <td><strong>${esc(a.nombre||'—')}</strong>${a.admisionId?` <span style="font-size:10px;color:#7C3AED;background:#EDE9FE;padding:1px 5px;border-radius:3px">Adm</span>`:''}</td>
         <td style="color:var(--tx3);font-size:12px">${a.nivel||'—'}</td>
         <td>${a.estado==='activo'
@@ -5413,7 +5540,9 @@ function filtrarPadron(){
           :`<span style="color:#EF4444;font-size:12px">● Baja</span> <span style="color:var(--tx3);font-size:11px">${a.motivoBaja||''}</span>`}</td>
         <td style="color:var(--tx3);font-size:12px">${fDateFull(a.fechaAlta)||'—'}</td>
         <td style="display:flex;gap:4px;flex-wrap:wrap">
-          ${a.estado==='activo'
+          ${esProy
+            ?`<span style="font-size:11px;color:#0EA5E9">proyectado</span>`
+            :a.estado==='activo'
             ?`<button class="btn btn-sm btn-out" onclick="moverSeccionModal('${a.id}')" title="Cambiar de sección">Mover</button>
               <button class="btn btn-sm btn-out" style="color:#EF4444" onclick="registrarBajaPadronModal('${a.id}')">Baja</button>`
             :`<button class="btn btn-sm btn-out" style="font-size:11px" onclick="reactivarAlumnoPadron('${a.id}')">Reactivar</button>`}
@@ -5432,7 +5561,7 @@ function abrirModalAgregarAlumno(){
     <div style="display:grid;gap:12px;padding:4px 0">
       <div class="fg"><label class="flabel">Nombre completo</label><input class="fi" id="pa-nombre" placeholder="APELLIDO, Nombre"></div>
       <div class="fg"><label class="flabel">Sección</label><select class="fsel" id="pa-curso"><option value="">Seleccionar sección</option>${opts}</select></div>
-      <div class="fg"><label class="flabel">Ciclo lectivo</label><input class="fi" id="pa-ciclo" type="number" value="${_ocCiclo}" min="2020" max="2030"></div>
+      <div class="fg"><label class="flabel">Ciclo lectivo</label><input class="fi" id="pa-ciclo" type="number" value="${_ocCiclo}" min="2020" max="2032"></div>
       <div class="fg"><label class="flabel">Fecha de alta</label><input class="fi" id="pa-fecha" type="date" value="${today()}"></div>
       <div class="fg"><label class="flabel">Observaciones</label><input class="fi" id="pa-obs" placeholder="Opcional"></div>
     </div>`;
@@ -5547,7 +5676,7 @@ function importarPadronModal(){
     </div>
     <div class="fg">
       <label class="flabel">Ciclo lectivo para importar</label>
-      <input class="fi" id="import-ciclo" type="number" value="${_ocCiclo}" min="2020" max="2030" style="max-width:100px">
+      <input class="fi" id="import-ciclo" type="number" value="${_ocCiclo}" min="2020" max="2032" style="max-width:100px">
     </div>
     <div id="import-preview" style="margin-top:8px;font-size:12px;color:var(--tx3)"></div>`;
   document.getElementById('mb').querySelector('#import-txt').addEventListener('input', previsualizarImport);
@@ -6606,35 +6735,9 @@ function _pdfEsc(v){
   return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
-function pasarAlAnoSiguienteModal(){
-  const ciclo=_ocCiclo, sig=ciclo+1;
-  const padronAct=(DB.padron||[]).filter(a=>a.ciclo===ciclo&&a.estado==='activo');
-  if(!padronAct.length){ toast(`No hay padrón activo en ${ciclo}`,'err'); return; }
-  const egresados=padronAct.filter(a=>SECTION_ADVANCE[a.curso]===null).length;
-  const avanzan=padronAct.filter(a=>SECTION_ADVANCE[a.curso]!==undefined&&SECTION_ADVANCE[a.curso]!==null).length;
-  const sinMapeo=padronAct.filter(a=>!Object.prototype.hasOwnProperty.call(SECTION_ADVANCE,a.curso)).length;
-  const bajas=padronAct.filter(a=>(DB.reMatricula||{})[a.id+'_'+sig]?.estado==='baja').length;
-  const noSaben=padronAct.filter(a=>(DB.reMatricula||{})[a.id+'_'+sig]?.estado==='no_sabe').length;
-  const nuevosS3=DB.postulantes.filter(p=>(p.estado==='nuevo'||p.estado==='matriculado')&&p.anio===sig&&p.curso&&p.curso.startsWith('K')).length;
-  document.getElementById('mt').textContent=`Pasar padrón ${ciclo} → ${sig}`;
-  document.getElementById('mb').innerHTML=`
-    <div style="background:var(--cr);border-radius:10px;padding:14px;margin-bottom:14px">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <div><div style="color:var(--tx3);font-size:11px;font-weight:600;text-transform:uppercase">Activos en ${ciclo}</div><div style="font-size:26px;font-weight:800;color:var(--td)">${padronAct.length}</div></div>
-        <div><div style="color:var(--tx3);font-size:11px;font-weight:600;text-transform:uppercase">Pasan a ${sig}</div><div style="font-size:26px;font-weight:800;color:#16A34A">${avanzan-bajas}</div></div>
-        <div><div style="color:var(--tx3);font-size:11px;font-weight:600;text-transform:uppercase">Egresan (6° Sec)</div><div style="font-size:26px;font-weight:800;color:#7C3AED">${egresados}</div></div>
-        <div><div style="color:var(--tx3);font-size:11px;font-weight:600;text-transform:uppercase">No re-matriculan</div><div style="font-size:26px;font-weight:800;color:#EF4444">${bajas}</div></div>
-        ${nuevosS3?`<div style="grid-column:1/-1"><div style="color:var(--tx3);font-size:11px;font-weight:600;text-transform:uppercase">Nuevos de admisiones (Inicial ${sig})</div><div style="font-size:26px;font-weight:800;color:#3B82F6">+${nuevosS3}</div></div>`:''}
-      </div>
-    </div>
-    ${sinMapeo?`<div style="background:#FEF3C7;border:1px solid #FDE68A;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:12px;color:#92400E">⚠ ${sinMapeo} alumno${sinMapeo!==1?'s tienen':'tiene'} sección no reconocida y quedarán en la sección actual. Verificá manualmente después del pase.</div>`:''}
-    ${noSaben?`<div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:12px;color:#1D4ED8">ℹ ${noSaben} marcado${noSaben!==1?'s':''} como "No saben aún" — se incluirán en ${sig}.</div>`:''}
-    <div style="font-size:13px;color:var(--tx3)">Se generará el padrón <strong>${sig}</strong> con cada alumno avanzado a su sección correspondiente. Las secciones quedan editables manualmente.</div>`;
-  document.getElementById('mf').innerHTML=`
-    <button class="btn btn-out" onclick="closeM()">Cancelar</button>
-    <button class="btn btn-pri" onclick="generarPadronDesdeRemat(${sig});closeM()">Confirmar → Generar padrón ${sig}</button>`;
-  openM();
-}
+// El botón "Pasar de año" del Padrón y del cierre de Re-Matrícula usan el mismo
+// modal: abrirTraspasoModal(cicloSiguiente). Antes había dos flujos distintos que
+// confundían; se unificó en uno solo.
 
 function moverSeccionModal(alumnoId){
   const a=(DB.padron||[]).find(x=>x.id===alumnoId);
