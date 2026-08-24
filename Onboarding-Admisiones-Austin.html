@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Guía del Sistema de Admisiones · Austin EBS</title>
+<style>
+  :root{
+    --or:#E8621A; --or-soft:#FDEEE3;
+    --navy:#2C4A5E; --navy-soft:#EAF0F3;
+    --cream:#EEE9DF; --cream-lite:#F8F6F0;
+    --ink:#252520; --ink2:#5A5A54; --ink3:#95958E;
+    --bd:#E3DED3;
+    --green:#16A34A; --amber:#D97706; --violet:#7C3AED; --red:#EF4444;
+  }
+  *{box-sizing:border-box; -webkit-print-color-adjust:exact; print-color-adjust:exact;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:#DDD6C8;
+    font:400 14.5px/1.65 -apple-system,Segoe UI,Arial,Helvetica,sans-serif;
+    color:var(--ink);
+  }
+  .sheet{
+    width:210mm; min-height:297mm;
+    margin:14px auto; padding:22mm 20mm 20mm;
+    background:#fff; position:relative;
+    box-shadow:0 4px 24px rgba(0,0,0,.14);
+  }
+  h1,h2,h3,.serif{font-family:Georgia,'Times New Roman',serif;}
+  /* ── COVER ── */
+  .cover{
+    background:linear-gradient(160deg,#F8F6F0 0%,#F1ECE1 100%);
+    display:flex; flex-direction:column; justify-content:center;
+    padding:0 22mm;
+  }
+  .cover .logo{width:96px;height:auto;margin-bottom:26px;}
+  .cover .kicker{
+    font:600 12px/1 Arial,sans-serif; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--or); margin-bottom:18px;
+  }
+  .cover h1{font-size:44px; line-height:1.08; color:var(--navy); margin:0 0 18px; font-weight:700;}
+  .cover .lead{font-size:16.5px; color:var(--ink2); max-width:135mm; line-height:1.6;}
+  .cover .rule{width:64px;height:4px;background:var(--or);border-radius:4px;margin:30px 0 26px;}
+  .cover .meta{font-size:12.5px; color:var(--ink3); line-height:1.9;}
+  .cover .meta strong{color:var(--navy);}
+  /* ── SECTIONS ── */
+  .sec-tag{
+    display:inline-block; font:700 11px/1 Arial,sans-serif; letter-spacing:.13em;
+    text-transform:uppercase; color:var(--or); background:var(--or-soft);
+    padding:6px 11px; border-radius:5px; margin-bottom:14px;
+  }
+  h2{font-size:27px; color:var(--navy); margin:0 0 8px; line-height:1.14;}
+  .sub{color:var(--ink2); font-size:14.5px; margin:0 0 22px; max-width:150mm;}
+  h3{font-size:16.5px; color:var(--navy); margin:26px 0 8px;}
+  p{margin:0 0 12px;}
+  .muted{color:var(--ink2);}
+  strong{color:var(--ink);}
+  a{color:var(--navy);}
+  /* cards */
+  .card{
+    border:1px solid var(--bd); border-radius:11px; padding:16px 18px; margin:0 0 13px;
+    background:#fff;
+  }
+  .card.tint{background:var(--cream-lite);}
+  .card.accent{border-left:4px solid var(--or);}
+  .card h4{margin:0 0 6px; font:700 15px/1.3 Arial,sans-serif; color:var(--navy);}
+  .card p{margin:0; font-size:13.5px; color:var(--ink2);}
+  /* numbered steps */
+  .steps{counter-reset:st; margin:8px 0 0; padding:0; list-style:none;}
+  .steps li{
+    position:relative; padding:0 0 18px 46px; margin:0;
+  }
+  .steps li:before{
+    counter-increment:st; content:counter(st);
+    position:absolute; left:0; top:-2px;
+    width:30px;height:30px; border-radius:50%;
+    background:var(--navy); color:#fff;
+    font:700 14px/30px Georgia,serif; text-align:center;
+  }
+  .steps li:after{
+    content:''; position:absolute; left:14px; top:30px; bottom:2px; width:2px;
+    background:var(--bd);
+  }
+  .steps li:last-child:after{display:none;}
+  .steps b{color:var(--navy); font-family:Georgia,serif; font-size:15.5px;}
+  /* pills grid */
+  .pills{display:flex; flex-wrap:wrap; gap:7px; margin:4px 0 6px;}
+  .pill{
+    font:600 12px/1 Arial,sans-serif; padding:6px 10px; border-radius:20px;
+    border:1px solid var(--bd); color:var(--ink2); background:#fff;
+    display:inline-flex; align-items:center; gap:6px;
+  }
+  .dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
+  /* mini-table */
+  table{width:100%; border-collapse:collapse; margin:6px 0 14px; font-size:13px;}
+  th{
+    text-align:left; font:700 11px/1.3 Arial,sans-serif; letter-spacing:.05em;
+    text-transform:uppercase; color:var(--ink3);
+    padding:0 12px 8px 0; border-bottom:1.5px solid var(--bd);
+  }
+  td{padding:9px 12px 9px 0; border-bottom:1px solid #F0ECE3; vertical-align:top; color:var(--ink2);}
+  td b{color:var(--navy);}
+  /* callout */
+  .note{
+    background:var(--navy-soft); border-radius:10px; padding:14px 16px; margin:16px 0;
+    font-size:13.5px; color:var(--navy); border-left:4px solid var(--navy);
+  }
+  .note.warn{background:#FEF6EC; color:#7A4A12; border-left-color:var(--amber);}
+  .note b{color:inherit;}
+  /* vac 3-num visual */
+  .vac3{display:flex; gap:12px; margin:12px 0 4px;}
+  .vac3 .vc{flex:1; border:1px solid var(--bd); border-radius:10px; padding:13px 14px; text-align:center;}
+  .vac3 .vc .n{font:800 26px/1 Georgia,serif; margin-bottom:5px;}
+  .vac3 .vc .l{font:700 11px/1.3 Arial,sans-serif; letter-spacing:.05em; text-transform:uppercase; color:var(--ink3);}
+  .vac3 .vc .d{font-size:11.5px; color:var(--ink2); margin-top:5px; line-height:1.4;}
+  /* cohort legend */
+  .cohorts{display:flex; flex-wrap:wrap; gap:9px; margin:10px 0;}
+  .coh{display:inline-flex; align-items:center; gap:7px; font:600 12.5px/1 Arial,sans-serif; color:var(--ink2);}
+  .coh .sw{width:22px;height:14px;border-radius:4px;border-left:3px solid;}
+  /* footer */
+  .foot{
+    position:absolute; left:20mm; right:20mm; bottom:12mm;
+    display:flex; justify-content:space-between; align-items:center;
+    font:400 10.5px/1 Arial,sans-serif; color:var(--ink3);
+    border-top:1px solid var(--bd); padding-top:9px;
+  }
+  .foot .brand{color:var(--navy); font-weight:700;}
+  .two{display:grid; grid-template-columns:1fr 1fr; gap:13px;}
+  @media print{
+    body{background:#fff;}
+    .sheet{margin:0; box-shadow:none; width:auto; min-height:auto; padding:18mm 16mm 20mm;}
+    .sheet + .sheet{page-break-before:always;}
+    .no-print{display:none;}
+  }
+  .toolbar{
+    max-width:210mm;margin:14px auto 0;text-align:right;
+  }
+  .toolbar button{
+    font:600 13px Arial,sans-serif; background:var(--navy); color:#fff; border:0;
+    padding:11px 20px; border-radius:8px; cursor:pointer;
+  }
+  .toolbar span{font-size:12px;color:#6b6459;margin-right:12px;}
+</style>
+</head>
+<body>
+
+<div class="toolbar no-print">
+  <span>Para guardarla como PDF: botón de la derecha → destino “Guardar como PDF”.</span>
+  <button onclick="window.print()">Guardar como PDF ↓</button>
+</div>
+
+<!-- ═══════════ PÁGINA 1 · PORTADA ═══════════ -->
+<section class="sheet cover">
+  <img class="logo" src="https://admisionesaustin.com.ar/logo-email.png" alt="Austin EBS"
+       onerror="this.style.display='none'">
+  <div class="kicker">Sistema de Admisiones · Guía de uso</div>
+  <h1>Todo el proceso de<br>admisión, en un<br>solo lugar.</h1>
+  <div class="rule"></div>
+  <p class="lead">
+    Esta guía te acompaña de punta a punta: desde que una familia consulta por primera vez
+    hasta que su hijo o hija queda en el padrón del colegio. Está pensada para que la uses
+    sin miedo a romper nada — el sistema guarda todo solo y te avisa en cada paso.
+  </p>
+  <div class="rule" style="width:40px;height:3px;margin:26px 0 22px;"></div>
+  <div class="meta">
+    <strong>Austin Eco Bilingual School</strong> · Equipo de Admisiones y Administración<br>
+    Bienvenida al equipo — esto es más fácil de lo que parece.
+  </div>
+</section>
+
+<!-- ═══════════ PÁGINA 2 · EN 1 MINUTO + FLUJO ═══════════ -->
+<section class="sheet">
+  <div class="sec-tag">Empezá por acá</div>
+  <h2>El sistema en un minuto</h2>
+  <p class="sub">
+    Hay una sola idea que ordena todo: cada familia es una <b>tarjeta</b> que avanza por un
+    <b>pipeline</b> (un camino con etapas). Vos movés la tarjeta de etapa, y el sistema se
+    encarga del resto: manda el mail que corresponde, cuenta las vacantes y actualiza el padrón.
+  </p>
+
+  <div class="two">
+    <div class="card accent">
+      <h4>Vos hacés una cosa</h4>
+      <p>Cambiar el estado de la tarjeta cuando pasa algo real: la contactaste, la citaste,
+         vino a la entrevista, se matriculó.</p>
+    </div>
+    <div class="card accent">
+      <h4>El sistema hace el resto</h4>
+      <p>Envía el mail a la familia con el diseño del colegio, descuenta la vacante del curso
+         y —cuando corresponde— suma al alumno al padrón.</p>
+    </div>
+  </div>
+
+  <h3>El recorrido de una familia</h3>
+  <ol class="steps">
+    <li><b>Llega la consulta.</b> Entra sola por el formulario de la web, o la cargás a mano
+        desde <i>“+ Agregar postulante”</i> si llamaron por teléfono o WhatsApp.</li>
+    <li><b>La contactás y la citás.</b> Acordás día y horario de entrevista. La familia recibe
+        un mail con la fecha, la hora y el lugar, sin que tengas que escribir nada.</li>
+    <li><b>Entrevista y postulación.</b> Después de la entrevista avanzás la tarjeta; el sistema
+        le manda las tarifas y los pasos para reservar la vacante.</li>
+    <li><b>EOE e Inglés.</b> Cuando el caso lo requiere, pasa por la evaluación del Equipo de
+        Orientación Escolar y la entrevista en inglés.</li>
+    <li><b>Matriculado → Nuevo alumno.</b> Al confirmar el ingreso, el alumno entra al padrón
+        del colegio, en el año para el que postuló y en la división con menos alumnos.</li>
+  </ol>
+
+  <div class="note">
+    <b>No hay forma de “romperlo”.</b> Todo cambio se guarda en la nube al instante y queda
+    registrado con fecha. Si te equivocás de estado, lo volvés a cambiar y listo.
+  </div>
+
+  <div class="foot"><span class="brand">Austin EBS · Admisiones</span><span>Guía del sistema — 2 / 6</span></div>
+</section>
+
+<!-- ═══════════ PÁGINA 3 · ESTADOS DEL PIPELINE ═══════════ -->
+<section class="sheet">
+  <div class="sec-tag">El pipeline</div>
+  <h2>Las etapas, una por una</h2>
+  <p class="sub">
+    Cada estado es una etapa del camino. Estos tres disparan una acción automática: <b>Citado</b>,
+    <b>Postulado</b> y <b>Nuevo alumno</b> envían mail a la familia; <b>Nuevo alumno</b> además
+    suma al padrón. El resto son etapas de seguimiento.
+  </p>
+
+  <table>
+    <thead><tr><th style="width:34%">Estado</th><th>Qué significa · qué dispara</th></tr></thead>
+    <tbody>
+      <tr><td><b>Contactado</b></td><td>Ya te comunicaste con la familia. Seguimiento.</td></tr>
+      <tr><td><b>Hermanos / Personal</b></td><td>Familiar de un alumno o del staff — tiene prioridad.</td></tr>
+      <tr><td><b>Citado entrevista</b></td><td>Entrevista agendada. <b>→ Mail</b> con fecha, hora y lugar.</td></tr>
+      <tr><td><b>Entrevistado</b></td><td>Ya vino. Podés mandarle el formulario post-entrevista.</td></tr>
+      <tr><td><b>Postulado</b></td><td>Avanza a reservar vacante. <b>→ Mail</b> con tarifas y pasos.</td></tr>
+      <tr><td><b>EOE / Inglés</b></td><td>Coordinás evaluación del EOE y entrevista en inglés.</td></tr>
+      <tr><td><b>Pend. Dir. General</b></td><td>Espera resolución de Dirección (plazo de 48 hs). Sin mail.</td></tr>
+      <tr><td><b>Matriculado</b></td><td>Ingreso confirmado. <b>→ Notifica a Administración</b> la ficha completa.</td></tr>
+      <tr><td><b>Nuevo alumno</b></td><td><b>→ Entra al padrón</b> + mail de bienvenida (onboarding).</td></tr>
+      <tr><td><b>Lista de espera</b></td><td>Sin vacante por ahora. Se avisa ante novedades.</td></tr>
+      <tr><td><b>Desiste</b></td><td>La familia no continúa. Queda registrada para re-contacto.</td></tr>
+      <tr><td><b>No incorporado</b></td><td>El colegio no avanza con el caso. Sin mail.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>El color te dice el año</h3>
+  <p class="muted" style="font-size:13.5px">
+    Cada tarjeta tiene una franja de color según el <b>año para el que postuló</b>. Así ves de un
+    vistazo si un “Nuevo alumno” es de este año o de una cohorte futura, sin tener que filtrar.
+  </p>
+  <div class="cohorts">
+    <span class="coh"><span class="sw" style="background:#EFEDEA;border-color:#78716C"></span>2025 o antes</span>
+    <span class="coh"><span class="sw" style="background:#FDEEE3;border-color:#E8621A"></span>2026</span>
+    <span class="coh"><span class="sw" style="background:#E1F0F3;border-color:#1A7A8E"></span>2027</span>
+    <span class="coh"><span class="sw" style="background:#E4F7EA;border-color:#16A34A"></span>2028</span>
+    <span class="coh"><span class="sw" style="background:#EFE9FE;border-color:#7C3AED"></span>2029</span>
+    <span class="coh"><span class="sw" style="background:#FCE7F1;border-color:#DB2777"></span>2030</span>
+    <span class="coh"><span class="sw" style="background:#E0F2FE;border-color:#0EA5E9"></span>2032</span>
+  </div>
+
+  <div class="foot"><span class="brand">Austin EBS · Admisiones</span><span>Guía del sistema — 3 / 6</span></div>
+</section>
+
+<!-- ═══════════ PÁGINA 4 · VACANTES Y OCUPACIÓN ═══════════ -->
+<section class="sheet">
+  <div class="sec-tag">Ocupación</div>
+  <h2>Tres números de vacante, sin confusión</h2>
+  <p class="sub">
+    En cada división vas a ver hasta tres números. Sirven para responder tres preguntas
+    distintas — cuántos lugares hay en total, cuántos quedan hoy, y cuántos van a quedar
+    cuando cierre la re-matrícula.
+  </p>
+
+  <div class="vac3">
+    <div class="vc"><div class="n" style="color:var(--navy)">27</div><div class="l">Cap. total</div>
+      <div class="d">Los cupos de la división. Lo definís vos y se puede editar.</div></div>
+    <div class="vc"><div class="n" style="color:var(--green)">+24</div><div class="l">Hoy</div>
+      <div class="d">Capacidad menos los alumnos que hay hoy en el padrón.</div></div>
+    <div class="vc"><div class="n" style="color:#0EA5E9">+26</div><div class="l">Proyectado</div>
+      <div class="d">Suma los lugares que liberan los marcados <b>“No continúa”</b> en Re-Matrícula.</div></div>
+  </div>
+
+  <div class="note">
+    <b>La capacidad la editás vos.</b> En la pestaña <i>Vacantes por curso</i> cambiás el cupo de
+    cada división (por defecto 25 en Inicial y 27 en Primaria/Secundaria). El resto se recalcula solo.
+  </div>
+
+  <h3>Ver un año a futuro</h3>
+  <p class="muted" style="font-size:13.5px">
+    Podés abrir cualquier ciclo hasta <b>2032</b>. Si el año todavía no se “cerró”, el sistema te
+    muestra una <b>proyección</b>: presume que todos re-matriculan, avanza cada sección un año,
+    suma los nuevos alumnos ya cargados y saca egresados y bajas. Aparece un aviso claro para que
+    sepas que es una estimación, no el padrón definitivo.
+  </p>
+  <div class="card tint">
+    <p style="color:var(--ink2)"><b style="color:var(--navy)">Ejemplo.</b> Un alumno de Sala 5 en 2026,
+    visto en “Padrón 2028”, aparece proyectado en 2° de Primaria. Y un nuevo alumno que cargaste
+    para 2028 ya se ve en su división, en el curso con menos alumnos.</p>
+  </div>
+
+  <div class="foot"><span class="brand">Austin EBS · Admisiones</span><span>Guía del sistema — 4 / 6</span></div>
+</section>
+
+<!-- ═══════════ PÁGINA 5 · RE-MATRÍCULA Y PASAR DE AÑO ═══════════ -->
+<section class="sheet">
+  <div class="sec-tag">Fin de año</div>
+  <h2>Re-Matrícula y “Pasar de año”</h2>
+  <p class="sub">
+    Una vez al año, sobre el final, definís quién sigue y apretás un botón. El sistema arma solo
+    el padrón del año que viene. No hay que cargar a nadie de nuevo.
+  </p>
+
+  <h3>1 · Marcá quién continúa</h3>
+  <p class="muted" style="font-size:13.5px">
+    En la pestaña <b>Re-Matrícula</b>, cada alumno tiene cuatro opciones. Si no tocás nada, cuenta
+    como que <b>re-matricula</b> — el sistema siempre asume que todos siguen.
+  </p>
+  <div class="pills">
+    <span class="pill"><span class="dot" style="background:#16A34A"></span>Re-matricula <span style="color:#95958E">(por defecto)</span></span>
+    <span class="pill"><span class="dot" style="background:#D97706"></span>Familia no sabe</span>
+    <span class="pill"><span class="dot" style="background:#7C3AED"></span>Austin evalúa</span>
+    <span class="pill"><span class="dot" style="background:#EF4444"></span>No continúa</span>
+  </div>
+  <p class="muted" style="font-size:13px;margin-top:4px">
+    Solo <b>“No continúa”</b> saca al alumno. “No sabe” y “Austin evalúa” pasan igual, para que no
+    se te pierda nadie por indefinición.
+  </p>
+
+  <h3>2 · Apretá “Pasar de año”</h3>
+  <p class="muted" style="font-size:13.5px">
+    El botón está arriba del Padrón. Antes de confirmar, te muestra un resumen de lo que va a pasar:
+  </p>
+  <table>
+    <tbody>
+      <tr><td><b>Re-matriculan</b></td><td>Avanzan a la sección que les toca. Se conservan sus descuentos y su ID de colegio.</td></tr>
+      <tr><td><b>Altas del pipeline</b></td><td>Los “Nuevo alumno” de ese año se suman al padrón.</td></tr>
+      <tr><td><b>No continúan</b></td><td>Los marcados como baja no pasan.</td></tr>
+      <tr><td><b>Egresan</b></td><td>El último año (6° de Secundaria) egresa y no se re-matricula.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="note warn">
+    <b>El año anterior queda intacto.</b> Después de pasar de año, el nuevo ciclo pasa a ser el que
+    ves por defecto — pero podés volver al anterior cambiando el ciclo, para consultarlo cuando quieras.
+  </div>
+
+  <div class="foot"><span class="brand">Austin EBS · Admisiones</span><span>Guía del sistema — 5 / 6</span></div>
+</section>
+
+<!-- ═══════════ PÁGINA 6 · MAILS + TIPS + CIERRE ═══════════ -->
+<section class="sheet">
+  <div class="sec-tag">Comunicación</div>
+  <h2>Los mails a las familias</h2>
+  <p class="sub">
+    Cada mail sale con el diseño del colegio: logo, tipografía, colores y firma de Admisiones.
+    Vos escribís texto plano; el sistema lo convierte en un correo prolijo automáticamente.
+  </p>
+
+  <div class="two">
+    <div class="card">
+      <h4>Se envían solos</h4>
+      <p>Al cambiar ciertos estados (Citado, Postulado, Nuevo alumno…) el mail sale sin que hagas nada.</p>
+    </div>
+    <div class="card">
+      <h4>Editás el texto, no el diseño</h4>
+      <p>En <i>Plantillas de mail</i> cambiás las palabras. El formato bonito lo pone el sistema.</p>
+    </div>
+  </div>
+
+  <p class="muted" style="font-size:13.5px">
+    Los datos de cada familia (nombre, alumno, curso, fecha de entrevista…) se completan solos
+    en el lugar correcto. Nunca vas a mandar un mail con un hueco sin llenar.
+  </p>
+
+  <div class="sec-tag" style="margin-top:26px">Para tener a mano</div>
+  <h2 style="font-size:22px">Cinco cosas que conviene saber</h2>
+  <ul style="list-style:none;padding:0;margin:10px 0 0">
+    <li class="card tint" style="padding:12px 15px"><b style="color:var(--navy)">Guarda solo.</b> No hay botón de “guardar”: cada cambio va a la nube al instante.</li>
+    <li class="card tint" style="padding:12px 15px"><b style="color:var(--navy)">Cargas grandes, de a poco.</b> Si importás muchos alumnos de una planilla, hacelo en tandas de ~12 para que no se traben.</li>
+    <li class="card tint" style="padding:12px 15px"><b style="color:var(--navy)">Todo queda con fecha.</b> Cada cambio de estado guarda cuándo pasó y si el mail salió.</li>
+    <li class="card tint" style="padding:12px 15px"><b style="color:var(--navy)">Los desistidos no se pierden.</b> Quedan guardados para re-contactarlos más adelante.</li>
+    <li class="card tint" style="padding:12px 15px"><b style="color:var(--navy)">Exportá cuando quieras.</b> El botón <i>Exportar CSV</i> te baja el padrón para abrirlo en Excel.</li>
+  </ul>
+
+  <div class="note" style="margin-top:24px;text-align:center;background:var(--or-soft);border-left-color:var(--or);color:#8A3D12">
+    <b>Estás lista.</b> El sistema fue pensado para acompañarte, no para complicarte.
+    Ante la duda, probá — nada se rompe y todo se puede volver atrás.
+  </div>
+
+  <div class="foot"><span class="brand">Austin EBS · Admisiones</span><span>Guía del sistema — 6 / 6</span></div>
+</section>
+
+</body>
+</html>
