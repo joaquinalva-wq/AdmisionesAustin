@@ -1029,7 +1029,7 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
                 <option value="nuevo">Nuevo alumno</option>
                 <option value="lista de espera">Lista de espera</option>
                 <option value="desiste">Desiste</option>
-                <option value="no_queremos">No incorporado</option>
+                <option value="no_queremos">No queremos</option>
               </select>
               <select class="fsel2" id="fniv" onchange="poblarCursosPost();filterT()">
                 <option value="">Todos los niveles</option>
@@ -1291,8 +1291,8 @@ function esc(v){
   return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
-const ESTADOS = ['contactado','hermanos','citado','entrevistado','postulado','eoe_ingles','pendiente_dg','matriculado','nuevo','lista de espera','rechazado_eoe','desiste','no_queremos'];
-const EL = {nueva:'Nueva consulta',contactado:'Contactado',hermanos:'Hermanos / Personal',citado:'Citado entrevista',entrevistado:'Entrevistado',postulado:'Postulado',eoe_ingles:'EOE / Inglés',pendiente_dg:'Pend. Dir. General',rechazado_eoe:'Rechazado EOE',matriculado:'Matriculado',nuevo:'Nuevo alumno','lista de espera':'Lista de espera',desiste:'Desiste',no_queremos:'No incorporado'};
+const ESTADOS = ['contactado','hermanos','citado','entrevistado','eoe_ingles','pendiente_dg','postulado','matriculado','nuevo','lista de espera','rechazado_eoe','desiste','no_queremos'];
+const EL = {nueva:'Nueva consulta',contactado:'Contactado',hermanos:'Hermanos / Personal',citado:'Citado entrevista',entrevistado:'Entrevistado',postulado:'Postulado',eoe_ingles:'EOE / Inglés',pendiente_dg:'Pend. Dir. General',rechazado_eoe:'Rechazado EOE',matriculado:'Matriculado',nuevo:'Nuevo alumno','lista de espera':'Lista de espera',desiste:'Desiste',no_queremos:'No queremos'};
 const ECLS = {nueva:'bg-n',contactado:'bg-co',citado:'bg-ci',entrevistado:'bg-en',postulado:'bg-po',eoe_ingles:'bg-eoe',pendiente_dg:'bg-dg',rechazado_eoe:'bg-reoe',matriculado:'bg-ma',nuevo:'bg-nu','lista de espera':'bg-es',desiste:'bg-de',no_queremos:'bg-de'};
 const EPCLS = {nueva:'ph-n',contactado:'ph-co',citado:'ph-ci',entrevistado:'ph-en',postulado:'ph-po',eoe_ingles:'ph-eoe',pendiente_dg:'ph-dg',rechazado_eoe:'ph-reoe',matriculado:'ph-ma',nuevo:'ph-nu','lista de espera':'ph-es',desiste:'ph-de',no_queremos:'ph-de'};
 const ECOL = {nueva:'var(--cn)',contactado:'#1A7A8E',hermanos:'#7C3AED',citado:'var(--cc)',entrevistado:'var(--ce)',postulado:'var(--cp)',eoe_ingles:'#7B52AB',pendiente_dg:'#B45309',rechazado_eoe:'#DC2626',matriculado:'var(--cm)',nuevo:'#166534','lista de espera':'var(--cs)',desiste:'var(--cd)',no_queremos:'var(--cd)'};
@@ -1578,6 +1578,11 @@ async function procesarInbox(){
       const nuevo = {...p, id: DB.nextId++};
       DB.postulantes.unshift(nuevo);
       DB.pendingNotif.push(nuevo.id);
+      // Recién acá, desde el panel autenticado, se agenda la entrevista en el calendar de
+      // Admisiones. Antes dependía de que el navegador de la familia completara reservarTurno
+      // al enviar el formulario —poco confiable— y por eso muchos 'citado' nunca aparecían en
+      // el calendario. crearEventoEntrevista es idempotente, así que no duplica si ya existía.
+      if(nuevo.entFecha && nuevo.entHora) agendarEntrevista(nuevo);
       nuevos++;
     });
     incorporados.push(d.name);
@@ -2156,8 +2161,20 @@ function renderDashboard(){
 
   // Notificaciones
   const nc=document.getElementById('notif-cont'); nc.innerHTML='';
-  // Nuevas postulaciones pendientes
-  
+  // Nuevas postulaciones sin revisar: las que entraron por el formulario y todavía nadie
+  // abrió. Es lo primero que tiene que verse al abrir el panel, con su estado a la vista.
+  const nuevasIds = new Set(DB.pendingNotif||[]);
+  const nuevas = DB.postulantes.filter(p=>nuevasIds.has(p.id));
+  if(nuevas.length>0){
+    const d=document.createElement('div'); d.className='notif-b';
+    d.innerHTML=`<div class="notif-t"><h4>✉ ${nuevas.length} postulación${nuevas.length>1?'es':''} nueva${nuevas.length>1?'s':''} sin revisar</h4>
+    <p>${nuevas.slice(0,4).map(p=>esc(p.alumno)+' — '+(EL[p.estado]||p.estado)).join(' · ')}${nuevas.length>4?` y ${nuevas.length-4} más`:''}</p></div>
+    <div class="notif-a">
+      <button class="nbtn nbtn-v" onclick="showV('pipeline')">Ver en pipeline</button>
+      <button class="nbtn nbtn-d" onclick="dismissAllN()">Marcar vistas</button>
+    </div>`; nc.appendChild(d);
+  }
+
   // Inactivos
   if(inac.length>0){
     const d=document.createElement('div'); d.className='notif-b warn';
@@ -2191,7 +2208,7 @@ function renderDashboard(){
     :accion.map(p=>{
       const sinFecha = p.estado==='citado' && !p.entFecha;
       return `<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 17px;border-bottom:1px solid var(--bd);font-size:12.5px">
-      <div><strong>${esc(p.alumno)}</strong>${esInactivo(p)?` <span class="inac-badge">⚠ ${diasDesde(p.ultAccion||p.fecha)}d</span>`:''}${sinFecha?` <span style="font-size:10px;background:#FEF3C7;color:#92400E;padding:1px 6px;border-radius:10px">entrevista a confirmar</span>`:''} <span style="color:var(--tx3);font-size:11px">· ${esc(p.curso)} · ${(p.fecha||'').split('-').reverse().slice(0,2).join('/')}</span></div>
+      <div><strong>${esc(p.alumno)}</strong>${nuevasIds.has(p.id)?` <span style="font-size:10px;background:#DCFCE7;color:#166534;padding:1px 6px;border-radius:10px;font-weight:700">NUEVO</span>`:''}${esInactivo(p)?` <span class="inac-badge">⚠ ${diasDesde(p.ultAccion||p.fecha)}d</span>`:''}${sinFecha?` <span style="font-size:10px;background:#FEF3C7;color:#92400E;padding:1px 6px;border-radius:10px">entrevista a confirmar</span>`:''} <span style="color:var(--tx3);font-size:11px">· ${esc(p.curso)} · ${(p.fecha||'').split('-').reverse().slice(0,2).join('/')}</span></div>
       <div style="display:flex;align-items:center;gap:7px">${badge(p.estado)}<button class="btn btn-sm btn-td" onclick="openDetalle(${p.id})">Gestionar →</button></div>
     </div>`;}).join('');
 
@@ -2222,6 +2239,9 @@ function renderDashboard(){
 }
 
 function dismissN(id){ DB.pendingNotif=DB.pendingNotif.filter(x=>x!==id); renderDashboard(); }
+// Marca como vistas todas las postulaciones nuevas de una. Persiste, así no reaparecen
+// al recargar ni al sincronizar desde la nube.
+function dismissAllN(){ DB.pendingNotif=[]; saveDB(); renderDashboard(); }
 
 // ═══════════════════════════
 // PIPELINE
@@ -2287,7 +2307,7 @@ function _filtrosPipeline(){
 function renderPipeline(){
   const f=_filtrosPipeline();
   const hayFiltro=Object.keys(f).some(k=>f[k]);
-  const ACTIVE=['contactado','citado','entrevistado','postulado','eoe_ingles','pendiente_dg','matriculado','nuevo'];
+  const ACTIVE=['contactado','citado','entrevistado','eoe_ingles','pendiente_dg','postulado','matriculado','nuevo'];
   let total=0;
   document.getElementById('pcols').innerHTML=ESTADOS.map(e=>{
     const ps=DB.postulantes.filter(p=>p.estado===e&&filtraPostulante(p,f));
@@ -2665,7 +2685,7 @@ function prevMail(id){
   const est=sel.value;
   const tmpl=DB.emails[est];
   const pe=document.getElementById('mprev-'+id); if(!pe) return;
-  const noMailStates={rechazado_eoe:'Sin mail automático — Admisiones notifica manualmente.',pendiente_dg:'Sin mail a familia — se envía notificación interna a Dirección General.',no_queremos:'Sin mail automático — contacto telefónico.'};
+  const noMailStates={rechazado_eoe:'Sin mail automático — Admisiones notifica manualmente.',pendiente_dg:'Sin mail a familia — se envía notificación interna a Dirección General.'};
   if(!tmpl){ pe.innerHTML=noMailStates[est]?`<div style="background:var(--cr2);border-radius:8px;padding:9px 12px;font-size:12px;color:var(--tx2);margin-top:8px">ℹ ${noMailStates[est]}</div>`:''; return; }
   const body=fillV(tmpl.body,p);
   const dest=EMAIL_DESTINATARIO[est]||'Familia';
@@ -2748,9 +2768,8 @@ function buildHtmlMail(texto, asunto){
   + '<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:100%;max-width:600px;background:#FFFFFF;border-radius:10px;overflow:hidden;border:1px solid #E3DED3">'
   // Encabezado
   + '<tr><td align="center" style="background:#F8F6F0;padding:26px 32px 20px;border-bottom:3px solid #E8621A">'
-  + '<img src="' + MAIL_LOGO + '" width="74" alt="Austin EBS" style="display:block;border:0;margin:0 auto 10px">'
-  + '<div style="font:700 17px Georgia,serif;color:#2C4A5E;letter-spacing:.01em">Austin Eco Bilingual School</div>'
-  + '<div style="font:400 11.5px Arial,Helvetica,sans-serif;color:#95958E;letter-spacing:.09em;text-transform:uppercase;margin-top:3px">Admisiones</div>'
+  + '<img src="' + MAIL_LOGO + '" width="210" alt="Austin Eco Bilingual School" style="display:block;border:0;width:210px;max-width:74%;height:auto;margin:0 auto 10px">'
+  + '<div style="font:400 11.5px Arial,Helvetica,sans-serif;color:#95958E;letter-spacing:.09em;text-transform:uppercase">Admisiones</div>'
   + '</td></tr>'
   + '<tr><td style="height:10px"></td></tr>'
   + cuerpo
@@ -2828,7 +2847,7 @@ function changeE(id){
   }
 
   // Sin mail automático a familia
-  const sinMail=['no_queremos','rechazado_eoe','pendiente_dg'];
+  const sinMail=['rechazado_eoe','pendiente_dg'];
   if(sinMail.includes(newEst)){
     toast('Estado actualizado → '+EL[newEst]+' · Sin mail a familia','info');
   } else if(soloCat){
@@ -2926,7 +2945,7 @@ function prevNuevoMail(){
   const noMail=document.getElementById('nm-nomail')?.checked||false;
   const info=document.getElementById('nm-mailinfo');
   const btn=document.getElementById('nm-btn');
-  const sinPlantilla=['no_queremos','rechazado_eoe','pendiente_dg'];
+  const sinPlantilla=['rechazado_eoe','pendiente_dg'];
   const tmpl=DB.emails[est];
   const hayMail=!!tmpl && !sinPlantilla.includes(est);
   if(btn) btn.textContent=(noMail||!hayMail)?'Guardar sin enviar mail':'Guardar y enviar mail';
@@ -2992,7 +3011,7 @@ function saveNuevo(){
   // botón para mandarla al calendario de Admisiones.
   if(entF) setTimeout(()=>openDetalle(p.id),120);
 
-  const sinPlantilla=['no_queremos','rechazado_eoe','pendiente_dg'];
+  const sinPlantilla=['rechazado_eoe','pendiente_dg'];
   if(noMail || !DB.emails[estadoSel] || sinPlantilla.includes(estadoSel)){
     toast(`✓ ${alumno} agregado en ${EL[estadoSel]||estadoSel}`+(entF?` · Entrevista ${fDate(entF)} ${entH}`:'')+' · Sin mail','ok');
     return;
@@ -3747,9 +3766,10 @@ async function submitPost(){
     // Hermanos de alumnos actuales y familiares del personal ya conocen el colegio:
     // saltean la entrevista de presentación y entran por un circuito más corto.
     const esFamiliaAustin = est.hermano==='si' || est.personal==='si';
-    // "Aún no sé": igual entra como citado, con la entrevista a confirmar por Admisiones.
-    // Antes caía en 'contactado' y se mezclaba con quienes todavía no habían tenido contacto.
-    const estadoInicial = esFamiliaAustin ? 'hermanos' : 'citado';
+    // "Aún no sé" (sin fecha elegida): entra a 'contactado', sin entrevista agendada —
+    // Admisiones coordina la fecha después. Si la familia sí eligió día y hora, va a 'citado'
+    // y la entrevista queda agendada en ambos calendarios al incorporarla.
+    const estadoInicial = esFamiliaAustin ? 'hermanos' : (sinEntrevista ? 'contactado' : 'citado');
     const tmpId = 'w'+Date.now().toString(36)+Math.random().toString(36).slice(2,8)+i;
     nuevosPostulantes.push({
       id:tmpId, tmpId, alumno, padre, email, tel,
@@ -3802,20 +3822,19 @@ async function submitPost(){
 
   // Use first postulante for the confirmation mail/slot API call
   const p0=nuevosPostulantes[0];
+  // Reservar el turno server-side apenas se envía, para que otra familia no pueda tomar el
+  // mismo horario en el rato que va hasta que Admisiones incorpore la postulación. Se usa
+  // setBloqueo (deduplica solo) y NO reservarTurno, porque reservarTurno manda su propio mail
+  // y crea el evento desde el navegador de la familia. El evento en el calendar de Admisiones
+  // se crea después, al incorporar, desde el panel autenticado (agendarEntrevista).
   if(!sinEntrevista && p0 && calSlotSeleccionado && DB.config.appsScriptUrl){
-    // Reservar el turno en Google Sheets
-    apiCall('reservarTurno',{
-      alumnoId:p0.id,
-      alumno:p0.alumno, padre, email,
-      tel, curso:p0.curso,
+    apiCall('setBloqueo',{
       fecha:calSlotSeleccionado.fecha,
       hora:calSlotSeleccionado.hora,
-      familyNote
-    }).then(res=>{
-      if(res.ok) calTurnosReservados.push({Fecha:calSlotSeleccionado.fecha, Hora:calSlotSeleccionado.hora, Estado:'reservado'});
+      motivo:'Entrevista: '+p0.alumno
     }).catch(()=>{});
   }
-  // Siempre enviar el mail de confirmación a la familia vía sendMail (independiente de reservarTurno)
+  // Único mail de confirmación a la familia.
   if(p0){
     const esFam = nuevosPostulantes.some(x=>x.hermano==='si'||x.personal==='si');
     const estadoMail = esFam ? 'hermanos' : (sinEntrevista ? 'citado_sin_fecha' : 'citado');

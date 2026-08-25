@@ -888,9 +888,8 @@ function mailBase_(titulo, contenido, footer) {
 <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:100%;max-width:600px;background:#ffffff;border-radius:10px;overflow:hidden;border:1px solid #E3DED3">
   <!-- Encabezado -->
   <tr><td align="center" style="background:#F8F6F0;padding:26px 32px 20px;border-bottom:3px solid #E8621A">
-    <img src="${MAIL_LOGO}" width="74" alt="Austin EBS" style="display:block;border:0;margin:0 auto 10px">
-    <div style="font:700 17px Georgia,serif;color:#2C4A5E">Austin Eco Bilingual School</div>
-    <div style="font:400 11.5px Arial,Helvetica,sans-serif;color:#95958E;letter-spacing:.09em;text-transform:uppercase;margin-top:3px">Admisiones</div>
+    <img src="${MAIL_LOGO}" width="210" alt="Austin Eco Bilingual School" style="display:block;border:0;width:210px;max-width:74%;height:auto;margin:0 auto 10px">
+    <div style="font:400 11.5px Arial,Helvetica,sans-serif;color:#95958E;letter-spacing:.09em;text-transform:uppercase">Admisiones</div>
   </td></tr>
   <!-- Título -->
   <tr><td style="padding:22px 32px 0">
