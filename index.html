@@ -444,6 +444,10 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
 .admin-cal-ent.estado-recordatorio_enviado{background:#EBF7D4;color:#3A6A0A}
 .admin-cal-ent.estado-post_entrevista_enviado{background:#D4E4EE;color:var(--cm)}
 .admin-cal-ent.estado-cancelado{background:#F0F0EE;color:var(--cd);text-decoration:line-through}
+.admin-cal-bloq{margin:5px;padding:5px 7px;border-radius:6px;font-size:10.5px;background:repeating-linear-gradient(45deg,#F3E4E4,#F3E4E4 5px,#EED9D9 5px,#EED9D9 10px);color:#9B2C2C;font-weight:600}
+.admin-cal-record{margin:5px;padding:5px 7px;border-radius:6px;font-size:10.5px;background:#FDF3D8;color:#8A6D1B;cursor:pointer;font-weight:600;display:flex;align-items:center;gap:4px}
+.admin-cal-record.hecho{opacity:.5;text-decoration:line-through}
+.admin-cal-record:hover{filter:brightness(.96)}
 
 .entcal{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin-bottom:20px}
 .entcard{background:#fff;border-radius:var(--r2);border:1px solid var(--bd);box-shadow:var(--sh);overflow:hidden;transition:box-shadow .2s}
@@ -836,6 +840,59 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
   </div>
 </div>
 
+<!-- ══ RE-AGENDA (link de auto-reserva para una familia) ══ -->
+<div id="s-reagenda" class="screen">
+  <nav class="fnav">
+    <button class="fbk" onclick="goPortal()">← Volver</button>
+    <div class="fnav-t">Agendá tu entrevista · Austin EBS</div>
+    <div style="width:80px"></div>
+  </nav>
+  <div class="fwrap">
+    <div class="fstep on" id="reag-step">
+      <div class="fstep-h">Elegí un nuevo día para tu entrevista</div>
+      <div class="fstep-s" id="reag-sub">Seleccioná el día y horario que mejor te quede. La entrevista dura 1 hora.</div>
+
+      <div id="reag-cal-container">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <button class="sbtn sbtn-b" id="reag-cal-prev" onclick="reagPrev()" style="padding:7px 14px;font-size:13px">‹ Anterior</button>
+          <div style="text-align:center">
+            <div style="font-size:14px;font-weight:600;color:var(--td)" id="reag-cal-rango"></div>
+            <div style="font-size:11.5px;color:var(--tx3)" id="reag-cal-semana-num"></div>
+          </div>
+          <button class="sbtn sbtn-b" id="reag-cal-next" onclick="reagNext()" style="padding:7px 14px;font-size:13px">Siguiente ›</button>
+        </div>
+        <div id="reag-cal-dias" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px"></div>
+        <div id="reag-cal-seleccionado" style="display:none;background:linear-gradient(135deg,#EBF7D4,#D4F0A8);border:1.5px solid var(--gr);border-radius:12px;padding:14px 16px;margin-bottom:16px">
+          <div style="font-size:13px;font-weight:600;color:#3A6A0A;margin-bottom:3px">✅ Horario seleccionado</div>
+          <div style="font-size:14px;color:var(--td);font-weight:600" id="reag-cal-sel-texto"></div>
+          <div style="font-size:12px;color:var(--tx2);margin-top:4px">📍 Planta alta de High School · 1 hora de duración</div>
+        </div>
+        <div id="reag-cal-loading" style="display:none;text-align:center;padding:30px;color:var(--tx3);font-size:13px">⏳ Cargando disponibilidad...</div>
+      </div>
+
+      <div class="fbtns">
+        <button class="sbtn sbtn-ok" id="reag-btn-confirmar" onclick="confirmarReagenda()" disabled style="opacity:.5;cursor:not-allowed">Confirmar entrevista →</button>
+      </div>
+    </div>
+
+    <div class="fstep" id="reag-ok">
+      <div class="fsuccess">
+        <div class="fsuccess-ic">🎉</div>
+        <div class="fsuccess-h">¡Entrevista agendada!</div>
+        <p class="fsuccess-p">Tu nueva entrevista quedó confirmada. Te vamos a esperar con muchas ganas de conocerlos.</p>
+        <div id="reag-ok-ent" style="background:linear-gradient(135deg,#EBF7D4,#D4F0A8);border-radius:12px;padding:13px 16px;margin:18px auto 0;max-width:360px;text-align:left;font-size:13px">
+          <div style="font-weight:600;color:#3A6A0A;margin-bottom:3px">📅 Tu entrevista</div>
+          <div style="color:var(--td);font-weight:600" id="reag-ok-txt"></div>
+          <div style="color:var(--tx2);font-size:12px;margin-top:3px">📍 Planta alta de High School</div>
+        </div>
+        <div style="margin-top:24px">
+          <button class="sbtn sbtn-n" onclick="goPortal()">Volver al inicio</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ══ LOGIN ══ -->
 <div id="s-login" class="screen">
   <div class="lcard">
@@ -988,6 +1045,7 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
           </div>
           <div style="display:flex;gap:8px">
             <button class="btn btn-td btn-sm" onclick="abrirConfigDisponibilidad()">⚙ Configurar disponibilidad</button>
+            <button class="btn btn-out btn-sm" onclick="abrirRecordatorio()">🔔 Recordatorio</button>
             <button class="btn btn-out btn-sm" onclick="abrirBloqueo()">🚫 Bloquear día/horario</button>
           </div>
         </div>
@@ -1283,7 +1341,7 @@ let numStudents = 1;
 let estudianteIdx = 0;
 let sinEntrevista = false;
 let estudiantesData = []; // [{n,ap,nac,dni,curso,nivel,jornada,anio,escuela,hermano,como}]
-const SCREENS = ['s-portal','s-postulacion','s-login','s-panel'];
+const SCREENS = ['s-portal','s-postulacion','s-reagenda','s-login','s-panel'];
 // Escapa datos de usuario antes de interpolarlos en HTML (defensa XSS).
 // El formulario público es anónimo: cualquiera puede inyectar markup en nombre/obs/etc.
 function esc(v){
@@ -1403,7 +1461,8 @@ let DB = {
     desiste_recontacto:{subj:'Austin EBS — Seguimos pensando en ustedes',body:'Hola {{padre}},\n\nHace un tiempo estuvieron en contacto con Austin Eco Bilingual School evaluando la incorporación de {{alumno}} y queremos ponernos en contacto nuevamente.\n\nSi el proceso de búsqueda escolar sigue abierto, nos encantaría retomar la conversación y acompañarlos. Estamos a disposición para responder cualquier consulta.\n\nSaludos cordiales,\nLaura Unamuno\nAdmisiones – Austin EBS'},
     no_queremos:{subj:'Proceso de admisión — Austin EBS',body:'Hola {{padre}},\n\nQueremos agradecerles sinceramente el tiempo y la confianza depositada en Austin Eco Bilingual School durante este proceso.\n\nLuego de evaluar con mucho cuidado las posibilidades de incorporación para el ciclo lectivo, lamentablemente no contamos con las vacantes necesarias para incorporar a {{alumno}} en esta ocasión.\n\nLes deseamos lo mejor en este proceso de encontrar la escuela que mejor acompañe su búsqueda, y esperamos que encuentren pronto el lugar ideal.\n\nQuedamos a disposición por cualquier consulta.\n\nUn afectuoso saludo,\nLaura Unamuno\nAdmisiones – Austin EBS'},
     seguimiento_entrevista:{subj:'¿Cómo fue la entrevista? — Austin EBS',body:'Hola {{padre}},\n\nFue un placer recibirlos en la entrevista. Esperamos que {{alumno}} y ustedes hayan quedado tan contentos como nosotros.\n\nSi desean continuar con el proceso de admisión, por favor respondé este mail confirmando tu interés. Con eso podremos avanzar con los pasos de reserva de vacante.\n\nSi por algún motivo decidieron no continuar, también podés avisarnos por este medio — lo entendemos perfectamente y siempre será bienvenida la familia si desean retomar en el futuro.\n\nEsperamos tu respuesta.\n\nUn afectuoso saludo,\nAdmisiones – Austin EBS'},
-    no_asistio:{subj:'¡Que lástima! Podemos reprogramar tu entrevista — Austin EBS',body:'Hola {{padre}},\n\nLamentamos que no hayas podido llegar a la entrevista que tenías agendada. ¡Nos hubiera encantado conocerlos!\n\nSi querés reprogramarla, respondé este mail y coordinamos un nuevo horario con gusto. También podés volver a completar el formulario de postulación para elegir una nueva fecha.\n\nEsperamos poder conocerlos pronto.\n\nUn afectuoso saludo,\nAdmisiones – Austin EBS'},
+    no_asistio:{subj:'¡Que lástima! Podemos reprogramar tu entrevista — Austin EBS',body:'Hola {{padre}},\n\nLamentamos que no hayas podido llegar a la entrevista que tenías agendada. ¡Nos hubiera encantado conocerlos!\n\nElegí vos mismo/a un nuevo día y horario, sin volver a completar todo el formulario, desde este link:\n{{link_agenda}}\n\nSi preferís, respondé este mail y coordinamos un nuevo horario con gusto. Estamos a disposición para acompañarlos.\n\nEsperamos poder conocerlos pronto.\n\nUn afectuoso saludo,\nAdmisiones – Austin EBS'},
+    link_agenda:{subj:'Agendá tu entrevista en Austin EBS cuando quieras',body:'Hola {{padre}},\n\n¡Nos encantaría coordinar la entrevista de {{alumno}} para que conozcan el colegio en persona!\n\nElegí el día y horario que mejor te quede, sin volver a completar el formulario, desde este link:\n{{link_agenda}}\n\nLa entrevista dura una hora y es en la planta alta de High School. Si preferís, respondé este mail y lo coordinamos juntos.\n\n¡Te esperamos!\n\nUn saludo,\nLaura Unamuno\nAdmisiones – Austin EBS'},
     nuevo:{subj:'¡Bienvenidos a Austin EBS! Información de inicio',body:'Hola {{padre}},\n\n¡Estamos muy emocionados de darles la bienvenida oficial a Austin Eco Bilingual School! {{alumno}} ya forma parte de nuestra comunidad.\n\nA continuación les compartimos información importante para el inicio del ciclo:\n\n▸ UNIFORMES\nPara la compra del uniforme escribinos a admisiones@austinebs-ah.edu.ar y te pasamos los datos del proveedor. Te recomendamos gestionarlo con anticipación para tener todo a tiempo.\n\n▸ REDES SOCIALES\nSeguinos para estar al tanto de todas las novedades:\n• Instagram: @austinebs\n• Facebook: Austin Eco Bilingual School\n\n▸ SISTEMAS DEL COLEGIO — HANDING Y ACADEU\nEn los próximos días recibirán el alta en los sistemas Handing y Acadeu con sus accesos. Si pasados algunos días no recibieron la información, por favor contactarse a admisiones@austinebs-ah.edu.ar indicando el nombre de {{alumno}}.\n\n¡Los esperamos con mucho entusiasmo!\n\nAdmisiones – Austin EBS'},
     admin_matriculado:{subj:'NUEVO MATRICULADO: {{alumno}} — {{curso}} {{anio}}',body:'Estimado equipo de Administración,\n\nEl siguiente estudiante completó el proceso de admisión y se encuentra MATRICULADO. Por favor proceder con el alta, cobro de matrícula y solicitud de documentación.\n\n══ DATOS DEL ESTUDIANTE ══\nNombre: {{alumno}}\nNivel: {{nivel}}\nCurso: {{curso}}\nJornada: {{jornada}}\nCiclo lectivo: {{anio}}\nHermano/a Austin: {{hermano}}\nColegio anterior: {{colegio}}\n\n══ DATOS DE LA FAMILIA ══\nPadre / Madre / Tutor: {{padre}}\nEmail: {{email}}\nTeléfono: {{tel}}\n\n══ APROBACIONES ══\nAdmisiones: ✓\nEOE / Inglés: ✓\nDirección General: ✓\n\nSistema de Admisiones – Austin EBS'},
     dg_notif:{subj:'EOE aprobó a {{alumno}} — pendiente confirmación DG',body:'Estimada Dirección General,\n\nEOE e Inglés dieron el visto bueno para el ingreso de {{alumno}} ({{curso}}, ciclo {{anio}}).\nAdmisiones confirmó la vacante.\n\nPor favor confirmar el ingreso antes del plazo indicado.\nSi no hay respuesta en 48hs, el sistema procederá automáticamente con la matrícula.\n\nDatos:\n- Nombre: {{alumno}}\n- Nivel: {{nivel}} — {{curso}}\n- Ciclo: {{anio}}\n- Familia: {{padre}}\n- Email: {{email}}\n- Teléfono: {{tel}}\n\nSaludos,\nSistema de Admisiones – Austin EBS'}
@@ -1417,6 +1476,7 @@ let DB = {
   descuentos:{},
   morosos:[],
   bloqueos:[],
+  recordatorios:[],
   // Marca de tiempo por registro y lápidas de los borrados. Es lo que permite combinar
   // el trabajo de dos sesiones en vez de que la última que guarda pise a la otra.
   _meta:{},
@@ -1490,6 +1550,7 @@ async function fsSave(){
     descuentos: DB.descuentos||{},
     morosos: DB.morosos||[],
     bloqueos: DB.bloqueos||[],
+    recordatorios: DB.recordatorios||[],
     _meta: DB._meta||{},
     _del: DB._del||{},
     ts: Date.now()
@@ -1558,6 +1619,26 @@ async function procesarInbox(){
     let body;
     try{ body = JSON.parse(d.fields?.data?.stringValue || '{}'); }catch(e){ return; }
     (body.postulantes||[]).forEach(p=>{
+      // Reagenda: la familia eligió una nueva fecha desde el link de auto-reserva. No es
+      // una postulación nueva — se actualiza la ficha que ya existe, vuelve a 'citado',
+      // se limpia el "no vino" y se agenda la entrevista en ambos calendarios.
+      if(p.__reagenda){
+        const ficha = DB.postulantes.find(x=>String(x.id)===String(p.id));
+        if(ficha && p.entFecha){
+          ficha.entFecha = p.entFecha;
+          ficha.entHora = p.entHora||'';
+          ficha.estado = 'citado';
+          ficha.entResultado = '';
+          ficha.ultAccion = today();
+          const ahora=new Date();
+          ficha.notas = ficha.notas||[];
+          ficha.notas.push({txt:'La familia reprogramó su entrevista para el '+formatFechaLinda(p.entFecha)+(p.entHora?' a las '+p.entHora:'')+' desde el link de auto-reserva.',fecha:ahora.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}),hora:ahora.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})});
+          ficha.hist = ficha.hist||[]; ficha.hist.push({e:'citado',f:today(),nota:'reagenda familia'});
+          agendarEntrevista(ficha);
+          nuevos++;
+        }
+        return;
+      }
       // Si el drenaje ya corrió antes, no duplicar
       if(p.tmpId && DB.postulantes.some(x=>x.tmpId===p.tmpId)) return;
       // Misma familia mandando el formulario dos veces. El navegador de la familia no
@@ -1646,6 +1727,7 @@ const MERGE_COLS = {
   bajasEscolares: {tipo:'array', key:'id'},
   morosos:        {tipo:'array', key:'apellido'},
   bloqueos:       {tipo:'array', key:'_k'},
+  recordatorios:  {tipo:'array', key:'id'},
   reMatricula:    {tipo:'obj'},
   descuentos:     {tipo:'obj'},
   ocupacion:      {tipo:'obj'},
@@ -1794,6 +1876,7 @@ function aplicarRemoto(remote){
   if(remote.descuentos) DB.descuentos = remote.descuentos;
   if(remote.morosos) DB.morosos = remote.morosos;
   if(remote.bloqueos) DB.bloqueos = remote.bloqueos;
+  if(remote.recordatorios) DB.recordatorios = remote.recordatorios;
 }
 
 // ═══════════════════════════
@@ -1838,6 +1921,7 @@ async function autoRefresh(silencioso){
 function startAutoRefresh(){
   stopAutoRefresh();
   _autoRefreshInterval = setInterval(()=>autoRefresh(true), 60000);
+  setInterval(()=>{ if(typeof chequearRecordatorios==='function') chequearRecordatorios(); }, 60000);
 }
 function stopAutoRefresh(){
   if(_autoRefreshInterval){ clearInterval(_autoRefreshInterval); _autoRefreshInterval=null; }
@@ -1851,7 +1935,7 @@ function saveLocalOnly(){
     const ts = Date.now();
     localStorage.setItem('austin_ebs_v2', JSON.stringify({
       nextId:DB.nextId, postulantes:DB.postulantes, vacantes:DB.vacantes,
-      tarifas:DB.tarifas, emails:DB.emails, config:DB.config, pendingNotif:DB.pendingNotif, bajasEscolares:DB.bajasEscolares||[], ocupacion:DB.ocupacion||{}, padron:DB.padron||[], reMatricula:DB.reMatricula||{}, descuentos:DB.descuentos||{}, morosos:DB.morosos||[], bloqueos:DB.bloqueos||[], _meta:DB._meta||{}, _del:DB._del||{}
+      tarifas:DB.tarifas, emails:DB.emails, config:DB.config, pendingNotif:DB.pendingNotif, bajasEscolares:DB.bajasEscolares||[], ocupacion:DB.ocupacion||{}, padron:DB.padron||[], reMatricula:DB.reMatricula||{}, descuentos:DB.descuentos||{}, morosos:DB.morosos||[], bloqueos:DB.bloqueos||[], recordatorios:DB.recordatorios||[], _meta:DB._meta||{}, _del:DB._del||{}
     }));
     localStorage.setItem('austin_ebs_ts', String(ts));
   } catch(e){}
@@ -1904,6 +1988,7 @@ function loadDB(){
     if(d.descuentos) DB.descuentos=d.descuentos;
     if(d.morosos) DB.morosos=d.morosos;
     if(d.bloqueos) DB.bloqueos=d.bloqueos;
+    if(d.recordatorios) DB.recordatorios=d.recordatorios;
     if(d._meta) DB._meta=d._meta;
     if(d._del) DB._del=d._del;
   } catch(e){}
@@ -2047,7 +2132,7 @@ function showV(v){
   document.getElementById('tb-t').textContent=titles[v]||v;
   if(v==='dashboard') renderDashboard();
   if(v==='pipeline'){ poblarCursosPipeline(); renderPipeline(); }
-  if(v==='entrevistas') { renderAdminCal(); renderEntAdminLista('proximas'); }
+  if(v==='entrevistas') { renderAdminCal(); renderEntAdminLista('proximas'); if(!chequearAsistencias()) chequearRecordatorios(); }
   if(v==='post'){ poblarCursosPost(); filterT(); }
   if(v==='bajas') renderBajas();
   if(v==='bajasesc') renderBajasEsc();
@@ -2075,8 +2160,20 @@ function migCitadoConFecha(){
   }
 }
 
+// Igual que migCitadoConFecha: si en la nube quedó guardada la plantilla vieja de
+// "no asistió" (sin el link de auto-reserva), la reemplaza por la nueva. Comparar
+// contra el texto viejo alcanza como guarda: una vez reemplazado deja de coincidir.
+function migNoAsistioLink(){
+  const viejo = 'Hola {{padre}},\n\nLamentamos que no hayas podido llegar a la entrevista que tenías agendada. ¡Nos hubiera encantado conocerlos!\n\nSi querés reprogramarla, respondé este mail y coordinamos un nuevo horario con gusto. También podés volver a completar el formulario de postulación para elegir una nueva fecha.\n\nEsperamos poder conocerlos pronto.\n\nUn afectuoso saludo,\nAdmisiones – Austin EBS';
+  if(DB.emails && DB.emails.no_asistio && DB.emails.no_asistio.body === viejo){
+    DB.emails.no_asistio = {subj:'¡Que lástima! Podemos reprogramar tu entrevista — Austin EBS', body:'Hola {{padre}},\n\nLamentamos que no hayas podido llegar a la entrevista que tenías agendada. ¡Nos hubiera encantado conocerlos!\n\nElegí vos mismo/a un nuevo día y horario, sin volver a completar todo el formulario, desde este link:\n{{link_agenda}}\n\nSi preferís, respondé este mail y coordinamos un nuevo horario con gusto. Estamos a disposición para acompañarlos.\n\nEsperamos poder conocerlos pronto.\n\nUn afectuoso saludo,\nAdmisiones – Austin EBS'};
+    saveDB();
+  }
+}
+
 function runMigrations(){
   migCitadoConFecha();
+  migNoAsistioLink();
   if(DB.config.mig_contactado_v1) return;
   let changed=0;
   DB.postulantes.forEach(p=>{
@@ -2505,6 +2602,7 @@ function openDetalle(id){
     <div style="margin-top:12px;background:#DCF0F5;border:1px solid #67C0D4;border-radius:10px;padding:13px 15px">
       <div style="font-size:11px;font-weight:600;color:#1A5F70;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">📅 Sin entrevista agendada</div>
       <div style="font-size:12.5px;color:#174E5C;line-height:1.6">La familia indicó que agendará la entrevista más adelante. Cuando confirmen fecha, moverlo a "Citado entrevista".</div>
+      <button class="btn btn-td btn-sm" onclick="enviarLinkAgenda(${id})" style="margin-top:10px">🔗 Enviar link para que agenden</button>
     </div>`:''}
 
 
@@ -2801,7 +2899,22 @@ function fillV(text,p){
     .replace(/{{hora_entrevista}}/g,p.entHora||'a coordinar')
     .replace(/{{lugar_entrevista}}/g,LUGAR_ENTREVISTA)
     .replace(/{{link_calendario}}/g,DB.config.calendar||'').replace(/{{link_drive}}/g,DB.config.drive)
+    .replace(/{{link_agenda}}/g,linkReagenda(p))
     .replace(/{{link_tarifas}}/g,DB.config.drive);
+}
+
+// Link de auto-reserva para una familia concreta: abre la web en modo "elegí un nuevo
+// día" con los datos de esa ficha embebidos (id + nombre + email). No expone la base ni
+// otras familias; sólo permite fijar una fecha de entrevista en su propia ficha.
+function linkReagenda(p){
+  if(!p || p.id==null) return DB.config.calendar||'';
+  try{
+    const tk = btoa(unescape(encodeURIComponent(JSON.stringify({
+      id:p.id, alumno:p.alumno||'', padre:p.padre||'', email:p.email||'', curso:p.curso||''
+    }))));
+    const base = location.origin + location.pathname;
+    return base + '?reagenda=' + encodeURIComponent(tk);
+  }catch(e){ return DB.config.calendar||''; }
 }
 
 function changeE(id){
@@ -3130,7 +3243,7 @@ const EMAIL_DESTINATARIO={
   contactado:'Familia',hermanos:'Familia',citado:'Familia',citado_sin_fecha:'Familia',entrevistado:'Familia',postulado:'Familia',
   eoe_ingles:'Familia',matriculado:'Familia','lista de espera':'Familia',
   desiste:'Familia',desiste_recontacto:'Familia',no_queremos:'Familia',
-  seguimiento_entrevista:'Familia',no_asistio:'Familia',nuevo:'Familia (onboarding)',
+  seguimiento_entrevista:'Familia',no_asistio:'Familia',link_agenda:'Familia',nuevo:'Familia (onboarding)',
   admin_matriculado:'Administración',dg_notif:'Dirección General'
 };
 
@@ -3139,8 +3252,8 @@ function renderEmails(){
   // no_queremos (envío manual) y no_asistio (al marcar que no llegaron): se podían
   // mandar pero no editar. Se siguen excluyendo rechazado_eoe y pendiente_dg, que son
   // estados internos sin mail a la familia, y seguimiento_entrevista, que no está conectada.
-  const allTpls=[...ESTADOS,'citado_sin_fecha','no_asistio','desiste_recontacto','admin_matriculado','dg_notif'].filter(e=>!['seguimiento_entrevista','rechazado_eoe','pendiente_dg'].includes(e));
-  const labels={...EL,hermanos:'Hermanos / familiares del personal',citado_sin_fecha:'Citado — entrevista a confirmar',no_asistio:'No asistió a la entrevista',desiste_recontacto:'Re-contacto a desistidos',admin_matriculado:'Notif. Administración (matriculado)',dg_notif:'Notif. Dirección General (EOE aprueba)'};
+  const allTpls=[...ESTADOS,'citado_sin_fecha','no_asistio','link_agenda','desiste_recontacto','admin_matriculado','dg_notif'].filter(e=>!['seguimiento_entrevista','rechazado_eoe','pendiente_dg'].includes(e));
+  const labels={...EL,hermanos:'Hermanos / familiares del personal',citado_sin_fecha:'Citado — entrevista a confirmar',no_asistio:'No asistió a la entrevista',link_agenda:'Link para auto-agendar entrevista',desiste_recontacto:'Re-contacto a desistidos',admin_matriculado:'Notif. Administración (matriculado)',dg_notif:'Notif. Dirección General (EOE aprueba)'};
   document.getElementById('email-tpls').innerHTML=allTpls.map(e=>{
     const dest=EMAIL_DESTINATARIO[e]||'Familia';
     const isTeam=dest!=='Familia'&&!dest.startsWith('Familia');
@@ -4086,6 +4199,134 @@ function confirmarEntrevista(){
 function calPrev(){ if(calSemanaOffset>0){ calSemanaOffset--; renderCalFormulario(); } }
 function calNext(){ if(calSemanaOffset<7){ calSemanaOffset++; renderCalFormulario(); } }
 
+// ── Re-agenda: link de auto-reserva (misma lógica de calendario, pantalla propia) ──
+let reagCtx = null, reagOffset = 0, reagSlot = null;
+
+// Detecta ?reagenda=TOKEN al cargar la web. El token trae los datos de una familia.
+function detectarReagenda(){
+  let raw;
+  try{ raw = new URLSearchParams(location.search).get('reagenda'); }catch(e){ return; }
+  if(!raw) return;
+  let ctx;
+  try{ ctx = JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(raw))))); }catch(e){ return; }
+  if(!ctx || ctx.id==null) return;
+  reagCtx = ctx;
+  const sub = document.getElementById('reag-sub');
+  if(sub) sub.textContent = `${ctx.alumno||''} · ${ctx.curso||''} — elegí el día y horario que mejor te quede. La entrevista dura 1 hora.`;
+  reagOffset = 0; reagSlot = null;
+  go('s-reagenda');
+  cargarTurnosReag();
+}
+
+async function cargarTurnosReag(){
+  const loading = document.getElementById('reag-cal-loading');
+  try{ calTurnosReservados = JSON.parse(localStorage.getItem('austin_turnos')||'[]'); }catch(e){ calTurnosReservados = []; }
+  try{ calBloqueos = JSON.parse(localStorage.getItem('austin_bloqueos')||'[]'); }catch(e){ calBloqueos = calBloqueos||[]; }
+  const hayCache = calTurnosReservados.length>0;
+  if(hayCache){ if(loading) loading.style.display='none'; renderReagCal(); }
+  else if(loading) loading.style.display='block';
+  if(!DB.config.appsScriptUrl){ if(loading) loading.style.display='none'; renderReagCal(); return; }
+  const conTimeout = (pr,ms)=>Promise.race([pr,new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),ms))]);
+  const [rt,rb] = await Promise.all([
+    conTimeout(apiCall('getTurnos',{}),8000).catch(()=>null),
+    conTimeout(apiCall('getBloqueos',{}),8000).catch(()=>null)
+  ]);
+  if(rt&&rt.ok&&rt.turnos){
+    calTurnosReservados = rt.turnos.filter(t=>t.Estado==='reservado'||t.Estado==='recordatorio_enviado');
+    try{ localStorage.setItem('austin_turnos', JSON.stringify(calTurnosReservados)); }catch(e){}
+  }
+  if(rb&&rb.ok){ calBloqueos = rb.bloqueos||[]; try{ localStorage.setItem('austin_bloqueos', JSON.stringify(calBloqueos)); }catch(e){} }
+  if(loading) loading.style.display='none';
+  renderReagCal();
+}
+
+function renderReagCal(){
+  const dias = document.getElementById('reag-cal-dias'); if(!dias) return;
+  const hoy = new Date();
+  const disponibilidad = getDisponibilidadBase();
+  const lunes = new Date(hoy);
+  lunes.setDate(hoy.getDate() - ((hoy.getDay()||7)-1) + reagOffset*7);
+  const fin = new Date(lunes); fin.setDate(lunes.getDate()+6);
+  const rEl = document.getElementById('reag-cal-rango');
+  const sEl = document.getElementById('reag-cal-semana-num');
+  if(rEl) rEl.textContent = fmtRango(lunes, fin);
+  if(sEl) sEl.textContent = 'Semana '+(reagOffset>=0?'+':'')+reagOffset;
+  const prevBtn = document.getElementById('reag-cal-prev');
+  if(prevBtn) prevBtn.style.display = reagOffset<=0?'none':'';
+  const diasConSlots = [];
+  for(let d=0;d<7;d++){
+    const fecha = new Date(lunes); fecha.setDate(lunes.getDate()+d);
+    const dow = fecha.getDay()==0?7:fecha.getDay();
+    if(!disponibilidad[dow]) continue;
+    diasConSlots.push({fecha, dow, slots:disponibilidad[dow]});
+  }
+  dias.innerHTML = diasConSlots.map(({fecha,dow,slots})=>{
+    const fechaStr = toDateStr(fecha);
+    const esPasada = fecha < hoy && !mismoDia(fecha,hoy);
+    const bloqueoDia = calBloqueos.some(b=>{ const h=slotHora(b); return slotFecha(b)===fechaStr && (!h||h==='*'); });
+    const nombre = ['','Lun','Mar','Mié','Jue','Vie','Sáb','Dom'][dow];
+    const dia = fecha.getDate();
+    const mes = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][fecha.getMonth()];
+    const slotsHtml = slots.map(({hora})=>{
+      const ocupado = calTurnosReservados.some(t=>slotFecha(t)===fechaStr&&slotHora(t)===hora);
+      const bloq = calBloqueos.some(b=>slotFecha(b)===fechaStr&&slotHora(b)===hora);
+      const dt = new Date(fecha); const [hh,mm]=hora.split(':'); dt.setHours(Number(hh),Number(mm));
+      const en24hs = dt - new Date() < 24*60*60*1000;
+      const isSel = reagSlot&&reagSlot.fecha===fechaStr&&reagSlot.hora===hora;
+      if(bloqueoDia||bloq) return `<div class="cal-slot bloqueado">No disponible</div>`;
+      if(esPasada||en24hs) return `<div class="cal-slot pasado">${hora}</div>`;
+      if(ocupado) return `<div class="cal-slot ocupado">${hora} — Ocupado</div>`;
+      return `<div class="cal-slot${isSel?' selected':''}" onclick="selSlotReag('${fechaStr}','${hora}','${nombre} ${dia} de ${mes}')">${hora}</div>`;
+    }).join('');
+    return `<div class="cal-dia${bloqueoDia?' bloqueado':''}">
+      <div class="cal-dia-head"><div class="cal-dia-nombre">${nombre}</div><div class="cal-dia-num">${dia} ${mes}</div></div>
+      <div class="cal-dia-slots">${slotsHtml||'<div class="cal-sin-slots">Sin horarios</div>'}</div>
+    </div>`;
+  }).join('');
+}
+
+function selSlotReag(fecha, hora, textoFecha){
+  reagSlot = {fecha, hora, texto:`${textoFecha} a las ${hora}`};
+  const txt = document.getElementById('reag-cal-sel-texto');
+  if(txt) txt.textContent = reagSlot.texto;
+  document.getElementById('reag-cal-seleccionado').style.display='block';
+  const btn = document.getElementById('reag-btn-confirmar');
+  if(btn){ btn.disabled=false; btn.style.opacity='1'; btn.style.cursor='pointer'; }
+  renderReagCal();
+}
+
+function reagPrev(){ if(reagOffset>0){ reagOffset--; renderReagCal(); } }
+function reagNext(){ if(reagOffset<7){ reagOffset++; renderReagCal(); } }
+
+async function confirmarReagenda(){
+  if(!reagCtx || !reagSlot){ toast('Seleccioná un horario','err'); return; }
+  const btn = document.getElementById('reag-btn-confirmar');
+  if(btn){ btn.disabled=true; btn.textContent='Confirmando...'; }
+  // Registro de reagenda para la bandeja: procesarInbox actualiza la ficha existente.
+  const rec = { __reagenda:true, id:reagCtx.id, alumno:reagCtx.alumno||'', entFecha:reagSlot.fecha, entHora:reagSlot.hora };
+  const guardada = await enviarAInbox([rec], '');
+  if(!guardada){
+    if(btn){ btn.disabled=false; btn.textContent='Confirmar entrevista →'; }
+    toast('No se pudo confirmar. Revisá tu conexión e intentá de nuevo.','err');
+    return;
+  }
+  // Bloquear el turno server-side para que no lo tome otra familia mientras tanto.
+  calTurnosReservados.push({Fecha:reagSlot.fecha, Hora:reagSlot.hora, Estado:'reservado'});
+  try{ localStorage.setItem('austin_turnos', JSON.stringify(calTurnosReservados)); }catch(e){}
+  if(DB.config.appsScriptUrl){
+    apiCall('setBloqueo',{fecha:reagSlot.fecha, hora:reagSlot.hora, motivo:'Entrevista: '+(reagCtx.alumno||'')}).catch(()=>{});
+  }
+  // Mail de confirmación a la familia con la nueva fecha.
+  const pseudo = { alumno:reagCtx.alumno||'', padre:reagCtx.padre||'', email:reagCtx.email||'', curso:reagCtx.curso||'', entFecha:reagSlot.fecha, entHora:reagSlot.hora };
+  enviarMail(pseudo, 'citado', ()=>{});
+  // Pantalla de éxito
+  const okTxt = document.getElementById('reag-ok-txt');
+  if(okTxt) okTxt.textContent = reagSlot.texto;
+  document.getElementById('reag-step').classList.remove('on');
+  document.getElementById('reag-ok').classList.add('on');
+  window.scrollTo(0,0);
+}
+
 function fmtRango(d1,d2){
   const m=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
   if(d1.getMonth()===d2.getMonth()) return `${d1.getDate()} al ${d2.getDate()} de ${m[d1.getMonth()]}`;
@@ -4134,12 +4375,27 @@ function renderAdminCal(){
         <strong>${esc(p.entHora||'—')}</strong> ${esc(p.alumno.split(' ')[0])}
         ${p.entResultado?'✓':''}
       </div>`).join('');
+    // Bloqueos del día (día completo o por horario)
+    const bloqsDia = (DB.bloqueos||[]).filter(b=>slotFecha(b)===fechaStr)
+      .sort((a,b)=>(slotHora(a)||'').localeCompare(slotHora(b)||''));
+    const bloqsHtml = bloqsDia.map(b=>{
+      const h = slotHora(b); const esDiaCompleto = !h || h==='*';
+      return `<div class="admin-cal-bloq" title="${esc(b.motivo||'Bloqueado')}">🚫 ${esDiaCompleto?'Día bloqueado':esc(h)}${b.motivo?' · '+esc(b.motivo):''}</div>`;
+    }).join('');
+    // Recordatorios del día (avisos manuales)
+    const recsDia = (DB.recordatorios||[]).filter(r=>r.fecha===fechaStr)
+      .sort((a,b)=>(a.hora||'').localeCompare(b.hora||''));
+    const recsHtml = recsDia.map(r=>`
+      <div class="admin-cal-record${r.hecho?' hecho':''}" onclick="event.stopPropagation();toggleRecordatorioHecho('${r.id}')" title="${esc(r.titulo||'')}${r.nota?' — '+esc(r.nota):''}">
+        🔔 ${r.hora?esc(r.hora)+' · ':''}${esc(r.titulo||'')}
+      </div>`).join('');
+    const contenido = bloqsHtml + recsHtml + entsHtml;
     html += `<div class="admin-cal-dia${esHoy?' hoy':''}">
       <div class="admin-cal-head">
         <div class="admin-cal-dn">${diaN}</div>
         <div class="admin-cal-dd" style="${esHoy?'color:var(--or);':''}">${fecha.getDate()}</div>
       </div>
-      ${entsHtml||'<div style="font-size:10px;color:var(--tx3);padding:6px 8px;text-align:center">—</div>'}
+      ${contenido||'<div style="font-size:10px;color:var(--tx3);padding:6px 8px;text-align:center">—</div>'}
     </div>`;
   }
   grid.innerHTML = html;
@@ -4849,14 +5105,31 @@ function marcarNoAsistio(id){
   p.notas = p.notas||[];
   p.notas.push({txt:'No asistió a la entrevista del '+formatFechaLinda(p.entFecha),fecha:new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}),hora:new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})});
   saveDB();
-  // Cancelar en Apps Script y enviar mail reprogramación
+  // Cancelar en Apps Script y enviar mail de reprogramación con el link de auto-reserva
+  // (la familia elige un nuevo día sin volver a completar el formulario).
   if(DB.config.appsScriptUrl && p.entFecha){
-    apiCall('cancelarTurno',{fecha:p.entFecha, hora:p.entHora, nuevoEstado:'reprogramar'});
+    apiCall('cancelarTurno',{fecha:p.entFecha, hora:p.entHora, nuevoEstado:'reprogramar', linkAgenda:linkReagenda(p)});
   } else {
     enviarMailAdmin(p,'no_asistio');
   }
   renderAdminCal(); updateSidebarBadges();
   toast(`Mail de reprogramación enviado a ${p.padre}`,'ok');
+}
+
+// Envía a la familia el link de auto-reserva para que elija día de entrevista por su cuenta.
+function enviarLinkAgenda(id){
+  const p = DB.postulantes.find(x=>x.id===id); if(!p) return;
+  if(!p.email){ toast('Esta ficha no tiene email cargado','err'); return; }
+  const ahora=new Date();
+  p.notas = p.notas||[];
+  p.notas.push({txt:'Se le envió el link de auto-reserva para agendar la entrevista.',fecha:ahora.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}),hora:ahora.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})});
+  saveDB();
+  enviarMailAdmin(p,'link_agenda',function(ok,mode){
+    if(ok && mode==='mailto') toast('Abriendo correo con el link...','info');
+    else if(ok) toast(`✓ Link para agendar enviado a ${p.padre}`,'ok');
+    else toast('No se pudo enviar. Configurá el Apps Script.','info');
+  });
+  if(document.getElementById('notas-'+id)) document.getElementById('notas-'+id).innerHTML = renderNotas(p);
 }
 
 // ═══════════════════════════
@@ -4952,16 +5225,18 @@ function abrirBloqueo(){
   const optsHorarios = buildHorariosOptions_();
   document.getElementById('mb').innerHTML = `
     <div class="warn-box" style="margin-bottom:14px">
-      Bloqueá un día completo (vacaciones, ausencia) o un horario específico. Las familias no podrán reservar en ese momento. El bloqueo se sincroniza al Apps Script si está configurado.
+      Bloqueá un día, un rango de fechas o una semana entera (vacaciones, ausencia). Las familias no podrán reservar en ese período, se ve en el calendario de Entrevistas y se sincroniza con el Google Calendar de Admisiones.
     </div>
     <div class="fgm2">
-      <div class="fgm"><label class="flm">Fecha *</label><input class="fim" type="date" id="blq-fecha" value="${today()}"></div>
-      <div class="fgm"><label class="flm">Horario (opcional)</label>
-        <select class="fsm" id="blq-hora">
-          <option value="">— Día completo —</option>
-          ${optsHorarios}
-        </select>
-      </div>
+      <div class="fgm"><label class="flm">Desde *</label><input class="fim" type="date" id="blq-fecha" value="${today()}"></div>
+      <div class="fgm"><label class="flm">Hasta (opcional)</label><input class="fim" type="date" id="blq-fecha-fin"></div>
+    </div>
+    <div style="margin:-4px 0 12px"><button class="btn btn-out btn-sm" type="button" onclick="blqEstaSemana()">📅 Esta semana completa</button></div>
+    <div class="fgm"><label class="flm">Horario (opcional)</label>
+      <select class="fsm" id="blq-hora">
+        <option value="">— Día completo —</option>
+        ${optsHorarios}
+      </select>
     </div>
     <div class="fgm"><label class="flm">Motivo (interno)</label><input class="fim" id="blq-motivo" placeholder="Ej: Laura de viaje, reunión de staff..."></div>
     <div style="margin-top:14px">
@@ -4990,33 +5265,200 @@ function renderListaBloqueos(){
     </div>`).join('');
 }
 
+// Autocompleta desde/hasta con la semana en curso (lunes a domingo).
+function blqEstaSemana(){
+  const hoy = new Date();
+  const lunes = new Date(hoy); lunes.setDate(hoy.getDate()-((hoy.getDay()||7)-1));
+  const dom = new Date(lunes); dom.setDate(lunes.getDate()+6);
+  const f = document.getElementById('blq-fecha'); const ff = document.getElementById('blq-fecha-fin');
+  if(f) f.value = toDateStr(lunes);
+  if(ff) ff.value = toDateStr(dom);
+}
+
+// Lista de fechas 'YYYY-MM-DD' entre desde y hasta (inclusive). Si no hay hasta válido,
+// devuelve solo el día desde.
+function fechasEntre(desde, hasta){
+  if(!desde) return [];
+  const d0 = new Date(desde+'T00:00:00');
+  const d1 = new Date(((hasta&&hasta>=desde)?hasta:desde)+'T00:00:00');
+  if(isNaN(d0.getTime())||isNaN(d1.getTime())) return [desde];
+  const out=[];
+  for(let d=new Date(d0); d<=d1; d.setDate(d.getDate()+1)) out.push(toDateStr(new Date(d)));
+  return out;
+}
+
 function guardarBloqueo(){
-  const fecha = document.getElementById('blq-fecha')?.value;
-  if(!fecha){ toast('Ingresá la fecha','err'); return; }
+  const desde = document.getElementById('blq-fecha')?.value;
+  if(!desde){ toast('Ingresá la fecha','err'); return; }
+  const hasta = document.getElementById('blq-fecha-fin')?.value||'';
   const hora = document.getElementById('blq-hora')?.value||'*';
   const motivo = document.getElementById('blq-motivo')?.value||'';
+  const fechas = fechasEntre(desde, hasta);
   DB.bloqueos = DB.bloqueos||[];
-  DB.bloqueos.push({fecha,hora,motivo});
+  let n=0;
+  fechas.forEach(fecha=>{
+    // No duplicar un bloqueo idéntico (misma fecha y mismo alcance horario)
+    if(DB.bloqueos.some(b=>slotFecha(b)===fecha && (slotHora(b)||'*')===(hora||'*'))) return;
+    DB.bloqueos.push({fecha,hora,motivo});
+    n++;
+    if(DB.config.appsScriptUrl){
+      apiCall('setBloqueo',{fecha, hora: hora==='*'?null:hora, motivo, evento:true});
+    }
+  });
   calBloqueos = DB.bloqueos; // actualizar cache local
   saveDB();
-  if(DB.config.appsScriptUrl){
-    apiCall('setBloqueo',{fecha, hora: hora==='*'?null:hora, motivo});
-  }
   closeM();
-  toast('Día/horario bloqueado correctamente','ok');
+  if(typeof renderAdminCal==='function') renderAdminCal();
+  toast(n===0?'Ese período ya estaba bloqueado':(n>1?`${n} días bloqueados`:'Día/horario bloqueado correctamente'),'ok');
 }
 
 function quitarBloqueo(i){
   if(!DB.bloqueos||!DB.bloqueos[i]) return;
   const b = DB.bloqueos[i];
   if(DB.config.appsScriptUrl){
-    apiCall('setBloqueo',{fecha:b.fecha, hora:b.hora||'*', eliminar:true});
+    apiCall('setBloqueo',{fecha:b.fecha, hora:b.hora||'*', eliminar:true, evento:true});
   }
   DB.bloqueos.splice(i,1);
   calBloqueos = DB.bloqueos;
   saveDB();
-  document.getElementById('blq-lista').innerHTML = renderListaBloqueos();
+  const lista=document.getElementById('blq-lista'); if(lista) lista.innerHTML = renderListaBloqueos();
+  if(typeof renderAdminCal==='function') renderAdminCal();
   toast('Bloqueo eliminado','ok');
+}
+
+// ── Recordatorios (avisos manuales del calendario, sin acción de sistema) ──
+function abrirRecordatorio(){
+  document.getElementById('mt').textContent = '🔔 Nuevo recordatorio';
+  document.getElementById('mb').innerHTML = `
+    <div class="warn-box" style="margin-bottom:14px">
+      Un recordatorio es un aviso personal (ej: "llamar a la familia López"). Aparece en el calendario y salta un aviso cuando llega el día y la hora. No dispara ninguna acción automática.
+    </div>
+    <div class="fgm"><label class="flm">¿Qué querés recordar? *</label><input class="fim" id="rec-titulo" placeholder="Ej: Llamar a la familia López"></div>
+    <div class="fgm2">
+      <div class="fgm"><label class="flm">Día *</label><input class="fim" type="date" id="rec-fecha" value="${today()}"></div>
+      <div class="fgm"><label class="flm">Hora (opcional)</label><input class="fim" type="time" id="rec-hora"></div>
+    </div>
+    <div class="fgm"><label class="flm">Nota (opcional)</label><textarea class="fim" id="rec-nota" rows="2" placeholder="Detalle o contexto..."></textarea></div>
+    <div style="margin-top:14px">
+      <div style="font-size:11.5px;font-weight:600;color:var(--tx2);margin-bottom:8px">Recordatorios activos:</div>
+      <div id="rec-lista">${renderListaRecordatorios()}</div>
+    </div>`;
+  document.getElementById('mf').innerHTML=`
+    <button class="btn btn-out" onclick="closeM()">Cerrar</button>
+    <button class="btn btn-primary" onclick="guardarRecordatorio()">Agregar recordatorio</button>`;
+  openM();
+}
+
+function renderListaRecordatorios(){
+  const recs = (DB.recordatorios||[]).slice().sort((a,b)=>((a.fecha||'')+(a.hora||'')).localeCompare((b.fecha||'')+(b.hora||'')));
+  if(recs.length===0) return `<div style="font-size:12px;color:var(--tx3)">Sin recordatorios activos.</div>`;
+  return recs.map(r=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;font-size:12px;padding:5px 0;border-bottom:1px solid var(--bd)">
+      <span style="${r.hecho?'text-decoration:line-through;opacity:.5':''}">${formatFechaLinda(r.fecha)} ${r.hora||''} · ${esc(r.titulo||'')}</span>
+      <button class="btn btn-ghost btn-sm" onclick="quitarRecordatorio('${r.id}')" style="color:#DC2626">✕ Quitar</button>
+    </div>`).join('');
+}
+
+function guardarRecordatorio(){
+  const titulo = document.getElementById('rec-titulo')?.value.trim();
+  const fecha = document.getElementById('rec-fecha')?.value;
+  if(!titulo){ toast('Escribí qué querés recordar','err'); return; }
+  if(!fecha){ toast('Elegí el día','err'); return; }
+  const hora = document.getElementById('rec-hora')?.value||'';
+  const nota = document.getElementById('rec-nota')?.value.trim()||'';
+  DB.recordatorios = DB.recordatorios||[];
+  DB.recordatorios.push({ id:'rec_'+Date.now()+'_'+Math.random().toString(36).slice(2,6), titulo, fecha, hora, nota, hecho:false, avisado:false });
+  saveDB();
+  const lista=document.getElementById('rec-lista'); if(lista) lista.innerHTML = renderListaRecordatorios();
+  const ti=document.getElementById('rec-titulo'); if(ti) ti.value='';
+  const no=document.getElementById('rec-nota'); if(no) no.value='';
+  if(typeof renderAdminCal==='function') renderAdminCal();
+  toast('Recordatorio agregado','ok');
+}
+
+function quitarRecordatorio(id){
+  DB.recordatorios = (DB.recordatorios||[]).filter(r=>r.id!==id);
+  saveDB();
+  const lista=document.getElementById('rec-lista'); if(lista) lista.innerHTML = renderListaRecordatorios();
+  if(typeof renderAdminCal==='function') renderAdminCal();
+  toast('Recordatorio eliminado','ok');
+}
+
+// Marca hecho/no hecho desde el chip del calendario.
+function toggleRecordatorioHecho(id){
+  const r = (DB.recordatorios||[]).find(x=>x.id===id);
+  if(!r) return;
+  r.hecho = !r.hecho;
+  saveDB();
+  if(typeof renderAdminCal==='function') renderAdminCal();
+}
+
+// Revisa recordatorios vencidos (día+hora ya pasados) que no fueron avisados ni hechos,
+// y los muestra en un pop-up. Se llama al abrir el panel y cada minuto.
+function chequearRecordatorios(){
+  const recs = (DB.recordatorios||[]).filter(r=>!r.hecho && !r.avisado);
+  if(recs.length===0) return false;
+  const ahora = new Date();
+  const vencidos = recs.filter(r=>{
+    if(!r.fecha) return false;
+    const cuando = new Date(r.fecha+'T'+((r.hora||'23:59'))+':00');
+    return cuando<=ahora;
+  });
+  if(vencidos.length===0) return false;
+  vencidos.forEach(r=>{ r.avisado = true; });
+  saveDB();
+  const cuerpo = vencidos.map(r=>`
+    <div style="padding:12px 14px;border:1px solid var(--bd);border-radius:10px;margin-bottom:10px;background:#FDF9EC">
+      <div style="font-size:14px;font-weight:700;color:var(--td)">🔔 ${esc(r.titulo||'')}</div>
+      <div style="font-size:12px;color:var(--tx2);margin-top:3px">${formatFechaLinda(r.fecha)} ${r.hora||''}</div>
+      ${r.nota?`<div style="font-size:12.5px;color:var(--tx1);margin-top:6px">${esc(r.nota)}</div>`:''}
+    </div>`).join('');
+  document.getElementById('mt').textContent = vencidos.length>1?`🔔 Tenés ${vencidos.length} recordatorios`:'🔔 Recordatorio';
+  document.getElementById('mb').innerHTML = cuerpo;
+  document.getElementById('mf').innerHTML = `<button class="btn btn-primary" onclick="closeM()">Entendido</button>`;
+  openM();
+  return true;
+}
+
+// Pop-up de asistencia: entrevistas cuyo horario ya pasó y siguen sin resultado. Pregunta
+// si la familia asistió. "Sí" abre el detalle para registrar el resultado; "No" dispara el
+// mail de reprogramación con el link de auto-reserva. Se muestra al abrir Entrevistas.
+let _asistPreguntadas = new Set();
+function chequearAsistencias(){
+  const ahora = new Date();
+  const pend = DB.postulantes.filter(p=>{
+    if(p.entResultado || !p.entFecha) return false;
+    if(p.estado!=='citado') return false;
+    if(_asistPreguntadas.has(p.id)) return false;
+    const cuando = new Date(p.entFecha+'T'+((p.entHora||'23:59'))+':00');
+    return cuando<=ahora;
+  }).sort((a,b)=>((a.entFecha||'')+(a.entHora||'')).localeCompare((b.entFecha||'')+(b.entHora||'')));
+  if(pend.length===0) return false;
+  pend.forEach(p=>_asistPreguntadas.add(p.id));
+  const cuerpo = pend.map(p=>`
+    <div style="padding:13px 15px;border:1px solid var(--bd);border-radius:10px;margin-bottom:12px">
+      <div style="font-size:14px;font-weight:700;color:var(--td)">${esc(p.alumno||'')}</div>
+      <div style="font-size:12px;color:var(--tx2);margin-top:2px">${esc(p.padre||'')} · ${esc(p.curso||'')}</div>
+      <div style="font-size:12px;color:var(--tx3);margin-top:2px">📅 ${formatFechaLinda(p.entFecha)}${p.entHora?' · '+esc(p.entHora):''}</div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="btn btn-ok btn-sm" onclick="asistenciaSi(${p.id})">✓ Sí, asistió</button>
+        <button class="btn btn-danger btn-sm" onclick="asistenciaNo(${p.id})">✗ No asistió</button>
+      </div>
+    </div>`).join('');
+  document.getElementById('mt').textContent = pend.length>1?`📋 ${pend.length} entrevistas por confirmar`:'📋 ¿Cómo salió la entrevista?';
+  document.getElementById('mb').innerHTML = `<div class="warn-box" style="margin-bottom:12px">Estas entrevistas ya pasaron y todavía no tienen resultado. ¿La familia asistió?</div>`+cuerpo;
+  document.getElementById('mf').innerHTML = `<button class="btn btn-out" onclick="closeM()">Después</button>`;
+  openM();
+  return true;
+}
+
+function asistenciaSi(id){
+  closeM();
+  setTimeout(()=>openDetalleEntrevista(id), 80);
+}
+function asistenciaNo(id){
+  closeM();
+  setTimeout(()=>marcarNoAsistio(id), 80);
 }
 
 function openM(){ document.getElementById('ov').classList.add('open'); }
@@ -5029,6 +5471,8 @@ function closeMBg(e){ if(e.target===document.getElementById('ov')) closeM(); }
 loadDB();
 // Inicializar bloqueos en cache local
 calBloqueos = DB.bloqueos||[];
+// Si la URL trae ?reagenda=TOKEN, una familia viene a elegir un nuevo día de entrevista.
+detectarReagenda();
 
 // ═══════════════════════════
 // OCUPACIÓN

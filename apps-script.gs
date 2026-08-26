@@ -483,15 +483,23 @@ function cancelarTurno_(data) {
       // agendada y de que no se concretó.
       marcarEventoCancelado_(rows[i][iAlumno], nuevoEstado);
 
-      // Si no asistió → mail de reprogramación
+      // Si no asistió → mail de reprogramación. Si el panel mandó el link de auto-reserva
+      // (data.linkAgenda), se ofrece a la familia elegir un nuevo día sin volver a completar
+      // el formulario; si no vino (versión vieja del panel), el mail sigue funcionando igual.
       if (nuevoEstado === 'reprogramar' && rows[i][iEmail]) {
+        const linkAgenda = data.linkAgenda || '';
+        const bloqueLink = linkAgenda
+          ? `<p style="margin:0 0 16px">Podés elegir vos mismo/a un nuevo día y horario, sin volver a completar todo el formulario, desde este link:</p>
+             <p style="margin:0 0 16px;text-align:center"><a href="${linkAgenda}" style="display:inline-block;background:#2F6B3E;color:#fff;text-decoration:none;padding:12px 26px;border-radius:8px;font-weight:600;font-size:14px">Elegir nuevo horario</a></p>
+             <p style="margin:0 0 16px;color:#5A5A54;font-size:13px">Si preferís, respondé este mail y lo coordinamos juntos.</p>`
+          : `<p style="margin:0 0 16px">Si querés reprogramarla, respondé este mail y coordinamos un nuevo horario con gusto.</p>`;
         sendEmail_(rows[i][iEmail],
           '¡Qué lástima! Podemos reprogramar tu entrevista en Austin EBS',
           mailBase_(
             'Te esperábamos hoy',
             `<p style="margin:0 0 8px">Hola <strong>${esc_(rows[i][iPadre])}</strong>,</p>
              <p style="margin:0 0 16px">Lamentamos que no hayas podido llegar a la entrevista de hoy. Nos hubiera encantado conocerlos.</p>
-             <p style="margin:0 0 16px">Si querés reprogramarla, respondé este mail y coordinamos un nuevo horario con gusto.</p>
+             ${bloqueLink}
              <p style="margin:0;color:#5A5A54;font-size:13px">Seguimos a tu disposición cuando quieras.</p>`,
             firma_()
           )
@@ -532,17 +540,67 @@ function setBloqueo_(data) {
         sh.deleteRow(i + 1);
       }
     }
+    if (data.evento) borrarEventoBloqueo_(fecha, hora);
     return { ok: true };
   }
 
-  // No duplicar si ya estaba bloqueado
+  // No duplicar la fila si ya estaba bloqueado
   const rows = sh.getDataRange().getValues();
+  let existe = false;
   for (let i = 1; i < rows.length; i++) {
-    if (aFecha_(rows[i][0]) === fecha && aHora_(rows[i][1]) === hora) return { ok: true };
+    if (aFecha_(rows[i][0]) === fecha && aHora_(rows[i][1]) === hora) { existe = true; break; }
   }
+  if (!existe) appendFilaTexto_(sh, [fecha, hora, data.motivo || '', new Date().toISOString()], [1, 2]);
 
-  appendFilaTexto_(sh, [fecha, hora, data.motivo || '', new Date().toISOString()], [1, 2]);
+  // Evento en el Google Calendar de Admisiones (idempotente por su propia marca)
+  if (data.evento) crearEventoBloqueo_(fecha, hora, data.motivo || '');
   return { ok: true };
+}
+
+// Marca invisible que identifica un bloqueo dentro de su evento de calendario, para
+// poder moverlo/borrarlo sin duplicar. Día completo usa 'dia'.
+function marcaBloqueo_(fecha, hora) {
+  const h = (!hora || hora === '*' || hora === '') ? 'dia' : String(hora);
+  return 'AEBS-BLOQ[' + aFecha_(fecha) + '|' + h + ']';
+}
+
+// Crea el evento de bloqueo en el calendario de Admisiones. Idempotente: si ya existe
+// (misma fecha y alcance horario), no lo duplica.
+function crearEventoBloqueo_(fecha, hora, motivo) {
+  try {
+    const cal = calAdmisiones_();
+    if (!cal) return;
+    const marca = marcaBloqueo_(fecha, hora);
+    if (buscarEventoAlumno_(cal, marca)) return;
+    const f = aFecha_(fecha).split('-');
+    const esDia = (!hora || hora === '*' || hora === '');
+    const titulo = '🚫 BLOQUEADO' + (motivo ? ' — ' + motivo : '');
+    const detalle = [
+      motivo ? 'Motivo: ' + motivo : 'Turno bloqueado para entrevistas.',
+      '',
+      'Evento del Sistema de Admisiones. No borrar la linea de abajo:',
+      marca
+    ].filter(function (x) { return x !== ''; }).join('\n');
+    if (esDia) {
+      const d = new Date(Number(f[0]), Number(f[1]) - 1, Number(f[2]));
+      cal.createAllDayEvent(titulo, d, { description: detalle });
+    } else {
+      const hm = aHora_(hora).split(':');
+      const inicio = new Date(Number(f[0]), Number(f[1]) - 1, Number(f[2]), Number(hm[0]), Number(hm[1]), 0);
+      const fin = new Date(inicio.getTime() + DURACION_ENTREVISTA_MIN * 60000);
+      cal.createEvent(titulo, inicio, fin, { description: detalle });
+    }
+  } catch (_) {}
+}
+
+// Borra el evento de bloqueo del calendario de Admisiones.
+function borrarEventoBloqueo_(fecha, hora) {
+  try {
+    const cal = calAdmisiones_();
+    if (!cal) return;
+    const ev = buscarEventoAlumno_(cal, marcaBloqueo_(fecha, hora));
+    if (ev) ev.deleteEvent();
+  } catch (_) {}
 }
 
 // ── CALENDARIO DE ADMISIONES ───────────────────────────────────
