@@ -2176,9 +2176,35 @@ function migNoAsistioLink(){
   }
 }
 
+// Limpieza única: los bloqueos automáticos de entrevistas reprogramadas o canceladas
+// antes de que el sistema aprendiera a liberarlos quedaron como turnos muertos
+// (invisibles) en el formulario público. Se borran los bloqueos "Entrevista:" que no
+// correspondan a una entrevista pendiente (postulante que todavía apunta a ese turno y
+// sin resultado cargado). No se libera nunca un turno con entrevista viva.
+function migLimpiarBloqueosHuerfanos(){
+  if(DB.config.mig_bloq_huerfanos_v1) return;
+  const activos = new Set(
+    DB.postulantes
+      .filter(p=>p.entFecha && p.entHora && !p.entResultado && p.estado!=='desiste' && p.estado!=='baja')
+      .map(p=>p.entFecha+'|'+p.entHora)
+  );
+  const huerfanos = (DB.bloqueos||[]).filter(b=>esBloqueoEntrevista(b) && !activos.has(slotFecha(b)+'|'+(slotHora(b)||'')));
+  if(huerfanos.length){
+    DB.bloqueos = DB.bloqueos.filter(b=>!huerfanos.includes(b));
+    calBloqueos = DB.bloqueos;
+    if(DB.config.appsScriptUrl){
+      huerfanos.forEach(b=>apiCall('setBloqueo',{fecha:slotFecha(b), hora:slotHora(b)||'', eliminar:true}));
+    }
+    toast(`✓ ${huerfanos.length} turno(s) liberados de entrevistas viejas`,'ok');
+  }
+  DB.config.mig_bloq_huerfanos_v1 = true;
+  saveDB();
+}
+
 function runMigrations(){
   migCitadoConFecha();
   migNoAsistioLink();
+  migLimpiarBloqueosHuerfanos();
   if(DB.config.mig_contactado_v1) return;
   let changed=0;
   DB.postulantes.forEach(p=>{
