@@ -848,6 +848,19 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
     <div style="width:80px"></div>
   </nav>
   <div class="fwrap">
+    <div class="fstep" id="agen-form">
+      <div class="fstep-h">Agendá tu entrevista</div>
+      <div class="fstep-s">Completá estos datos y en el paso siguiente elegís el día y horario. La entrevista dura 1 hora.</div>
+      <div class="fgm" style="margin-bottom:12px"><label class="flm">Nombre y apellido del estudiante</label><input class="fim" id="agen-alumno" placeholder="Ej: Juana Pérez"></div>
+      <div class="fgm" style="margin-bottom:12px"><label class="flm">Nombre y apellido del adulto responsable</label><input class="fim" id="agen-padre" placeholder="Ej: Carlos Pérez"></div>
+      <div class="fgm" style="margin-bottom:12px"><label class="flm">Email del adulto</label><input class="fim" id="agen-email" type="email" placeholder="tucorreo@ejemplo.com"></div>
+      <div class="fgm" style="margin-bottom:12px"><label class="flm">Curso al que postula</label><select class="fim" id="agen-curso"></select></div>
+      <div class="fgm" style="margin-bottom:12px"><label class="flm">Año de ingreso</label><input class="fim" id="agen-anio" type="number" min="2025" max="2030"></div>
+      <div class="fbtns">
+        <button class="sbtn sbtn-ok" onclick="agenContinuar()">Continuar →</button>
+      </div>
+    </div>
+
     <div class="fstep on" id="reag-step">
       <div class="fstep-h">Elegí un nuevo día para tu entrevista</div>
       <div class="fstep-s" id="reag-sub">Seleccioná el día y horario que mejor te quede. La entrevista dura 1 hora.</div>
@@ -1045,6 +1058,7 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
           </div>
           <div style="display:flex;gap:8px">
             <button class="btn btn-td btn-sm" onclick="abrirConfigDisponibilidad()">⚙ Configurar disponibilidad</button>
+            <button class="btn btn-out btn-sm" onclick="compartirCalendario()">🔗 Compartir calendario</button>
             <button class="btn btn-out btn-sm" onclick="abrirRecordatorio()">🔔 Recordatorio</button>
             <button class="btn btn-out btn-sm" onclick="abrirBloqueo()">🚫 Bloquear día/horario</button>
           </div>
@@ -1642,6 +1656,39 @@ async function procesarInbox(){
           agendarEntrevista(ficha);
           nuevos++;
         }
+        return;
+      }
+      // Auto-agenda desde el link genérico (?agendar=1): familia sin ficha o interna.
+      // Se matchea por email+alumno con una ficha existente (mismo id, sin duplicar) o
+      // se crea una nueva mínima. En ambos casos queda 'citado' y se agenda en los dos
+      // calendarios (sistema + Google Calendar de Admisiones).
+      if(p.__agendarNuevo){
+        if(!p.entFecha) return;
+        const kk = s => String(s||'').trim().toLowerCase();
+        const ahora=new Date();
+        const nota = {txt:'La familia agendó su entrevista para el '+formatFechaLinda(p.entFecha)+(p.entHora?' a las '+p.entHora:'')+' desde el link de auto-agenda.',fecha:ahora.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}),hora:ahora.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})};
+        let ficha = DB.postulantes.find(x=>kk(x.email)===kk(p.email) && kk(x.alumno)===kk(p.alumno) && x.estado!=='desiste');
+        if(ficha){
+          const fVieja=ficha.entFecha, hVieja=ficha.entHora;
+          ficha.entFecha = p.entFecha; ficha.entHora = p.entHora||'';
+          if(fVieja && hVieja && (fVieja!==ficha.entFecha || hVieja!==ficha.entHora)) liberarTurnoEntrevista(fVieja, hVieja);
+          ficha.estado='citado'; ficha.entResultado=''; ficha.ultAccion=today();
+          ficha.notas=ficha.notas||[]; ficha.notas.push(nota);
+          ficha.hist=ficha.hist||[]; ficha.hist.push({e:'citado',f:today(),nota:'auto-agenda familia'});
+        } else {
+          ficha = {
+            id:DB.nextId++, alumno:p.alumno||'', padre:p.padre||'', email:p.email||'', tel:'',
+            curso:p.curso||'', nivel:NIVEL(p.curso||''), jornada:'',
+            anio:parseInt(p.anio)||new Date().getFullYear(), colegio:'', hermano:'no',
+            estado:'citado', fecha:today(), ultAccion:today(),
+            entFecha:p.entFecha, entHora:p.entHora||'',
+            notas:[nota], hist:[{e:'citado',f:today(),nota:'auto-agenda familia'}]
+          };
+          DB.postulantes.unshift(ficha);
+          DB.pendingNotif.push(ficha.id);
+        }
+        agendarEntrevista(ficha);
+        nuevos++;
         return;
       }
       // Si el drenaje ya corrió antes, no duplicar
@@ -2635,7 +2682,10 @@ function openDetalle(id){
     <div style="margin-top:12px;background:#DCF0F5;border:1px solid #67C0D4;border-radius:10px;padding:13px 15px">
       <div style="font-size:11px;font-weight:600;color:#1A5F70;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">📅 Sin entrevista agendada</div>
       <div style="font-size:12.5px;color:#174E5C;line-height:1.6">La familia indicó que agendará la entrevista más adelante. Cuando confirmen fecha, moverlo a "Citado entrevista".</div>
-      <button class="btn btn-td btn-sm" onclick="enviarLinkAgenda(${id})" style="margin-top:10px">🔗 Enviar link para que agenden</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+        <button class="btn btn-td btn-sm" onclick="enviarLinkAgenda(${id})">🔗 Enviar link por mail</button>
+        <button class="btn btn-out btn-sm" onclick="copiarLinkAgenda(${id})">📋 Copiar link</button>
+      </div>
     </div>`:''}
 
 
@@ -4279,6 +4329,43 @@ function detectarReagenda(){
   cargarTurnosReag();
 }
 
+// Link genérico ?agendar=1: para familias sin ficha en el sistema (internas del
+// colegio, o que no querés que completen todo el formulario). Junta los datos mínimos
+// y después agenda; procesarInbox matchea por email+alumno con una ficha existente
+// (mismo id) o crea una nueva si no la encuentra.
+function detectarAgendar(){
+  let on;
+  try{ on = new URLSearchParams(location.search).get('agendar'); }catch(e){ return; }
+  if(!on) return;
+  reagCtx = null; reagOffset = 0; reagSlot = null;
+  const sel = document.getElementById('agen-curso');
+  if(sel) sel.innerHTML = '<option value="">Elegí el curso…</option>' + CURSOS.map(c=>`<option value="${c}">${c}</option>`).join('');
+  const anio = document.getElementById('agen-anio');
+  if(anio && !anio.value) anio.value = new Date().getFullYear();
+  go('s-reagenda');
+  const step = document.getElementById('reag-step'); if(step) step.classList.remove('on');
+  const ok = document.getElementById('reag-ok'); if(ok) ok.classList.remove('on');
+  const form = document.getElementById('agen-form'); if(form) form.classList.add('on');
+}
+
+// Valida el mini-form y pasa al calendario reutilizando el flujo de reagenda.
+function agenContinuar(){
+  const alumno = (document.getElementById('agen-alumno').value||'').trim();
+  const padre  = (document.getElementById('agen-padre').value||'').trim();
+  const email  = (document.getElementById('agen-email').value||'').trim();
+  const curso  = document.getElementById('agen-curso').value;
+  const anio   = parseInt(document.getElementById('agen-anio').value) || new Date().getFullYear();
+  if(!alumno || !padre || !email || !curso){ toast('Completá todos los datos','err'); return; }
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ toast('Revisá el email','err'); return; }
+  reagCtx = { __nuevo:true, alumno, padre, email, curso, anio };
+  const sub = document.getElementById('reag-sub');
+  if(sub) sub.textContent = `${alumno} · ${curso} — elegí el día y horario que mejor te quede. La entrevista dura 1 hora.`;
+  const form = document.getElementById('agen-form'); if(form) form.classList.remove('on');
+  const step = document.getElementById('reag-step'); if(step) step.classList.add('on');
+  reagOffset = 0; reagSlot = null;
+  cargarTurnosReag();
+}
+
 async function cargarTurnosReag(){
   const loading = document.getElementById('reag-cal-loading');
   try{ calTurnosReservados = JSON.parse(localStorage.getItem('austin_turnos')||'[]'); }catch(e){ calTurnosReservados = []; }
@@ -4363,8 +4450,12 @@ async function confirmarReagenda(){
   if(!reagCtx || !reagSlot){ toast('Seleccioná un horario','err'); return; }
   const btn = document.getElementById('reag-btn-confirmar');
   if(btn){ btn.disabled=true; btn.textContent='Confirmando...'; }
-  // Registro de reagenda para la bandeja: procesarInbox actualiza la ficha existente.
-  const rec = { __reagenda:true, id:reagCtx.id, alumno:reagCtx.alumno||'', entFecha:reagSlot.fecha, entHora:reagSlot.hora };
+  // Registro para la bandeja. Si viene del link genérico (__nuevo) no hay id todavía:
+  // procesarInbox matchea por email+alumno o crea la ficha. Si es reagenda por-familia,
+  // trae el id y actualiza la ficha existente.
+  const rec = reagCtx.__nuevo
+    ? { __agendarNuevo:true, alumno:reagCtx.alumno||'', padre:reagCtx.padre||'', email:reagCtx.email||'', curso:reagCtx.curso||'', anio:reagCtx.anio||new Date().getFullYear(), entFecha:reagSlot.fecha, entHora:reagSlot.hora }
+    : { __reagenda:true, id:reagCtx.id, alumno:reagCtx.alumno||'', entFecha:reagSlot.fecha, entHora:reagSlot.hora };
   const guardada = await enviarAInbox([rec], '');
   if(!guardada){
     if(btn){ btn.disabled=false; btn.textContent='Confirmar entrevista →'; }
@@ -5218,6 +5309,51 @@ function enviarLinkAgenda(id){
   if(document.getElementById('notas-'+id)) document.getElementById('notas-'+id).innerHTML = renderNotas(p);
 }
 
+// Copia al portapapeles el link de auto-reserva por-familia para pegarlo donde sea
+// (WhatsApp, etc.). El link ya trae el id de la ficha: la familia elige día sin volver
+// a cargar datos y se actualiza esta misma ficha (matching exacto, sin duplicados).
+function copiarLinkAgenda(id){
+  const p = DB.postulantes.find(x=>x.id===id); if(!p) return;
+  const link = linkReagenda(p);
+  copiarAlPortapapeles(link, `✓ Link de ${p.alumno} copiado`);
+}
+
+// Copia texto al portapapeles con fallback para navegadores viejos / sin permiso.
+function copiarAlPortapapeles(texto, msgOk){
+  const ok = ()=>toast(msgOk||'✓ Copiado','ok');
+  const fallback = ()=>{
+    try{
+      const ta=document.createElement('textarea'); ta.value=texto;
+      ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta);
+      ta.select(); document.execCommand('copy'); document.body.removeChild(ta); ok();
+    }catch(e){ prompt('Copiá el link manualmente:', texto); }
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(texto).then(ok).catch(fallback);
+  } else fallback();
+}
+
+// Link genérico de auto-agenda (?agendar=1) para familias que NO están en el sistema
+// (internas del colegio, hermanos, etc.). Abre un modal con el link listo para copiar.
+function compartirCalendario(){
+  const link = location.origin + location.pathname + '?agendar=1';
+  document.getElementById('mt').textContent = '🔗 Compartir calendario de entrevistas';
+  document.getElementById('mb').innerHTML = `
+    <div class="info-box" style="margin-bottom:14px">
+      Compartí este link con familias que <strong>no están en el sistema</strong> (internas,
+      hermanos, o cuando no querés que completen todo el formulario). Al abrirlo cargan solo
+      alumno, adulto, email y curso, eligen día y horario, y la entrevista queda agendada:
+      impacta en el calendario del sistema y en el de Admisiones. Si el alumno ya existe se
+      agenda sobre su ficha, sin duplicar.
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <input class="cfgi" id="share-link" readonly value="${link}" style="flex:1;font-size:12px" onclick="this.select()">
+      <button class="btn btn-primary btn-sm" onclick="copiarAlPortapapeles(document.getElementById('share-link').value,'✓ Link para agendar copiado')">📋 Copiar</button>
+    </div>`;
+  document.getElementById('mf').innerHTML = '';
+  openM();
+}
+
 // ═══════════════════════════
 // DASHBOARD - ENTREVISTAS HOY
 // ═══════════════════════════
@@ -5569,6 +5705,8 @@ loadDB();
 calBloqueos = DB.bloqueos||[];
 // Si la URL trae ?reagenda=TOKEN, una familia viene a elegir un nuevo día de entrevista.
 detectarReagenda();
+// Si la URL trae ?agendar=1, es el link genérico: familia sin ficha que viene a agendarse.
+detectarAgendar();
 
 // ═══════════════════════════
 // OCUPACIÓN
