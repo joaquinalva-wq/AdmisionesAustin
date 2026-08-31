@@ -2157,6 +2157,7 @@ function showV(v){
 // nube ya no volvía a intentarlo. Comparar contra el texto viejo alcanza como guarda:
 // una vez reemplazado deja de coincidir y no se repite.
 function migCitadoConFecha(){
+  if(DB.config.emailsProtegidos && DB.config.emailsProtegidos.citado) return;
   const viejo = 'Hola {{padre}},\n\nTu entrevista en Austin Eco Bilingual School está confirmada. Te esperamos con gusto.\n\nSi necesitás reprogramar, respondenos este mail a admisiones@austinebs-ah.edu.ar y lo coordinamos.\n\nUn saludo,\nLaura Unamuno\nAdmisiones – Austin EBS';
   if(DB.emails && DB.emails.citado && DB.emails.citado.body === viejo){
     DB.emails.citado = {subj:'Tu entrevista en Austin EBS está confirmada — {{fecha_entrevista}}', body:'Hola {{padre}},\n\n¡Tu entrevista en Austin Eco Bilingual School está confirmada! Nos alegra mucho que vengan a conocernos.\n\n▸ LOS DATOS DE TU ENTREVISTA\nEstudiante: {{alumno}} — {{curso}}\nDía: {{fecha_entrevista}}\nHora: {{hora_entrevista}}\nLugar: {{lugar_entrevista}}\nDuración aproximada: 1 hora\n\nSi necesitás reprogramar, respondé este mail y lo coordinamos sin problema.\n\nMientras tanto, si querés ir conociendo el proyecto y los aranceles, están acá: {{link_drive}}\n\n¡Te esperamos!\n\nUn saludo,\nLaura Unamuno\nAdmisiones – Austin EBS'};
@@ -2169,6 +2170,7 @@ function migCitadoConFecha(){
 // "no asistió" (sin el link de auto-reserva), la reemplaza por la nueva. Comparar
 // contra el texto viejo alcanza como guarda: una vez reemplazado deja de coincidir.
 function migNoAsistioLink(){
+  if(DB.config.emailsProtegidos && DB.config.emailsProtegidos.no_asistio) return;
   const viejo = 'Hola {{padre}},\n\nLamentamos que no hayas podido llegar a la entrevista que tenías agendada. ¡Nos hubiera encantado conocerlos!\n\nSi querés reprogramarla, respondé este mail y coordinamos un nuevo horario con gusto. También podés volver a completar el formulario de postulación para elegir una nueva fecha.\n\nEsperamos poder conocerlos pronto.\n\nUn afectuoso saludo,\nAdmisiones – Austin EBS';
   if(DB.emails && DB.emails.no_asistio && DB.emails.no_asistio.body === viejo){
     DB.emails.no_asistio = {subj:'¡Que lástima! Podemos reprogramar tu entrevista — Austin EBS', body:'Hola {{padre}},\n\nLamentamos que no hayas podido llegar a la entrevista que tenías agendada. ¡Nos hubiera encantado conocerlos!\n\nElegí vos mismo/a un nuevo día y horario, sin volver a completar todo el formulario, desde este link:\n{{link_agenda}}\n\nSi preferís, respondé este mail y coordinamos un nuevo horario con gusto. Estamos a disposición para acompañarlos.\n\nEsperamos poder conocerlos pronto.\n\nUn afectuoso saludo,\nAdmisiones – Austin EBS'};
@@ -3297,11 +3299,14 @@ function renderEmails(){
           ${destBadge}
         </div>
         <div class="ets">${e==='desiste_recontacto'?'Envío manual desde el perfil del postulante':'Se envía automáticamente al cambiar el estado del postulante'}</div></div>
-        <button class="btn btn-td btn-sm" onclick="saveEmail('${e}')">Guardar</button>
+        <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
+          <span id="est-${e}" style="font-size:11px;color:var(--tx3)"></span>
+          <button class="btn btn-td btn-sm" onclick="saveEmail('${e}')">Guardar</button>
+        </div>
       </div>
       <div class="etb">
-        <div class="fgm" style="margin-bottom:11px"><label class="flm">Asunto</label><input class="fim" id="esubj-${e}" value="${(DB.emails[e]?.subj||'').replace(/"/g,'&quot;')}"></div>
-        <div class="fgm"><label class="flm">Cuerpo del mensaje</label><textarea class="ftm" id="ebody-${e}" style="min-height:130px">${DB.emails[e]?.body||''}</textarea></div>
+        <div class="fgm" style="margin-bottom:11px"><label class="flm">Asunto</label><input class="fim" id="esubj-${e}" value="${(DB.emails[e]?.subj||'').replace(/"/g,'&quot;')}" oninput="marcarSinGuardar('${e}')" onchange="saveEmail('${e}',true)"></div>
+        <div class="fgm"><label class="flm">Cuerpo del mensaje</label><textarea class="ftm" id="ebody-${e}" style="min-height:130px" oninput="marcarSinGuardar('${e}')" onchange="saveEmail('${e}',true)">${DB.emails[e]?.body||''}</textarea></div>
         <div style="margin-top:7px;font-size:11px;color:var(--tx3);line-height:2">Variables:
           <span class="etvar">{{alumno}}</span><span class="etvar">{{padre}}</span><span class="etvar">{{curso}}</span><span class="etvar">{{nivel}}</span><span class="etvar">{{anio}}</span><span class="etvar">{{jornada}}</span><span class="etvar">{{email}}</span><span class="etvar">{{tel}}</span><span class="etvar">{{colegio}}</span><span class="etvar">{{hermano}}</span><span class="etvar">{{fecha_entrevista}}</span><span class="etvar">{{hora_entrevista}}</span><span class="etvar">{{lugar_entrevista}}</span><span class="etvar">{{link_drive}}</span><span class="etvar">{{link_calendario}}</span>
         </div>
@@ -3309,7 +3314,32 @@ function renderEmails(){
     </div>`;
   }).join('');
 }
-function saveEmail(e){ DB.emails[e]={subj:document.getElementById('esubj-'+e).value,body:document.getElementById('ebody-'+e).value}; saveDB(); toast(`Plantilla "${EL[e]}" guardada`,'ok'); }
+// Marca la plantilla como "sin guardar" mientras la están escribiendo.
+function marcarSinGuardar(e){
+  const st=document.getElementById('est-'+e);
+  if(st){ st.textContent='● Sin guardar'; st.style.color='var(--or)'; }
+}
+
+// Guarda una plantilla. auto=true cuando se dispara al salir del campo (autoguardado
+// silencioso, sin toast). Se sube a la nube en el acto — no se espera el guardado
+// diferido — para que un cierre de pestaña no se lleve la edición. Además queda marcada
+// como editada por el staff: ninguna migración ni valor por defecto la vuelve a pisar.
+function saveEmail(e, auto){
+  const subjEl=document.getElementById('esubj-'+e), bodyEl=document.getElementById('ebody-'+e);
+  if(!subjEl||!bodyEl) return;
+  const nuevo={subj:subjEl.value, body:bodyEl.value};
+  const actual=DB.emails[e]||{};
+  const cambio = actual.subj!==nuevo.subj || actual.body!==nuevo.body;
+  DB.emails[e]=nuevo;
+  DB.config.emailsProtegidos = DB.config.emailsProtegidos || {};
+  DB.config.emailsProtegidos[e] = true;
+  saveDB();
+  clearTimeout(_fsSaveTimer); triggerCloudSave();
+  const st=document.getElementById('est-'+e);
+  if(st){ st.textContent='✓ Guardado'; st.style.color='#3A6A0A'; }
+  if(!auto && !cambio){ if(st){ st.textContent='✓ Sin cambios'; st.style.color='var(--tx3)'; } }
+  if(!auto) toast(`Plantilla "${EL[e]||e}" guardada`,'ok');
+}
 
 // ═══════════════════════════
 // TARIFAS
