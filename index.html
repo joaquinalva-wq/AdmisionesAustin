@@ -1625,8 +1625,13 @@ async function procesarInbox(){
       if(p.__reagenda){
         const ficha = DB.postulantes.find(x=>String(x.id)===String(p.id));
         if(ficha && p.entFecha){
+          const fVieja=ficha.entFecha, hVieja=ficha.entHora;
           ficha.entFecha = p.entFecha;
           ficha.entHora = p.entHora||'';
+          // Liberar el turno anterior si la familia eligió uno distinto.
+          if(fVieja && hVieja && (fVieja!==ficha.entFecha || hVieja!==ficha.entHora)){
+            liberarTurnoEntrevista(fVieja, hVieja);
+          }
           ficha.estado = 'citado';
           ficha.entResultado = '';
           ficha.ultAccion = today();
@@ -4375,8 +4380,11 @@ function renderAdminCal(){
         <strong>${esc(p.entHora||'—')}</strong> ${esc(p.alumno.split(' ')[0])}
         ${p.entResultado?'✓':''}
       </div>`).join('');
-    // Bloqueos del día (día completo o por horario)
-    const bloqsDia = (DB.bloqueos||[]).filter(b=>slotFecha(b)===fechaStr)
+    // Bloqueos del día (día completo o por horario). Se excluyen los bloqueos
+    // automáticos de entrevistas: el turno queda reservado igual, pero el chip
+    // de la entrevista ya lo representa — mostrar además el 🚫 haría parecer
+    // que la entrevista está cancelada.
+    const bloqsDia = (DB.bloqueos||[]).filter(b=>slotFecha(b)===fechaStr && !esBloqueoEntrevista(b))
       .sort((a,b)=>(slotHora(a)||'').localeCompare(slotHora(b)||''));
     const bloqsHtml = bloqsDia.map(b=>{
       const h = slotHora(b); const esDiaCompleto = !h || h==='*';
@@ -4543,8 +4551,14 @@ function guardarFechaDesdeDetalle(id){
   const p=DB.postulantes.find(x=>x.id===id); if(!p) return;
   const f=document.getElementById('det-entf-'+id);
   const h=document.getElementById('det-enth-'+id);
+  const fechaVieja=p.entFecha, horaVieja=p.entHora;
   if(f&&f.value) p.entFecha=f.value;
   if(h&&h.value) p.entHora=h.value;
+  // Si cambió de turno, liberar el que tenía reservado antes (si no, quedaría un
+  // horario muerto en el formulario público, ahora invisible en el calendario).
+  if(fechaVieja && horaVieja && (fechaVieja!==p.entFecha || horaVieja!==p.entHora)){
+    liberarTurnoEntrevista(fechaVieja, horaVieja);
+  }
   agendarEntrevista(p);
   p.ultAccion=today();
   saveDB(); toast('Fecha de entrevista guardada — el turno quedó bloqueado','ok');
@@ -4576,6 +4590,20 @@ function bloquearTurno(fecha, hora, alumno){
   DB.bloqueos.push({fecha,hora,motivo:'Entrevista: '+(alumno||'')});
   calBloqueos=DB.bloqueos;
   if(DB.config.appsScriptUrl) apiCall('setBloqueo',{fecha,hora,motivo:'Entrevista: '+(alumno||'')});
+}
+
+// Libera el turno que una entrevista tenía reservado (al reprogramarla o marcarla
+// "no asistió"). Quita el bloqueo automático local y en la hoja del Apps Script para
+// que el horario vuelva a estar disponible en el formulario público. No toca bloqueos
+// manuales ni el evento de la entrevista en Google Calendar (eso lo maneja quien llama).
+function liberarTurnoEntrevista(fecha, hora){
+  if(!fecha||!hora) return;
+  const antes = (DB.bloqueos||[]).length;
+  DB.bloqueos = (DB.bloqueos||[]).filter(b=>!(slotFecha(b)===fecha && (slotHora(b)||'')===hora && esBloqueoEntrevista(b)));
+  calBloqueos = DB.bloqueos;
+  if(antes!==DB.bloqueos.length && DB.config.appsScriptUrl){
+    apiCall('setBloqueo',{fecha, hora, eliminar:true});
+  }
 }
 
 function guardarUltContacto(id){
@@ -5112,6 +5140,8 @@ function marcarNoAsistio(id){
   } else {
     enviarMailAdmin(p,'no_asistio');
   }
+  // La entrevista no ocurrió: liberar el turno para que otra familia pueda tomarlo.
+  liberarTurnoEntrevista(p.entFecha, p.entHora);
   renderAdminCal(); updateSidebarBadges();
   toast(`Mail de reprogramación enviado a ${p.padre}`,'ok');
 }
@@ -5257,12 +5287,22 @@ function buildHorariosOptions_(){
 
 function renderListaBloqueos(){
   const blqs = DB.bloqueos||[];
-  if(blqs.length===0) return `<div style="font-size:12px;color:var(--tx3)">Sin bloqueos activos.</div>`;
-  return blqs.map((b,i)=>`
+  // Se listan solo los bloqueos manuales. Los de entrevistas se gestionan solos
+  // (se crean al agendar y se liberan al cancelar/reprogramar), así que no se
+  // ofrecen para quitar acá — quitarlos dejaría la entrevista sin turno reservado.
+  const manuales = blqs.map((b,i)=>({b,i})).filter(x=>!esBloqueoEntrevista(x.b));
+  if(manuales.length===0) return `<div style="font-size:12px;color:var(--tx3)">Sin bloqueos activos.</div>`;
+  return manuales.map(({b,i})=>`
     <div style="display:flex;align-items:center;justify-content:space-between;font-size:12px;padding:5px 0;border-bottom:1px solid var(--bd)">
       <span>${formatFechaLinda(b.fecha)} ${b.hora||'(día completo)'} ${b.motivo?'· '+b.motivo:''}</span>
       <button class="btn btn-ghost btn-sm" onclick="quitarBloqueo(${i})" style="color:#DC2626">✕ Quitar</button>
     </div>`).join('');
+}
+
+// Un bloqueo es "de entrevista" (automático) si su motivo arranca con "Entrevista:".
+// Estos se crean solos al agendar y no se muestran como bloqueos manuales.
+function esBloqueoEntrevista(b){
+  return /^Entrevista:/.test((b&&b.motivo)||'');
 }
 
 // Autocompleta desde/hasta con la semana en curso (lunes a domingo).
