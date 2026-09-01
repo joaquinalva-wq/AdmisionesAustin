@@ -876,7 +876,7 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
           <div class="agf-fg"><label class="agf-lbl">Adulto responsable</label><input class="agf-in" id="agen-padre" placeholder="Nombre y apellido"></div>
           <div class="agf-fg agf-full"><label class="agf-lbl">Email del adulto</label><input class="agf-in" id="agen-email" type="email" placeholder="tucorreo@ejemplo.com"></div>
           <div class="agf-fg"><label class="agf-lbl">Curso al que postula</label><select class="agf-in" id="agen-curso"></select></div>
-          <div class="agf-fg"><label class="agf-lbl">Año de ingreso</label><input class="agf-in" id="agen-anio" type="number" min="2025" max="2030"></div>
+          <div class="agf-fg"><label class="agf-lbl">Año de ingreso</label><input class="agf-in" id="agen-anio" type="number" min="2027" max="2033"></div>
         </div>
         <button class="agf-cta" onclick="agenContinuar()">Continuar →</button>
       </div>
@@ -3856,7 +3856,9 @@ function showFStep(n){
 function anioLectivoDefault(){ return new Date().getFullYear()+1; }
 function poblarAniosFormulario(){
   const sel=document.getElementById('pf-anio'); if(!sel) return;
-  const desde=new Date().getFullYear();
+  // Se postula para el ciclo que viene en adelante: el año en curso ya arrancó, no se
+  // toma. Arranca en getFullYear()+1 para que nunca aparezca un año ya vencido.
+  const desde=new Date().getFullYear()+1;
   sel.innerHTML='';
   for(let y=desde; y<=Math.max(desde+6,2032); y++){
     const o=document.createElement('option');
@@ -4362,7 +4364,8 @@ function detectarAgendar(){
   const sel = document.getElementById('agen-curso');
   if(sel) sel.innerHTML = '<option value="">Elegí el curso…</option>' + CURSOS.map(c=>`<option value="${c}">${c}</option>`).join('');
   const anio = document.getElementById('agen-anio');
-  if(anio && !anio.value) anio.value = new Date().getFullYear();
+  const primerAnio = new Date().getFullYear()+1; // el año en curso ya pasó, se postula del que viene en adelante
+  if(anio){ anio.min = String(primerAnio); if(!anio.value || parseInt(anio.value)<primerAnio) anio.value = String(primerAnio); }
   go('s-reagenda');
   const step = document.getElementById('reag-step'); if(step) step.classList.remove('on');
   const ok = document.getElementById('reag-ok'); if(ok) ok.classList.remove('on');
@@ -4375,9 +4378,11 @@ function agenContinuar(){
   const padre  = (document.getElementById('agen-padre').value||'').trim();
   const email  = (document.getElementById('agen-email').value||'').trim();
   const curso  = document.getElementById('agen-curso').value;
-  const anio   = parseInt(document.getElementById('agen-anio').value) || new Date().getFullYear();
+  const primerAnio = new Date().getFullYear()+1;
+  const anio   = parseInt(document.getElementById('agen-anio').value) || primerAnio;
   if(!alumno || !padre || !email || !curso){ toast('Completá todos los datos','err'); return; }
   if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ toast('Revisá el email','err'); return; }
+  if(anio < primerAnio){ toast('El año de ingreso debe ser '+primerAnio+' o posterior','err'); return; }
   reagCtx = { __nuevo:true, alumno, padre, email, curso, anio };
   const sub = document.getElementById('reag-sub');
   if(sub) sub.textContent = `${alumno} · ${curso} — elegí el día y horario que mejor te quede. La entrevista dura 1 hora.`;
