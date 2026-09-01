@@ -287,6 +287,23 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
 .fim,.fsm,.ftm{padding:8px 11px;border:1.5px solid var(--bd2);border-radius:8px;font-size:13px;color:var(--tx);background:var(--cr);outline:none;transition:border-color .2s,background .2s;font-family:'DM Sans',sans-serif;width:100%}
 .fim:focus,.fsm:focus,.ftm:focus{border-color:var(--tl);background:#fff}
 .ftm{resize:vertical;min-height:70px;line-height:1.5}
+/* Auto-agenda ?agendar=1 — formulario de la familia, versión elevada */
+.agf-card{background:var(--wh);border:1px solid var(--bd);border-radius:18px;padding:34px 32px;box-shadow:0 14px 44px -14px rgba(44,74,94,.22),0 2px 8px rgba(44,74,94,.05);position:relative;overflow:hidden}
+.agf-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--gr),var(--tl2))}
+.agf-eyebrow{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--gr);margin-bottom:11px}
+.agf-h{font-family:'Lora',serif;font-size:26px;line-height:1.15;color:var(--td);margin-bottom:9px}
+.agf-s{font-size:13.5px;color:var(--tx2);line-height:1.6;margin-bottom:16px}
+.agf-chip{display:inline-flex;align-items:center;gap:7px;background:var(--cr);border:1px solid var(--bd2);color:var(--tx2);font-size:12px;font-weight:600;padding:7px 13px;border-radius:999px;margin-bottom:24px}
+.agf-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px 16px}
+.agf-full{grid-column:1/-1}
+.agf-fg{display:flex;flex-direction:column;gap:6px}
+.agf-lbl{font-size:12px;font-weight:600;color:var(--td)}
+.agf-in{padding:12px 13px;border:1.5px solid var(--bd2);border-radius:10px;font-size:14px;color:var(--tx);background:var(--cr);outline:none;transition:border-color .2s,background .2s,box-shadow .2s;font-family:'DM Sans',sans-serif;width:100%}
+.agf-in:focus{border-color:var(--gr);background:#fff;box-shadow:0 0 0 3px rgba(124,181,24,.15)}
+.agf-cta{width:100%;margin-top:26px;padding:15px;border-radius:12px;background:var(--gr);color:#fff;border:none;font-size:15px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:background .15s,transform .1s,box-shadow .2s;box-shadow:0 8px 20px -8px rgba(124,181,24,.55)}
+.agf-cta:hover{background:#6AA515;box-shadow:0 10px 26px -8px rgba(124,181,24,.6)}
+.agf-cta:active{transform:translateY(1px)}
+@media(max-width:560px){.agf-grid{grid-template-columns:1fr}.agf-card{padding:26px 20px}}
 .ssm{font-size:10.5px;font-weight:600;color:var(--tl);text-transform:uppercase;letter-spacing:.07em;padding-top:8px;border-top:1px solid var(--bd);margin-top:5px}
 
 /* DETALLE */
@@ -849,15 +866,19 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
   </nav>
   <div class="fwrap">
     <div class="fstep" id="agen-form">
-      <div class="fstep-h">Agendá tu entrevista</div>
-      <div class="fstep-s">Completá estos datos y en el paso siguiente elegís el día y horario. La entrevista dura 1 hora.</div>
-      <div class="fgm" style="margin-bottom:12px"><label class="flm">Nombre y apellido del estudiante</label><input class="fim" id="agen-alumno" placeholder="Ej: Juana Pérez"></div>
-      <div class="fgm" style="margin-bottom:12px"><label class="flm">Nombre y apellido del adulto responsable</label><input class="fim" id="agen-padre" placeholder="Ej: Carlos Pérez"></div>
-      <div class="fgm" style="margin-bottom:12px"><label class="flm">Email del adulto</label><input class="fim" id="agen-email" type="email" placeholder="tucorreo@ejemplo.com"></div>
-      <div class="fgm" style="margin-bottom:12px"><label class="flm">Curso al que postula</label><select class="fim" id="agen-curso"></select></div>
-      <div class="fgm" style="margin-bottom:12px"><label class="flm">Año de ingreso</label><input class="fim" id="agen-anio" type="number" min="2025" max="2030"></div>
-      <div class="fbtns">
-        <button class="sbtn sbtn-ok" onclick="agenContinuar()">Continuar →</button>
+      <div class="agf-card">
+        <div class="agf-eyebrow">Austin EBS · Admisiones</div>
+        <div class="agf-h">Agendá tu entrevista</div>
+        <div class="agf-s">Completá estos datos y en el paso siguiente elegís el día y horario que mejor te queden.</div>
+        <div class="agf-chip">⏱ Dura aproximadamente 1 hora</div>
+        <div class="agf-grid">
+          <div class="agf-fg"><label class="agf-lbl">Estudiante</label><input class="agf-in" id="agen-alumno" placeholder="Nombre y apellido"></div>
+          <div class="agf-fg"><label class="agf-lbl">Adulto responsable</label><input class="agf-in" id="agen-padre" placeholder="Nombre y apellido"></div>
+          <div class="agf-fg agf-full"><label class="agf-lbl">Email del adulto</label><input class="agf-in" id="agen-email" type="email" placeholder="tucorreo@ejemplo.com"></div>
+          <div class="agf-fg"><label class="agf-lbl">Curso al que postula</label><select class="agf-in" id="agen-curso"></select></div>
+          <div class="agf-fg"><label class="agf-lbl">Año de ingreso</label><input class="agf-in" id="agen-anio" type="number" min="2025" max="2030"></div>
+        </div>
+        <button class="agf-cta" onclick="agenContinuar()">Continuar →</button>
       </div>
     </div>
 
