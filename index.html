@@ -755,8 +755,11 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
         <div class="fg"><label class="flabel">Nombre <span class="req">*</span></label><input class="fi" id="pf-pn" placeholder="Nombre"></div>
         <div class="fg"><label class="flabel">Apellido <span class="req">*</span></label><input class="fi" id="pf-pap" placeholder="Apellido"></div>
       </div>
-      <div class="fg"><label class="flabel">Relación con el estudiante</label>
-        <select class="fsel" id="pf-rel"><option>Padre / Madre</option><option>Tutor/a legal</option><option>Abuelo/a</option><option>Otro familiar</option></select>
+      <div class="fgrow">
+        <div class="fg"><label class="flabel">Relación con el estudiante</label>
+          <select class="fsel" id="pf-rel"><option>Padre / Madre</option><option>Tutor/a legal</option><option>Abuelo/a</option><option>Otro familiar</option></select>
+        </div>
+        <div class="fg"><label class="flabel">Fecha de nacimiento <span class="req">*</span></label><input class="fi" id="pf-pnac" type="date"></div>
       </div>
       <div class="fdiv"></div>
       <div class="fsec">Contacto</div>
@@ -2627,9 +2630,10 @@ function openDetalle(id){
       <div class="detf"><div class="detfl">Vacante en ${esc(p.curso)}</div><div class="detfv">${getVacDisp(p.curso, p.anio)}</div></div>
       ${p.colegio?`<div class="detf"><div class="detfl">Colegio anterior</div><div class="detfv">${esc(p.colegio)}</div></div>`:''}
       ${p.dni?`<div class="detf"><div class="detfl">DNI del estudiante</div><div class="detfv">${esc(p.dni)}</div></div>`:''}
-      ${p.nac?`<div class="detf"><div class="detfl">Fecha de nacimiento</div><div class="detfv">${fDateFull(p.nac)}</div></div>`:''}
+      ${p.nac?`<div class="detf"><div class="detfl">Nacimiento del estudiante</div><div class="detfv">${fDateFull(p.nac)}</div></div>`:''}
       ${p.dir?`<div class="detf"><div class="detfl">Localidad</div><div class="detfv">${esc(p.dir)}</div></div>`:''}
       ${p.rel?`<div class="detf"><div class="detfl">Relación con el estudiante</div><div class="detfv">${esc(p.rel)}</div></div>`:''}
+      ${p.padreNac?`<div class="detf"><div class="detfl">Nacimiento del responsable</div><div class="detfv">${fDateFull(p.padreNac)}</div></div>`:''}
       ${p.como?`<div class="detf"><div class="detfl">Cómo nos conoció</div><div class="detfv">${esc(p.como)}</div></div>`:''}
     </div>
 
@@ -2797,7 +2801,10 @@ function editarPostulante(id){
       <div class="fgm"><label class="flm">Teléfono</label><input class="fim" id="ed-tel" value="${esc(p.tel||'')}"></div>
       <div class="fgm"><label class="flm">¿Hermano en Austin?</label><select class="fsm" id="ed-he"><option value="no" ${p.hermano!=='si'?'selected':''}>No</option><option value="si" ${p.hermano==='si'?'selected':''}>Sí ★ (tiene prioridad)</option></select></div>
     </div>
-    <div class="fgm"><label class="flm">Barrio / Localidad</label><input class="fim" id="ed-dir" value="${esc(p.dir||'')}"></div>`;
+    <div class="fgm2">
+      <div class="fgm"><label class="flm">Barrio / Localidad</label><input class="fim" id="ed-dir" value="${esc(p.dir||'')}"></div>
+      <div class="fgm"><label class="flm">Nacimiento del responsable</label><input class="fim" id="ed-pnac" type="date" value="${esc(p.padreNac||'')}"></div>
+    </div>`;
   document.getElementById('mf').innerHTML=`
     <button class="btn btn-out" onclick="openDetalle(${id})">Cancelar</button>
     <button class="btn btn-td" onclick="guardarEdicionPostulante(${id})">Guardar cambios</button>`;
@@ -2826,6 +2833,7 @@ function guardarEdicionPostulante(id){
   setSi('tel',v('ed-tel'),'Teléfono');
   setSi('hermano',document.getElementById('ed-he').value,'Hermano en Austin');
   setSi('dir',v('ed-dir'),'Localidad');
+  setSi('padreNac',v('ed-pnac'),'Nacimiento del responsable');
   p.nivel=NIVEL(p.curso); // el nivel se deriva del curso, nunca se carga a mano
 
   if(!cambios.length){ toast('No hubo cambios para guardar',''); openDetalle(id); return; }
@@ -3734,9 +3742,9 @@ async function testMailAppsScript(){
 // ═══════════════════════════
 function exportCSV(){
   if(DB.postulantes.length===0){ toast('No hay postulantes para exportar',''); return; }
-  const cols=['ID','Alumno','DNI','Fecha nacimiento','Padre/Tutor','Relación','Email','Teléfono','Localidad','Curso','Nivel','Jornada','Ciclo','Estado','Colegio anterior','Hermano en Austin','Cómo nos conoció','Fecha postulación','Última acción','Días inactivo','Notas'];
+  const cols=['ID','Alumno','DNI','Fecha nacimiento','Padre/Tutor','Relación','Nacimiento responsable','Email','Teléfono','Localidad','Curso','Nivel','Jornada','Ciclo','Estado','Colegio anterior','Hermano en Austin','Cómo nos conoció','Fecha postulación','Última acción','Días inactivo','Notas'];
   const rows=DB.postulantes.map(p=>[
-    p.id,p.alumno,p.dni||'',p.nac||'',p.padre,p.rel||'',p.email,p.tel||'',p.dir||'',p.curso,p.nivel,p.jornada||'',p.anio,EL[p.estado]||p.estado,
+    p.id,p.alumno,p.dni||'',p.nac||'',p.padre,p.rel||'',p.padreNac||'',p.email,p.tel||'',p.dir||'',p.curso,p.nivel,p.jornada||'',p.anio,EL[p.estado]||p.estado,
     p.colegio||'',p.hermano==='si'?'Sí':'No',p.como||'',p.fecha,p.ultAccion||p.fecha,
     diasDesde(p.ultAccion||p.fecha),
     (p.notas||[]).map(n=>`[${n.fecha} ${n.hora}] ${n.txt}`).join(' | ')
@@ -3910,8 +3918,9 @@ function fNext(from){
   if(from===1){
     const pn=document.getElementById('pf-pn'), pap=document.getElementById('pf-pap');
     const em=document.getElementById('pf-email'), tel=document.getElementById('pf-tel');
+    const pnac=document.getElementById('pf-pnac');
     let ok=true;
-    [pn,pap,em,tel].forEach(el=>{ if(!el.value.trim()){ el.classList.add('err'); ok=false; } else el.classList.remove('err'); });
+    [pn,pap,em,tel,pnac].forEach(el=>{ if(el && !el.value.trim()){ el.classList.add('err'); ok=false; } else if(el) el.classList.remove('err'); });
     if(!ok){ toast('Completá los campos obligatorios','err'); return; }
 
     // Sin calendario para familias Austin: si reservaran un turno, el Apps Script
@@ -3992,6 +4001,7 @@ async function submitPost(){
   const obs=(document.getElementById('pf-obs').value||'').trim();
   const dir=(document.getElementById('pf-dir')?.value||'').trim();
   const rel=document.getElementById('pf-rel')?.value||'';
+  const padreNac=(document.getElementById('pf-pnac')?.value||'');
 
   const now=new Date();
   const nowDate=now.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});
@@ -4029,7 +4039,7 @@ async function submitPost(){
       // el alta, y sin ellos había que volver a pedírselos a la familia.
       nac:est.nac||'',
       dni:est.dni||'',
-      dir, rel,
+      dir, rel, padreNac,
       como:est.como||'',
       hermano:est.hermano,
       personal:est.personal||'no',
