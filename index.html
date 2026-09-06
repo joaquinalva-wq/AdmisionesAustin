@@ -2864,6 +2864,8 @@ function guardarEdicionPostulante(id){
   });
   p.ultAccion=today();
   saveDB();
+  // Si ya fue enviado al EOE, los datos corregidos se propagan al mismo doc (upsert).
+  propagarEdicionEOE(p);
   refrescarVistasPostulantes();
   openDetalle(id);
   toast(`✓ ${cambios.length} dato${cambios.length!==1?'s':''} actualizado${cambios.length!==1?'s':''}`,'ok');
@@ -4835,57 +4837,69 @@ function renderDesiste(){
 }
 
 // ── 5. INTEGRACIÓN EOE ───────────────────────────────────────
-// Cuando un postulante pasa a 'matriculado', se llama automáticamente
-// URL del sistema EOE configurable en Configuración
-async function sincronizarConEOE(p){
-  const FIRESTORE_URL = 'https://firestore.googleapis.com/v1/projects/eoe-aebs/databases/(default)/documents/matriculados-pendientes';
+// Escritura idempotente a la base Firestore del EOE (proyecto eoe-aebs, compartido).
+// En vez de POST con id autogenerado (que duplicaba al reintentar y no dejaba forma de
+// actualizar), se hace PATCH al documento cuyo id ES el id estable del postulante
+// (p.id). Firestore lo crea si no existe y lo actualiza si ya está: reenviar = reescribir
+// el MISMO doc, sin duplicados. El updateMask se arma desde las claves del body, así solo
+// se tocan esos campos y NUNCA se pisan los que el EOE devuelve (resultado, estado
+// resuelto, revisadoPor, fechaRevision, estudianteId, dadoDeAltaPor, fechaAlta...).
+// Sin token, igual que el create de hoy: las reglas del EOE deben permitir el update.
+async function upsertEOE(col, docId, fields){
+  const mask = Object.keys(fields)
+    .map(k=>'updateMask.fieldPaths='+encodeURIComponent(k))
+    .join('&');
+  const url = `${FS_BASE}/${col}/${encodeURIComponent(String(docId))}?${mask}`;
+  return fetch(url, {
+    method:'PATCH',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({fields})
+  });
+}
 
-  // Separar nombre y apellido del alumno
+// Campos de DATOS (sin estado ni timestamp) que Admisiones manda a matriculados-pendientes.
+// Se reutilizan en el envío inicial y en la propagación de ediciones.
+function eoeFieldsMatriculados(p){
   const partes = (p.alumno||'').trim().split(' ');
   const nombre = partes[0] || '';
   const apellido = partes.slice(1).join(' ') || '';
-
-  // Mapear nivel al formato EOE
   const nivelEOE = p.nivel === 'Kindergarten' ? 'Inicial'
                  : p.nivel === 'Elementary'   ? 'Primario'
                  : p.nivel === 'High School'  ? 'Secundario'
                  : p.nivel || '';
-
-  // Extraer número de curso (ej: "3er año Elementary" → "3")
   const cursoMatch = (p.curso||'').match(/(\d+)/);
   const cursoNum = cursoMatch ? cursoMatch[1]+'°' : p.curso||'';
-
-  // Notas del proceso
   const notasTxt = (p.notas||[]).map(n=>'['+n.fecha+'] '+n.txt).join(' | ');
-
-  const body = {
-    fields: {
-      nombre:          { stringValue: nombre },
-      apellido:        { stringValue: apellido },
-      nivel:           { stringValue: nivelEOE },
-      curso:           { stringValue: cursoNum },
-      division:        { stringValue: '' },
-      anioIngreso:     { integerValue: String(p.anio || new Date().getFullYear()) },
-      email:           { stringValue: p.email || '' },
-      telefono:        { stringValue: (p.tel||'').replace(/\D/g,'') },
-      nombrePadre:     { stringValue: p.padre || '' },
-      emailPadre:      { stringValue: p.email || '' },
-      nombreMadre:     { stringValue: '' },
-      emailMadre:      { stringValue: '' },
-      fechaNacimiento: { stringValue: p.nacimiento || '' },
-      observaciones:   { stringValue: notasTxt || ('Matriculado desde sistema de admisiones. Curso original: '+p.curso) },
-      estado:          { stringValue: 'Pendiente de alta' },
-      timestamp:       { integerValue: String(Date.now()) }
-    }
+  return {
+    nombre:          { stringValue: nombre },
+    apellido:        { stringValue: apellido },
+    nivel:           { stringValue: nivelEOE },
+    curso:           { stringValue: cursoNum },
+    division:        { stringValue: '' },
+    anioIngreso:     { integerValue: String(p.anio || new Date().getFullYear()) },
+    email:           { stringValue: p.email || '' },
+    telefono:        { stringValue: (p.tel||'').replace(/\D/g,'') },
+    nombrePadre:     { stringValue: p.padre || '' },
+    emailPadre:      { stringValue: p.email || '' },
+    nombreMadre:     { stringValue: '' },
+    emailMadre:      { stringValue: '' },
+    fechaNacimiento: { stringValue: p.nacimiento || '' },
+    observaciones:   { stringValue: notasTxt || ('Matriculado desde sistema de admisiones. Curso original: '+p.curso) },
+    admisionesId:    { integerValue: String(p.id) }
   };
+}
 
+// Cuando un postulante pasa a 'matriculado' → alta pendiente en el EOE (upsert por p.id).
+async function sincronizarConEOE(p){
+  const fields = {
+    ...eoeFieldsMatriculados(p),
+    estado:    { stringValue: 'Pendiente de alta' },
+    timestamp: { integerValue: String(Date.now()) }
+  };
   try{
-    const res = await fetch(FIRESTORE_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
+    const res = await upsertEOE('matriculados-pendientes', p.id, fields);
     if(res.ok){
+      p.eoeMatDocId = String(p.id); saveDB();
       toast('✓ '+p.alumno+' enviado al sistema EOE','ok');
     } else {
       const err = await res.text();
@@ -5124,29 +5138,48 @@ function enviarMailAdministracion(p, manual=false){
 // ═══════════════════════════
 // FIRESTORE: EVALUACIÓN EOE/INGLÉS
 // ═══════════════════════════
-async function sincronizarConEOEEvaluacion(p){
-  const URL='https://firestore.googleapis.com/v1/projects/eoe-aebs/databases/(default)/documents/admisiones-revision';
+// Campos de DATOS (sin estado ni timestamp) que Admisiones manda a admisiones-revision.
+function eoeFieldsRevision(p){
   const partes=(p.alumno||'').trim().split(' ');
   const nivelEOE=p.nivel==='Kindergarten'?'Inicial':p.nivel==='Elementary'?'Primario':'Secundario';
-  const body={fields:{
+  return {
     nombre:{stringValue:partes[0]||''},apellido:{stringValue:partes.slice(1).join(' ')||''},
     nivel:{stringValue:nivelEOE},curso:{stringValue:p.curso||''},
     anioIngreso:{integerValue:String(p.anio||new Date().getFullYear())},
     email:{stringValue:p.email||''},telefono:{stringValue:(p.tel||'').replace(/\D/g,'')},
-    nombrePadre:{stringValue:p.padre||''},admisionesId:{integerValue:String(p.id)},
+    nombrePadre:{stringValue:p.padre||''},admisionesId:{integerValue:String(p.id)}
+  };
+}
+
+async function sincronizarConEOEEvaluacion(p){
+  const fields={
+    ...eoeFieldsRevision(p),
     estado:{stringValue:'pendiente'},timestamp:{integerValue:String(Date.now())}
-  }};
+  };
   try{
-    const res=await fetch(URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const res=await upsertEOE('admisiones-revision', p.id, fields);
     if(res.ok){
-      const data=await res.json();
-      p.eoeDocId=data.name?.split('/').pop()||'';
+      // El doc id ahora ES p.id: el polling lo lee en admisiones-revision/${p.eoeDocId}.
+      p.eoeDocId=String(p.id);
       saveDB();
       toast('✓ Caso enviado al sistema EOE para evaluación','ok');
     } else {
       toast('⚠ EOE: error al enviar evaluación ('+res.status+')','err');
     }
   } catch(e){ toast('⚠ EOE: no se pudo conectar','err'); }
+}
+
+// Propaga al EOE los datos corregidos de un postulante YA enviado. Data-only: sin estado
+// ni timestamp, para no reabrir un caso resuelto ni revertir un alta. Usa el docId
+// guardado (para casos viejos con id autogenerado, así no se crea un duplicado; para los
+// nuevos coincide con p.id). El updateMask acotado deja intactos los campos del EOE.
+function propagarEdicionEOE(p){
+  if(p.eoeDocId){
+    upsertEOE('admisiones-revision', p.eoeDocId, eoeFieldsRevision(p)).catch(()=>{});
+  }
+  if(p.eoeMatDocId){
+    upsertEOE('matriculados-pendientes', p.eoeMatDocId, eoeFieldsMatriculados(p)).catch(()=>{});
+  }
 }
 
 // ═══════════════════════════
