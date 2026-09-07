@@ -852,8 +852,7 @@ function handleDGDecision_(params) {
   const res = fsCrearDecisionDG_(id, accion, alumno);
 
   if (res.yaExistia) {
-    const previo = res.accionPrevia === 'aprobar' ? 'aprobada' : 'rechazada';
-    return paginaDG_('Ya estaba resuelto', 'Esta postulación ya fue ' + previo + ' por la otra Dirección. No se registró un cambio nuevo.', '#B45309');
+    return paginaDG_('Ya estaba resuelto', 'Esta postulación ya la resolvió la otra Dirección. No se registró un cambio nuevo.', '#B45309');
   }
   if (!res.ok) {
     return paginaDG_('No se pudo registrar', 'Ocurrió un error guardando la decisión. Probá de nuevo en unos minutos.', '#C62828');
@@ -884,19 +883,9 @@ function fsCrearDecisionDG_(id, accion, alumno) {
   });
   const code = resp.getResponseCode();
   if (code >= 200 && code < 300) return { ok: true, yaExistia: false };
-  if (code === 409) {
-    // Ya había una decisión: leerla para informar cuál fue.
-    let accionPrevia = '';
-    try {
-      const g = UrlFetchApp.fetch(DG_FS_BASE + '/' + DG_FS_COL + '/' + encodeURIComponent(String(id)),
-        { method: 'get', muteHttpExceptions: true });
-      if (g.getResponseCode() === 200) {
-        const doc = JSON.parse(g.getContentText());
-        accionPrevia = (doc.fields && doc.fields.accion && doc.fields.accion.stringValue) || '';
-      }
-    } catch(_) {}
-    return { ok: false, yaExistia: true, accionPrevia: accionPrevia };
-  }
+  // 409 = el documento ya existe → otra DG decidió primero (primera decisión gana).
+  // No leemos la decisión previa: la regla de dg-decisiones no permite lectura sin auth.
+  if (code === 409) return { ok: false, yaExistia: true };
   return { ok: false, yaExistia: false, error: 'HTTP ' + code + ': ' + resp.getContentText() };
 }
 
