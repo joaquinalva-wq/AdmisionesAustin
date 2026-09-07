@@ -22,7 +22,7 @@ const MAIL_LOGO = 'https://admisionesaustin.com.ar/logo-email.png';
 
 // Marca de versión: sirve para confirmar que la implementación se publicó.
 // Al abrir la URL del script con ?action=ping tiene que aparecer este valor.
-const API_VERSION = '2026-08-22-v4';
+const API_VERSION = '2026-09-07-v5-caminoB';
 
 // ── Calendario ────────────────────────────────────────────────
 const CAL_ADMISIONES        = 'admisiones@austinebs-ah.edu.ar';
@@ -37,6 +37,14 @@ const DURACION_ENTREVISTA_MIN = 60;
 // porque el panel no lo manda.
 const RECORDATORIO_AUTOMATICO   = true;
 const POST_ENTREVISTA_AUTOMATICO = false;
+
+// ── Camino B: decisión de Dirección General por mail ──────────
+// Firestore compartido con el panel de admisiones y el sistema EOE.
+const DG_FS_PROJECT = 'eoe-aebs';
+const DG_FS_BASE    = 'https://firestore.googleapis.com/v1/projects/' + DG_FS_PROJECT + '/databases/(default)/documents';
+const DG_FS_COL     = 'dg-decisiones';
+// El secreto para firmar los botones vive en Propiedades del script (no en el código):
+// Configuración del proyecto → Propiedades del script → DG_SECRET = (texto largo al azar).
 
 // ── Hojas (el script las crea solo si no existen) ─────────────
 const SHEET_TURNOS   = 'Turnos';
@@ -339,7 +347,12 @@ function onEdit_SendByStatus(e) {
 }
 
 // ── PUNTO DE ENTRADA HTTP ──────────────────────────────────────
-function doGet(e)  { return handleAPI_(e); }
+function doGet(e)  {
+  // Camino B: clic de una DG en el mail (Aprobar/Rechazar). Devuelve una página
+  // HTML de confirmación, no JSON.
+  if (e && e.parameter && e.parameter.dg) return handleDGDecision_(e.parameter);
+  return handleAPI_(e);
+}
 function doPost(e) { return handleAPI_(e); }
 
 function handleAPI_(e) {
@@ -367,6 +380,7 @@ function handleAPI_(e) {
       case 'getBloqueos':   result = getBloqueos_(); break;
       case 'setBloqueo':    result = setBloqueo_(data); break;
       case 'sendMail':      result = sendMailDirect_(data); break;
+      case 'sendDGNotif':   result = sendDGNotif_(data); break;
       case 'crearEventoEntrevista': result = crearEventoEntrevista(data); break;
     }
   } catch(err) {
@@ -750,6 +764,160 @@ function sendMailDirect_(data) {
   );
   sendEmail_(data.to, data.subject, htmlBody, data.body);
   return { ok: true };
+}
+
+// ── CAMINO B: DECISIÓN DG POR MAIL ─────────────────────────────
+
+/** Secreto para firmar los links. Sin esto el camino B no funciona. */
+function dgSecret_() {
+  return PropertiesService.getScriptProperties().getProperty('DG_SECRET') || '';
+}
+
+/** Firma un id+acción con HMAC-SHA256. Los links no se pueden falsificar sin el secreto. */
+function dgToken_(id, accion) {
+  const secret = dgSecret_();
+  if (!secret) return '';
+  const raw = Utilities.computeHmacSha256Signature(String(id) + '|' + String(accion), secret);
+  return Utilities.base64EncodeWebSafe(raw).replace(/=+$/, '');
+}
+
+/** URL /exec de esta implementación (para los botones del mail). */
+function dgWebAppUrl_() {
+  return ScriptApp.getService().getUrl();
+}
+
+/**
+ * Manda el mail a las DGs con el cuerpo editable + dos botones firmados.
+ * data: { to, subject, body, id, alumno, curso, anio, padre, email }
+ */
+function sendDGNotif_(data) {
+  if (!data.to || !data.subject || !data.id) {
+    return { ok: false, error: 'Faltan campos: to, subject, id' };
+  }
+  if (!dgSecret_()) return { ok: false, error: 'Falta DG_SECRET en Propiedades del script' };
+
+  const base   = dgWebAppUrl_();
+  const tOk     = dgToken_(data.id, 'aprobar');
+  const tNo     = dgToken_(data.id, 'rechazar');
+  const linkOk = base + '?dg=1&accion=aprobar&id='  + encodeURIComponent(data.id) + '&t=' + encodeURIComponent(tOk);
+  const linkNo = base + '?dg=1&accion=rechazar&id=' + encodeURIComponent(data.id) + '&t=' + encodeURIComponent(tNo);
+
+  // Cuerpo editable (viene del panel) → párrafos HTML.
+  const intro = String(data.body || '')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\n\n/g, '</p><p style="margin:0 0 12px">')
+    .replace(/\n/g, '<br>')
+    .replace(/^/, '<p style="margin:0 0 12px">')
+    .replace(/$/, '</p>');
+
+  const botones = `
+  <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin:24px 0 8px">
+    <tr>
+      <td align="center" style="padding:0 6px">
+        <a href="${linkOk}" style="display:inline-block;background:#2E7D32;color:#fff;text-decoration:none;font:700 15px Arial,Helvetica,sans-serif;padding:14px 30px;border-radius:8px">✓ Aprobar postulación</a>
+      </td>
+      <td align="center" style="padding:0 6px">
+        <a href="${linkNo}" style="display:inline-block;background:#C62828;color:#fff;text-decoration:none;font:700 15px Arial,Helvetica,sans-serif;padding:14px 30px;border-radius:8px">✕ Rechazar</a>
+      </td>
+    </tr>
+  </table>
+  <p style="margin:6px 0 0;font-size:12px;color:#95958E;text-align:center">Con que una de las dos Direcciones responda alcanza. La primera respuesta queda registrada.</p>`;
+
+  const html = mailBase_(data.subject, intro + botones, firma_());
+  sendEmail_(data.to, data.subject, html, data.body);
+  return { ok: true };
+}
+
+/**
+ * Recibe el clic de la DG (GET ?dg=1&accion=&id=&t=), valida el token, registra
+ * la decisión en Firestore (dg-decisiones/{id}) y devuelve una página HTML.
+ * La primera decisión gana: el create con documentId falla si ya existe.
+ */
+function handleDGDecision_(params) {
+  const id     = params.id || '';
+  const accion = (params.accion || '').toLowerCase();
+  const token  = params.t || '';
+
+  if (!id || (accion !== 'aprobar' && accion !== 'rechazar')) {
+    return paginaDG_('Link inválido', 'El enlace no es válido. Revisá que hayas copiado la dirección completa.', '#C62828');
+  }
+  if (!dgSecret_()) {
+    return paginaDG_('No disponible', 'Falta configurar el sistema (DG_SECRET). Avisá al equipo de admisiones.', '#C62828');
+  }
+  if (token !== dgToken_(id, accion)) {
+    return paginaDG_('Link inválido', 'La firma del enlace no coincide. Por seguridad no se registró nada.', '#C62828');
+  }
+
+  const alumno = params.alumno || '';
+  const res = fsCrearDecisionDG_(id, accion, alumno);
+
+  if (res.yaExistia) {
+    const previo = res.accionPrevia === 'aprobar' ? 'aprobada' : 'rechazada';
+    return paginaDG_('Ya estaba resuelto', 'Esta postulación ya fue ' + previo + ' por la otra Dirección. No se registró un cambio nuevo.', '#B45309');
+  }
+  if (!res.ok) {
+    return paginaDG_('No se pudo registrar', 'Ocurrió un error guardando la decisión. Probá de nuevo en unos minutos.', '#C62828');
+  }
+
+  if (accion === 'aprobar') {
+    return paginaDG_('✓ Postulación aprobada', 'Registramos tu aprobación. El equipo de admisiones la va a ver reflejada en el sistema en los próximos minutos.', '#2E7D32');
+  }
+  return paginaDG_('Postulación rechazada', 'Registramos el rechazo. El equipo de admisiones va a avisar a la familia.', '#C62828');
+}
+
+/**
+ * Crea dg-decisiones/{id} en Firestore con documentId fijo. Si ya existe (otra DG
+ * respondió antes), Firestore devuelve 409 y devolvemos yaExistia.
+ */
+function fsCrearDecisionDG_(id, accion, alumno) {
+  const url = DG_FS_BASE + '/' + DG_FS_COL + '?documentId=' + encodeURIComponent(String(id));
+  const payload = { fields: {
+    accion:    { stringValue: accion },
+    alumno:    { stringValue: String(alumno || '') },
+    timestamp: { integerValue: String(Date.now()) }
+  }};
+  const resp = UrlFetchApp.fetch(url, {
+    method: 'post',
+    contentType: 'application/json',
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true
+  });
+  const code = resp.getResponseCode();
+  if (code >= 200 && code < 300) return { ok: true, yaExistia: false };
+  if (code === 409) {
+    // Ya había una decisión: leerla para informar cuál fue.
+    let accionPrevia = '';
+    try {
+      const g = UrlFetchApp.fetch(DG_FS_BASE + '/' + DG_FS_COL + '/' + encodeURIComponent(String(id)),
+        { method: 'get', muteHttpExceptions: true });
+      if (g.getResponseCode() === 200) {
+        const doc = JSON.parse(g.getContentText());
+        accionPrevia = (doc.fields && doc.fields.accion && doc.fields.accion.stringValue) || '';
+      }
+    } catch(_) {}
+    return { ok: false, yaExistia: true, accionPrevia: accionPrevia };
+  }
+  return { ok: false, yaExistia: false, error: 'HTTP ' + code + ': ' + resp.getContentText() };
+}
+
+/** Página HTML de confirmación que ve la DG tras el clic. */
+function paginaDG_(titulo, texto, color) {
+  const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>${titulo}</title></head>
+<body style="margin:0;background:#EEE9DF;font-family:Arial,Helvetica,sans-serif">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding:48px 16px"><tr><td align="center">
+<table role="presentation" width="480" cellpadding="0" cellspacing="0" style="width:100%;max-width:480px;background:#fff;border-radius:12px;border:1px solid #E3DED3;overflow:hidden">
+  <tr><td style="height:6px;background:${color}"></td></tr>
+  <tr><td style="padding:36px 32px;text-align:center">
+    <img src="${MAIL_LOGO}" width="180" alt="Austin EBS" style="display:block;margin:0 auto 24px;max-width:60%;height:auto">
+    <div style="font:700 22px Georgia,serif;color:${color};margin:0 0 14px">${titulo}</div>
+    <div style="font-size:15px;line-height:1.7;color:#252520">${texto}</div>
+    <div style="margin-top:26px;font-size:12px;color:#95958E">Podés cerrar esta pestaña.</div>
+  </td></tr>
+</table>
+</td></tr></table></body></html>`;
+  return HtmlService.createHtmlOutput(html)
+    .addMetaTag('viewport', 'width=device-width,initial-scale=1');
 }
 
 // ── TRIGGERS AUTOMÁTICOS ───────────────────────────────────────

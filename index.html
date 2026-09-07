@@ -4932,8 +4932,8 @@ let _eoePollingInterval = null;
 
 function startEOEPolling(){
   stopEOEPolling();
-  pollEOEResults(); // primera vez inmediata
-  _eoePollingInterval = setInterval(pollEOEResults, 30000); // cada 30s
+  pollEOEResults(); pollDGDecisiones(); // primera vez inmediata
+  _eoePollingInterval = setInterval(()=>{ pollEOEResults(); pollDGDecisiones(); }, 30000); // cada 30s
 }
 
 function stopEOEPolling(){
@@ -4992,6 +4992,62 @@ async function pollEOEResults(){
         renderDashboard();
         const pv=document.getElementById('view-pipeline'); if(pv&&pv.classList.contains('on')) renderPipeline();
       }
+    } catch(e){ /* continúa con el siguiente */ }
+  }
+}
+
+// ═══════════════════════════
+// CAMINO B: DECISIONES DG POR MAIL
+// ═══════════════════════════
+// Lee la colección dg-decisiones (que escribe Apps Script cuando una DG toca
+// Aprobar/Rechazar en el mail) y la aplica al pipeline. La primera decisión gana:
+// Apps Script no vuelve a escribir si ya hay una, así que acá solo aplicamos.
+async function pollDGDecisiones(){
+  const pendientes = DB.postulantes.filter(p=>p.estado==='pendiente_dg');
+  if(pendientes.length===0) return;
+
+  const _tk = await fsToken();
+  const _authH = _tk ? {'Authorization':'Bearer '+_tk} : {};
+
+  for(const p of pendientes){
+    try{
+      const url=`${FS_BASE}/dg-decisiones/${encodeURIComponent(String(p.id))}`;
+      const res=await fetch(url,{headers:_authH});
+      if(!res.ok) continue; // 404 = todavía nadie decidió
+      const doc=await res.json();
+      if(doc.fields?.procesado?.booleanValue) continue; // ya lo aplicamos
+      const accion=(doc.fields?.accion?.stringValue||'').toLowerCase();
+      if(accion!=='aprobar' && accion!=='rechazar') continue;
+
+      if(accion==='aprobar'){
+        p.estado='postulado';
+        p.ultAccion=today();
+        p.hist=p.hist||[];
+        p.hist.push({e:'postulado',f:today(),auto:true,via:'dg-mail'});
+        saveDB();
+        enviarMailAdmin(p,'postulado',()=>{});
+        mostrarNotifEOE(p,'aprobado');
+      } else {
+        p.estado='no_queremos';
+        p.ultAccion=today();
+        p.hist=p.hist||[];
+        p.hist.push({e:'no_queremos',f:today(),auto:true,via:'dg-mail'});
+        saveDB();
+        enviarMailAdmin(p,'no_queremos',()=>{});
+        mostrarNotifEOE(p,'rechazado');
+      }
+
+      // Marcar procesado (con updateMask para no borrar accion/decididoPor/timestamp)
+      await fetch(url+'?updateMask.fieldPaths=procesado&updateMask.fieldPaths=procesadoEn',
+        {method:'PATCH',headers:{'Content-Type':'application/json',..._authH},
+        body:JSON.stringify({fields:{
+          procesado:{booleanValue:true},
+          procesadoEn:{integerValue:String(Date.now())}
+        }})
+      });
+
+      renderDashboard();
+      const pv=document.getElementById('view-pipeline'); if(pv&&pv.classList.contains('on')) renderPipeline();
     } catch(e){ /* continúa con el siguiente */ }
   }
 }
@@ -5124,7 +5180,16 @@ function enviarMailDG(p){
   const subj=tmpl?fillV(tmpl.subj,p):`EOE aprobó a ${esc(p.alumno)} — pendiente confirmación DG`;
   const body=tmpl?fillV(tmpl.body,p):`EOE aprobó a ${esc(p.alumno)} (${esc(p.curso)}, ciclo ${p.anio}). Familia: ${esc(p.padre)} · ${esc(p.email)}`;
   if(DB.config.appsScriptUrl){
-    apiCall('sendMail',{to:dgEmail,subject:subj,body,html:buildHtmlMail(body,subj)}).then(()=>{});
+    // Camino B: Apps Script arma el mail con los botones Aprobar/Rechazar firmados
+    // (el token secreto vive en Apps Script, no acá). El cuerpo editable va como intro.
+    apiCall('sendDGNotif',{
+      to:dgEmail, subject:subj, body,
+      id:String(p.id), alumno:p.alumno||'', curso:p.curso||'',
+      anio:String(p.anio||''), padre:p.padre||'', email:p.email||''
+    }).then(res=>{
+      // Fallback: si Apps Script no tiene el camino B desplegado, manda el mail simple.
+      if(!res||!res.ok){ apiCall('sendMail',{to:dgEmail,subject:subj,body,html:buildHtmlMail(body,subj)}).then(()=>{}); }
+    });
   } else {
     window.open('mailto:'+dgEmail+'?subject='+encodeURIComponent(subj)+'&body='+encodeURIComponent(body));
   }
