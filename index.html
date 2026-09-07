@@ -1193,7 +1193,7 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
             <div class="cfgrow"><div><div class="cfglbl">Email de admisiones</div><div class="cfgsub">Dirección desde la que se envían los correos</div></div><input class="cfgi" id="cfg-em" value="admisiones@austinebs-ah.edu.ar"></div>
             <div class="cfgrow"><div><div class="cfglbl">Link Google Drive (brochure)</div><div class="cfgsub">Para que las familias descarguen información</div></div><input class="cfgi" id="cfg-drv" value="https://drive.google.com/drive/folders/1c0vFf1MWUcSC8-lqBjBCGDQ-hbXxGQDA"></div>
             <div class="cfgrow"><div><div class="cfglbl">Email Administración</div><div class="cfgsub">Recibe la ficha completa cuando un estudiante queda matriculado</div></div><input class="cfgi" id="cfg-admin-email" placeholder="adm@austinebs-ah.edu.ar"></div>
-            <div class="cfgrow"><div><div class="cfglbl">Email Dirección General</div><div class="cfgsub">Recibe la notificación cuando EOE/Inglés aprueba un caso</div></div><input class="cfgi" id="cfg-dg" placeholder="alejandra.luna@austinebs-ah.edu.ar"></div>
+            <div class="cfgrow"><div><div class="cfglbl">Email Dirección General</div><div class="cfgsub">Recibe la notificación cuando EOE/Inglés aprueba un caso. Podés poner varios separados por coma.</div></div><input class="cfgi" id="cfg-dg" placeholder="alejandra.luna@austinebs-ah.edu.ar, sofia.sanmartin@austinebs-ah.edu.ar"></div>
             <div class="cfgrow" style="background:linear-gradient(135deg,#EBF7D4,#D4F0A8);border-radius:10px;padding:10px 14px;margin-top:6px">
               <div><div class="cfglbl" style="color:#3A6A0A">🔑 URL del Apps Script (Google Sheets)</div><div class="cfgsub" style="color:#5A8A1A">Necesario para mails automáticos y calendario en tiempo real. Ver instructivo.</div></div>
               <input class="cfgi" id="cfg-apps" placeholder="https://script.google.com/macros/s/..." style="background:#fff">
@@ -1505,7 +1505,7 @@ let DB = {
     admin_matriculado:{subj:'NUEVO MATRICULADO: {{alumno}} — {{curso}} {{anio}}',body:'Estimado equipo de Administración,\n\nEl siguiente estudiante completó el proceso de admisión y se encuentra MATRICULADO. Por favor proceder con el alta, cobro de matrícula y solicitud de documentación.\n\n══ DATOS DEL ESTUDIANTE ══\nNombre: {{alumno}}\nNivel: {{nivel}}\nCurso: {{curso}}\nJornada: {{jornada}}\nCiclo lectivo: {{anio}}\nHermano/a Austin: {{hermano}}\nColegio anterior: {{colegio}}\n\n══ DATOS DE LA FAMILIA ══\nPadre / Madre / Tutor: {{padre}}\nEmail: {{email}}\nTeléfono: {{tel}}\n\n══ APROBACIONES ══\nAdmisiones: ✓\nEOE / Inglés: ✓\nDirección General: ✓\n\nSistema de Admisiones – Austin EBS'},
     dg_notif:{subj:'EOE aprobó a {{alumno}} — pendiente confirmación DG',body:'Estimada Dirección General,\n\nEOE e Inglés dieron el visto bueno para el ingreso de {{alumno}} ({{curso}}, ciclo {{anio}}).\nAdmisiones confirmó la vacante.\n\nPor favor confirmar el ingreso antes del plazo indicado.\nSi no hay respuesta en 48hs, el sistema procederá automáticamente con la matrícula.\n\nDatos:\n- Nombre: {{alumno}}\n- Nivel: {{nivel}} — {{curso}}\n- Ciclo: {{anio}}\n- Familia: {{padre}}\n- Email: {{email}}\n- Teléfono: {{tel}}\n\nSaludos,\nSistema de Admisiones – Austin EBS'}
   },
-  config:{nombre:'Admisiones Austin EBS',email:'admisiones@austinebs-ah.edu.ar',calendar:'https://calendar.app.google/WrfYGGSiRH3smkxL8',drive:'https://drive.google.com/drive/folders/1c0vFf1MWUcSC8-lqBjBCGDQ-hbXxGQDA',appsScriptUrl:'https://script.google.com/macros/s/AKfycbzGXKe6Azyy3q9NVSKsV_ERgDKvJmQRdjHlLG9-Q-0w-70Y2QkP3ikIwx9dHRwDFYp_9Q/exec',emailAdmin:'adm@austinebs-ah.edu.ar',emailDG:'alejandra.luna@austinebs-ah.edu.ar',eoeApiUrl:'https://eoe-austin.netlify.app/',},
+  config:{nombre:'Admisiones Austin EBS',email:'admisiones@austinebs-ah.edu.ar',calendar:'https://calendar.app.google/WrfYGGSiRH3smkxL8',drive:'https://drive.google.com/drive/folders/1c0vFf1MWUcSC8-lqBjBCGDQ-hbXxGQDA',appsScriptUrl:'https://script.google.com/macros/s/AKfycbzGXKe6Azyy3q9NVSKsV_ERgDKvJmQRdjHlLG9-Q-0w-70Y2QkP3ikIwx9dHRwDFYp_9Q/exec',emailAdmin:'adm@austinebs-ah.edu.ar',emailDG:'alejandra.luna@austinebs-ah.edu.ar, sofia.sanmartin@austinebs-ah.edu.ar',eoeApiUrl:'https://eoe-austin.netlify.app/',},
   pendingNotif:[],
   bajasEscolares:[],
   ocupacion:{},
@@ -2072,7 +2072,7 @@ function loadDB(){
   // Safety net: nunca sobreescribir con vacío — valores críticos del sistema
   if(!DB.config.appsScriptUrl) DB.config.appsScriptUrl='https://script.google.com/macros/s/AKfycbzGXKe6Azyy3q9NVSKsV_ERgDKvJmQRdjHlLG9-Q-0w-70Y2QkP3ikIwx9dHRwDFYp_9Q/exec';
   if(!DB.config.emailAdmin) DB.config.emailAdmin='adm@austinebs-ah.edu.ar';
-  if(!DB.config.emailDG) DB.config.emailDG='alejandra.luna@austinebs-ah.edu.ar';
+  if(!DB.config.emailDG) DB.config.emailDG='alejandra.luna@austinebs-ah.edu.ar, sofia.sanmartin@austinebs-ah.edu.ar';
   if(!DB.config.eoeApiUrl) DB.config.eoeApiUrl='https://eoe-austin.netlify.app/';
   // Foto de partida: sin esto el primer stampChanges() marcaria todo como recien
   // editado y la copia local le ganaria a la nube entera.
@@ -2263,6 +2263,17 @@ function migCitadoSinFechaAgenda(){
   }
 }
 
+// Suma a Sofía San Martín como segundo destinatario de las notificaciones a Dirección
+// General, sobre el config que ya está guardado en la nube (que pisa el default). Solo
+// agrega el mail si todavía no está: respeta cualquier edición previa de Admisiones.
+function migDGSegundoMail(){
+  const extra='sofia.sanmartin@austinebs-ah.edu.ar';
+  const actual=(DB.config.emailDG||'').trim();
+  if(actual.toLowerCase().includes(extra)) return;
+  DB.config.emailDG = actual ? (actual.replace(/\s*,\s*$/,'') + ', ' + extra) : extra;
+  saveDB();
+}
+
 // Limpieza única: los bloqueos automáticos de entrevistas reprogramadas o canceladas
 // antes de que el sistema aprendiera a liberarlos quedaron como turnos muertos
 // (invisibles) en el formulario público. Se borran los bloqueos "Entrevista:" que no
@@ -2292,6 +2303,7 @@ function runMigrations(){
   migCitadoConFecha();
   migNoAsistioLink();
   migCitadoSinFechaAgenda();
+  migDGSegundoMail();
   migLimpiarBloqueosHuerfanos();
   if(DB.config.mig_contactado_v1) return;
   let changed=0;
@@ -2680,8 +2692,8 @@ function openDetalle(id){
     ${p.estado==='pendiente_dg'?`
     <div style="margin-top:12px;background:#FEF3C7;border:1px solid #F59E0B;border-radius:10px;padding:13px 15px">
       <div style="font-size:11px;font-weight:600;color:#92400E;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">⏳ Pendiente Dirección General</div>
-      <div style="font-size:12.5px;color:#78350F;margin-bottom:10px">DG tiene 48hs para confirmar. Si no responde, el sistema avanza automáticamente a Matriculado.${p.dgDeadline?' Vence: <strong>'+fDateFull(p.dgDeadline)+'</strong>':''}</div>
-      <button class="btn btn-gr" onclick="confirmarDG(${id})">✓ DG confirmó — pasar a Matriculado</button>
+      <div style="font-size:12.5px;color:#78350F;margin-bottom:10px">DG tiene 48hs para confirmar. Si no responde, el sistema avanza automáticamente a Postulado.${p.dgDeadline?' Vence: <strong>'+fDateFull(p.dgDeadline)+'</strong>':''}</div>
+      <button class="btn btn-gr" onclick="confirmarDG(${id})">✓ DG confirmó — pasar a Postulado</button>
     </div>`:''}
     ${p.estado==='matriculado'?`
     <div style="margin-top:12px;background:#EBF7D4;border:1px solid #6AB04C;border-radius:10px;padding:13px 15px">
@@ -5066,18 +5078,19 @@ function rechazarEOE(id){
 // ═══════════════════════════
 function confirmarDG(id){
   const p=DB.postulantes.find(x=>x.id===id); if(!p) return;
-  const prevEst=p.estado;
-  p.estado='matriculado';
+  // DG aprueba → el caso pasa a POSTULADO (no a matriculado). El paso a matriculado /
+  // nuevo alumno queda para más adelante en el pipeline. Se manda a la familia el mail
+  // de "postulado" (siguiente paso / reserva de vacante), igual que el cambio manual.
+  p.estado='postulado';
   p.ultAccion=today();
   p.hist=p.hist||[];
-  p.hist.push({e:'matriculado',f:today(),mailOk:false});
+  p.hist.push({e:'postulado',f:today(),mailOk:false});
   saveDB();
-  enviarMailAdministracion(p);
-  enviarMailAdmin(p,'matriculado',(ok,mode)=>{
+  enviarMailAdmin(p,'postulado',(ok,mode)=>{
     if(ok){ p.hist[p.hist.length-1].mailOk=true; saveDB(); }
-    if(ok&&mode==='mailto') toast('Matriculado · Abriendo correo...','info');
-    else if(ok) toast('✓ Matriculado · Ficha enviada a Administración','ok');
-    else toast('Matriculado · Configurá el Apps Script para envío automático','info');
+    if(ok&&mode==='mailto') toast('Postulado · Abriendo correo...','info');
+    else if(ok) toast('✓ DG confirmó · Postulado — mail enviado a la familia','ok');
+    else toast('Postulado · Configurá el Apps Script para envío automático','info');
   });
   closeM(); renderDashboard();
   const pv=document.getElementById('view-pipeline'); if(pv&&pv.classList.contains('on')) renderPipeline();
@@ -5091,17 +5104,15 @@ function checkPendienteDG(){
   let changed=false;
   DB.postulantes.forEach(p=>{
     if(p.estado==='pendiente_dg'&&p.dgDeadline&&p.dgDeadline<=hoy){
-      const prevEst=p.estado;
-      p.estado='matriculado';
+      p.estado='postulado';
       p.ultAccion=today();
       p.hist=p.hist||[];
-      p.hist.push({e:'matriculado',f:today(),mailOk:false,auto:true});
-      enviarMailAdministracion(p);
-      enviarMailAdmin(p,'matriculado',(ok)=>{ if(ok){ p.hist[p.hist.length-1].mailOk=true; saveDB(); } });
+      p.hist.push({e:'postulado',f:today(),mailOk:false,auto:true});
+      enviarMailAdmin(p,'postulado',(ok)=>{ if(ok){ p.hist[p.hist.length-1].mailOk=true; saveDB(); } });
       changed=true;
     }
   });
-  if(changed){ saveDB(); renderDashboard(); toast('⏰ Auto-avance: pendiente DG → Matriculado por vencimiento 48hs','info'); }
+  if(changed){ saveDB(); renderDashboard(); toast('⏰ Auto-avance: pendiente DG → Postulado por vencimiento 48hs','info'); }
 }
 
 // ═══════════════════════════
