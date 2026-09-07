@@ -1045,6 +1045,18 @@ function instalarTriggers_API() {
  * Verifica el acceso al calendario y que las fechas se lean bien.
  * No manda mails ni crea eventos.
  */
+/**
+ * Ejecutar UNA sola vez desde el editor para autorizar el permiso "Conectarse a
+ * un servicio externo" (UrlFetchApp), que el camino B necesita para escribir la
+ * decisión de la DG en Firestore. Hace solo una lectura de prueba (no escribe nada).
+ */
+function autorizarCaminoB() {
+  const url = DG_FS_BASE + '/' + DG_FS_COL + '/__probe__';
+  const r = UrlFetchApp.fetch(url, { method: 'get', muteHttpExceptions: true });
+  Logger.log('Autorización OK — Firestore respondió HTTP ' + r.getResponseCode());
+  return 'Autorización OK (HTTP ' + r.getResponseCode() + ')';
+}
+
 function probarSistema() {
   const out = [];
   out.push('Zona horaria de la planilla: ' + tz_());
