@@ -22,7 +22,7 @@ const MAIL_LOGO = 'https://admisionesaustin.com.ar/logo-email.png';
 
 // Marca de versión: sirve para confirmar que la implementación se publicó.
 // Al abrir la URL del script con ?action=ping tiene que aparecer este valor.
-const API_VERSION = '2026-09-07-v5-caminoB';
+const API_VERSION = '2026-09-07-v6-caminoB';
 
 // ── Calendario ────────────────────────────────────────────────
 const CAL_ADMISIONES        = 'admisiones@austinebs-ah.edu.ar';
