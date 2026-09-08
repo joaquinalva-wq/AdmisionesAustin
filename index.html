@@ -2042,6 +2042,12 @@ function loadDB(){
       // ts=0 so Firestore always wins on first sync
       DB.ocupacion={...OC_DEFAULT};
       try{ localStorage.setItem('austin_ebs_v2', JSON.stringify({nextId:DB.nextId,postulantes:DB.postulantes,vacantes:DB.vacantes,tarifas:DB.tarifas,emails:DB.emails,config:DB.config,pendingNotif:DB.pendingNotif,bajasEscolares:DB.bajasEscolares||[],ocupacion:DB.ocupacion})); localStorage.setItem('austin_ebs_ts','0'); }catch(e){}
+      // Foto de partida también en el arranque limpio (navegador nuevo o storage
+      // vaciado). Sin esto, el primer stampChanges() de syncFromCloud tomaba los valores
+      // por defecto del código como ediciones recién hechas, les ponía la hora actual, y
+      // en el merge esos defaults le ganaban a lo editado en la nube (tarifas y plantillas
+      // volvían "a como estaban al inicio") — y encima se re-subían, pisando la nube.
+      primeSig();
       return;
     }
     const d=JSON.parse(s);
