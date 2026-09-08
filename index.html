@@ -3507,7 +3507,11 @@ function renderTar(){
 function saveTar(){
   const g=id=>{const el=document.getElementById(id);return el?parsePesos(el.value):0;};
   DB.tarifas={rv_k2_js:g('t-rvk2js'),rv_k2_jc:g('t-rvk2jc'),rv_k3_js:g('t-rvk3js'),rv_k3_jc:g('t-rvk3jc'),rv_k45:g('t-rvk45'),rv_prim:g('t-rvprim'),rv_sec13:g('t-rvsec13'),rv_sec46:g('t-rvsec46'),k2_m:g('t-k2m'),k2_s:g('t-k2s'),k2_c:g('t-k2c'),k3_m:g('t-k3m'),k3_s:g('t-k3s'),k3_c:g('t-k3c'),k45_m:g('t-k45m'),k45_c:g('t-k45c'),el_m:g('t-elm'),el_c:g('t-elc'),hs13_m:g('t-h13m'),hs13_c:g('t-h13c'),hs46_m:g('t-h46m'),hs46_c:g('t-h46c')};
-  saveDB(); toast('Tarifas actualizadas','ok');
+  saveDB();
+  // Subida inmediata (igual que las plantillas): que un cierre de pestaña dentro de los
+  // 2s del guardado diferido no deje la tarifa solo en local hasta la próxima sesión.
+  clearTimeout(_fsSaveTimer); triggerCloudSave();
+  toast('Tarifas actualizadas','ok');
 }
 
 // ── HELPER: formatear número como pesos ───────────────────────
