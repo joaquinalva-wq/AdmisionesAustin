@@ -3087,6 +3087,15 @@ function linkAgendaOnline(){
   catch(e){ return DB.config.calendar||''; }
 }
 
+// El alta en el EOE (matriculados-pendientes) corresponde SOLO a un ingreso real: el
+// alumno tiene que haber recorrido el funnel, no haber saltado directo a 'nuevo' desde el
+// desplegable (lo que metía en "Altas" del EOE a alumnos a mitad de flujo). Condición
+// exacta: el historial registra un paso por 'matriculado', el último gate antes de 'nuevo'.
+// Sin eso, pasar a 'nuevo' cambia el estado pero NO dispara el alta.
+function flujoAdmisionCompleto(p){
+  return !!(p && (p.hist||[]).some(function(h){ return h && h.e==='matriculado'; }));
+}
+
 function changeE(id){
   const p=DB.postulantes.find(x=>x.id===id); if(!p) return;
   const sel=document.getElementById('new-st-'+id); if(!sel) return;
@@ -3121,7 +3130,13 @@ function changeE(id){
     enviarMailAdministracion(p);
   }
   if(newEst==='nuevo'){
-    sincronizarConEOE(p); // alta real en EOE recién al confirmar ingreso
+    // Alta real en EOE solo si recorrió el funnel (pasó por 'matriculado'). Un salto
+    // directo a 'nuevo' cambia el estado pero no manda el alta, para no ensuciar "Altas".
+    if(flujoAdmisionCompleto(p)){
+      sincronizarConEOE(p);
+    } else {
+      toast('⚠ '+p.alumno+' quedó en Nuevo alumno pero NO se envió al EOE: falta el paso por Matriculado (flujo incompleto).','err');
+    }
     crearAlumnoPadron(p); // registra en el padrón escolar
     renderOcupacionCards();
   }
