@@ -2305,7 +2305,21 @@ function migLimpiarBloqueosHuerfanos(){
   saveDB();
 }
 
+// Corte "de ahora en adelante": los casos que YA estaban en pendiente_dg no deben
+// volver a notificar a DG (venían del backlog viejo que se reenviaba en loop). Se marcan
+// como ya notificados; los casos nuevos, que entran con dgMailEnviado sin setear, sí avisan.
+// Espera a que la nube haya bajado (postulantes cargados): si corriera con el DB vacío del
+// arranque, marcaría la bandera sin tocar nada y el backlog real quedaría sin cubrir.
+function migDGNoReenviarBacklog(){
+  if(DB.config.mig_dg_backlog_v1) return;
+  if(!DB.postulantes || !DB.postulantes.length) return;
+  DB.postulantes.forEach(function(p){ if(p.estado==='pendiente_dg') p.dgMailEnviado=true; });
+  DB.config.mig_dg_backlog_v1=true;
+  saveDB();
+}
+
 function runMigrations(){
+  migDGNoReenviarBacklog();
   migCitadoConFecha();
   migNoAsistioLink();
   migCitadoSinFechaAgenda();
@@ -4968,6 +4982,10 @@ async function pollEOEResults(){
       if(!res.ok) continue;
       const doc=await res.json();
       const estado=doc.fields?.resultado?.stringValue||doc.fields?.estado?.stringValue||'';
+      // Ya procesado: no re-disparar. El PATCH de cierre escribe procesadoEn y deja el
+      // estado como "Procesado — Aprobado/Rechazado" — que contiene "aprobado", así que
+      // sin este corte volvía a matchear y re-enviaba el mail a DG en cada vuelta del poll.
+      if(doc.fields?.procesadoEn || estado.toLowerCase().includes('procesado')) continue;
 
       if(estado.toLowerCase().includes('aprobado')||estado.toLowerCase()==='aprobado'){
         // EOE aprobó → pendiente_dg
@@ -5185,6 +5203,12 @@ function checkPendienteDG(){
 // MAIL A DIRECCIÓN GENERAL
 // ═══════════════════════════
 function enviarMailDG(p){
+  // Idempotente: una sola notificación a DG por caso. Sin esto, cualquier re-entrada
+  // (re-detección del poll, revert de estado, reintento) volvía a mandar el mail y las
+  // DGs recibían el mismo aviso decenas de veces. La marca viaja con el postulante en la
+  // nube, así que otro dispositivo tampoco lo reenvía.
+  if(p && p.dgMailEnviado) return;
+  if(p){ p.dgMailEnviado=true; try{ saveDB(); }catch(e){} }
   const dgEmail=DB.config.emailDG||'alejandra.luna@austinebs-ah.edu.ar';
   const tmpl=DB.emails.dg_notif;
   const subj=tmpl?fillV(tmpl.subj,p):`EOE aprobó a ${esc(p.alumno)} — pendiente confirmación DG`;
