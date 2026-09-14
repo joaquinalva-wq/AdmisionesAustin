@@ -1327,6 +1327,7 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
         <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
           <button class="btn btn-sm" id="oc-tab-resumen" onclick="ocTab('resumen')" style="background:var(--gr);color:#fff;border:none">Resumen</button>
           <button class="btn btn-sm btn-out" id="oc-tab-padron" onclick="ocTab('padron')">Padrón</button>
+          <button class="btn btn-sm btn-out" id="oc-tab-trayectorias" onclick="ocTab('trayectorias')">Trayectorias</button>
           <button class="btn btn-sm btn-out" id="oc-tab-movimientos" onclick="ocTab('movimientos')">Movimientos</button>
           <button class="btn btn-sm btn-out" id="oc-tab-remat" onclick="ocTab('remat')">Re-Matrícula</button>
           <button class="btn btn-sm btn-out" id="oc-tab-descuentos" onclick="ocTab('descuentos')">Descuentos</button>
@@ -2430,6 +2431,30 @@ function migDGNoReenviarBacklog(){
   saveDB();
 }
 
+// Deja escrita la forma canónica de cada sección en el padrón y en las fichas de
+// admisiones. Una sección mal escrita ("3º A Prim" con ordinal masculino, o "3ro A")
+// no coincide con SCHOOL_CURSOS: el alumno no sumaba en la ocupación de su curso ni
+// avanzaba de año. Corre siempre —sin bandera de "ya hecho"— porque el dato puede
+// volver a entrar torcido desde una importación.
+function migNormalizarCursos(){
+  let n=0;
+  (DB.padron||[]).forEach(function(a){
+    if(!a.curso || SCHOOL_CURSOS.includes(a.curso)) return;
+    const c = normalizarCurso(a.curso);
+    if(c && c!==a.curso && SCHOOL_CURSOS.includes(c)){
+      a.curso = c;
+      a.nivel = normalizarNivel(SCHOOL_NIVEL(c)) || a.nivel;
+      n++;
+    }
+  });
+  (DB.postulantes||[]).forEach(function(p){
+    if(!p.seccion || SCHOOL_CURSOS.includes(p.seccion)) return;
+    const c = normalizarCurso(p.seccion);
+    if(c && c!==p.seccion && SCHOOL_CURSOS.includes(c)){ p.seccion = c; n++; }
+  });
+  if(n){ saveDB(); toast(`✓ ${n} sección${n!==1?'es':''} con el nombre corregido`,'ok'); }
+}
+
 function runMigrations(){
   migDGNoReenviarBacklog();
   migCitadoConFecha();
@@ -2438,6 +2463,7 @@ function runMigrations(){
   migAdminPostulado();
   migDGSegundoMail();
   migLimpiarBloqueosHuerfanos();
+  migNormalizarCursos();
   if(DB.config.mig_contactado_v1) return;
   let changed=0;
   DB.postulantes.forEach(p=>{
@@ -6324,7 +6350,7 @@ function setOcCiclo(val){
 
 function ocTab(t){
   _ocTab = t;
-  ['resumen','padron','movimientos','remat','descuentos','morosos'].forEach(id=>{
+  ['resumen','padron','trayectorias','movimientos','remat','descuentos','morosos'].forEach(id=>{
     const b=document.getElementById('oc-tab-'+id);
     if(!b) return;
     if(id===t){ b.style.background='var(--gr)'; b.style.color='#fff'; b.classList.remove('btn-out'); }
@@ -6399,8 +6425,7 @@ function padronVista(ciclo){
       .filter(a=>!esEgresado(a))
       .filter(a=>(DB.reMatricula||{})[a.id+'_'+(c+1)]?.estado !== 'baja')
       .map(a=>{
-        const nuevaCurso = Object.prototype.hasOwnProperty.call(SECTION_ADVANCE,a.curso)
-          ? (SECTION_ADVANCE[a.curso]||a.curso) : a.curso;
+        const nuevaCurso = cursoAvanzado(a.curso);
         return {...a, curso:nuevaCurso, nivel:SCHOOL_NIVEL(nuevaCurso), ciclo:c+1, proyectado:true};
       });
     // Ingresantes reales del año c+1 (nuevos alumnos ya cargados en el padrón)
@@ -6528,6 +6553,7 @@ function renderOcupacionBody(){
   if(!body) return;
   if(_ocTab==='movimientos'){ body.innerHTML=renderMovimientos(); return; }
   if(_ocTab==='padron'){ body.innerHTML=renderPadron(); attachPadronEvents(); return; }
+  if(_ocTab==='trayectorias'){ body.innerHTML=renderTrayectorias(); attachTrayectoriasEvents(); return; }
   if(_ocTab==='remat'){ body.innerHTML=renderReMatricula(); attachRematEvents(); return; }
   if(_ocTab==='descuentos'){ body.innerHTML=renderDescuentos(); attachDescuentosEvents(); return; }
   if(_ocTab==='morosos'){ body.innerHTML=renderMorosos(); return; }
@@ -6876,6 +6902,9 @@ function filtrarPadron(){
         <td style="display:flex;gap:4px;flex-wrap:wrap">
           ${esProy
             ?`<span style="font-size:11px;color:#0EA5E9">proyectado</span>`
+            :`<button class="btn btn-sm btn-ghost" style="color:var(--tx3);font-size:11px" title="Ver su recorrido año por año" onclick="verTrayectoriaDeFila('${a.id}')">Trayectoria</button>`}
+          ${esProy
+            ?''
             :a.estado==='activo'
             ?`<button class="btn btn-sm btn-out" onclick="moverSeccionModal('${a.id}')" title="Cambiar de sección">Mover</button>
               <button class="btn btn-sm btn-out" style="color:#EF4444" onclick="registrarBajaPadronModal('${a.id}')">Baja</button>
@@ -6887,6 +6916,196 @@ function filtrarPadron(){
 }
 
 function attachPadronEvents(){ filtrarPadron(); }
+
+// ═══════════════════════════
+// TRAYECTORIA ESCOLAR
+// ═══════════════════════════
+// El padrón guarda una fila por alumno por ciclo lectivo, cada una con su propio id.
+// La historia de una persona queda repartida en varias filas y lo único que las une es
+// el ID del colegio, que lo acompaña toda la escolaridad. Los que todavía no tienen ID
+// se agrupan por nombre, para que igual se pueda ver su recorrido.
+function claveTrayectoria(a){
+  const id = String(a.idColegio||'').trim();
+  return id ? 'ID|'+id : 'NOM|'+normNombrePersona(a.nombre||'');
+}
+
+function trayectorias(){
+  const grupos = {};
+  (DB.padron||[]).forEach(function(a){
+    if(!a.nombre && !a.idColegio) return;
+    const k = claveTrayectoria(a);
+    (grupos[k] = grupos[k] || []).push(a);
+  });
+  return Object.keys(grupos).map(function(k){
+    const filas = grupos[k].slice().sort(function(x,y){ return (x.ciclo||0)-(y.ciclo||0); });
+    const ult = filas[filas.length-1];
+    return {
+      clave: k,
+      nombre: ult.nombre || '—',
+      idColegio: String(ult.idColegio||'').trim(),
+      filas: filas,
+      desde: filas[0].ciclo,
+      hasta: ult.ciclo,
+      estadoFinal: ult.estado,
+      egresado: ult.estado==='activo' && esEgresado(ult)
+    };
+  }).sort(function(a,b){ return (a.nombre||'').localeCompare(b.nombre||''); });
+}
+
+// De dónde salió la fila de ese ciclo. El prefijo del id lo dice sin ambigüedad.
+function origenFilaPadron(a){
+  const id = String(a.id||'');
+  if(id.indexOf('pa_gen_')===0) return {txt:'pasó de año', col:'var(--tx3)'};
+  if(id.indexOf('pa_new_')===0 || id.indexOf('pa_')===0 && a.admisionId) return {txt:'ingresó por Admisiones', col:'#7C3AED'};
+  if(id.indexOf('pa_imp_')===0) return {txt:'importado', col:'var(--tx3)'};
+  if(a.admisionId) return {txt:'ingresó por Admisiones', col:'#7C3AED'};
+  return {txt:'carga manual', col:'var(--tx3)'};
+}
+
+let _trayClave = null;
+
+function renderTrayectorias(){
+  return `<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
+    <input class="fi" id="tray-q" placeholder="Buscar por nombre o ID del colegio..."
+      style="max-width:320px;padding:7px 12px" oninput="buscarTrayectorias()">
+    <div style="flex:1"></div>
+    <span style="font-size:12px;color:var(--tx3)">Todos los ciclos · incluye bajas y egresados</span>
+  </div>
+  <div id="tray-body"></div>`;
+}
+
+function attachTrayectoriasEvents(){
+  const inp = document.getElementById('tray-q');
+  if(inp && !_trayClave) setTimeout(function(){ inp.focus(); }, 30);
+  pintarTrayectorias();
+}
+
+// Escribir en el buscador siempre vuelve al listado.
+function buscarTrayectorias(){ _trayClave = null; pintarTrayectorias(); }
+
+function verTrayectoria(clave){
+  _trayClave = clave;
+  if(_ocTab !== 'trayectorias'){ ocTab('trayectorias'); return; }
+  pintarTrayectorias();
+}
+
+// Atajo desde una fila del padrón: abre la trayectoria de ese alumno.
+function verTrayectoriaDeFila(filaId){
+  const a = (DB.padron||[]).find(function(x){ return String(x.id)===String(filaId); });
+  if(!a) return;
+  verTrayectoria(claveTrayectoria(a));
+}
+
+function pintarTrayectorias(){
+  const body = document.getElementById('tray-body');
+  if(!body) return;
+  if(_trayClave){ body.innerHTML = fichaTrayectoria(_trayClave); return; }
+
+  const q = (document.getElementById('tray-q')?.value||'').trim().toLowerCase();
+  let lista = trayectorias();
+  if(q) lista = lista.filter(function(t){
+    return (t.nombre||'').toLowerCase().includes(q) || t.idColegio.toLowerCase().includes(q);
+  });
+
+  if(!lista.length){
+    body.innerHTML = `<div class="cbox"><p style="color:var(--tx3);padding:14px">
+      ${q?'Ningún alumno coincide con la búsqueda.':'Todavía no hay alumnos en el padrón.'}</p></div>`;
+    return;
+  }
+
+  const TOPE = 40;
+  const muestra = lista.slice(0, TOPE);
+  const chip = function(t){
+    if(t.estadoFinal==='baja') return '<span style="font-size:11px;color:#B91C1C;background:#FEE2E2;padding:2px 7px;border-radius:5px">Baja</span>';
+    if(t.egresado) return '<span style="font-size:11px;color:#5B21B6;background:#EDE9FE;padding:2px 7px;border-radius:5px">Último año</span>';
+    return '<span style="font-size:11px;color:#166534;background:#DCFCE7;padding:2px 7px;border-radius:5px">Activo</span>';
+  };
+
+  body.innerHTML = `<div class="cbox">
+    <div class="cbox-h"><div class="cbox-t">${lista.length} alumno${lista.length!==1?'s':''}</div>
+      ${lista.length>TOPE?`<span style="font-size:12px;color:var(--tx3)">mostrando los primeros ${TOPE} — afiná la búsqueda</span>`:''}</div>
+    <table><thead><tr><th style="width:100px">ID colegio</th><th>Nombre</th><th>Años en el colegio</th><th>Sección actual</th><th></th><th></th></tr></thead>
+    <tbody>${muestra.map(function(t){
+      const ult = t.filas[t.filas.length-1];
+      const anios = t.hasta - t.desde + 1;
+      return `<tr>
+        <td><span style="font-family:monospace;font-size:12px;color:${t.idColegio?'var(--td)':'var(--tx3)'}">${esc(t.idColegio||'sin ID')}</span></td>
+        <td><strong>${esc(t.nombre)}</strong></td>
+        <td style="font-size:12px;color:var(--tx3)">${t.desde} → ${t.hasta} <span style="color:var(--bd)">·</span> ${anios} ciclo${anios!==1?'s':''}</td>
+        <td style="font-size:12px">${esc(ult.curso||'—')}</td>
+        <td>${chip(t)}</td>
+        <td><button class="btn btn-sm btn-out" onclick="verTrayectoria('${esc(t.clave).replace(/'/g,"\\'")}')">Ver trayectoria</button></td>
+      </tr>`;
+    }).join('')}</tbody></table>
+  </div>`;
+}
+
+function fichaTrayectoria(clave){
+  const t = trayectorias().find(function(x){ return x.clave===clave; });
+  if(!t) return `<div class="cbox"><p style="color:var(--tx3);padding:14px">Ese alumno ya no está en el padrón.</p></div>`;
+
+  const remat = DB.reMatricula||{}, desc = DB.descuentos||{};
+  const anios = t.hasta - t.desde + 1;
+
+  const hitos = t.filas.map(function(a, i){
+    const prev = i>0 ? t.filas[i-1] : null;
+    const o = origenFilaPadron(a);
+    const d = desc[a.id];
+    const r = remat[a.id+'_'+(a.ciclo+1)];
+    const cfgR = r ? (REMAT_ESTADOS[r.estado]||null) : null;
+    const baja = a.estado==='baja';
+    const egresa = a.estado==='activo' && esEgresado(a);
+    const cambioSeccion = prev && prev.curso && a.curso && cursoAvanzado(prev.curso)!==a.curso;
+    const color = baja ? '#EF4444' : egresa ? '#7C3AED' : '#16A34A';
+
+    const nota = function(txt, col){
+      return `<div style="font-size:12px;color:${col||'var(--tx3)'};margin-top:3px">${txt}</div>`;
+    };
+
+    return `<div style="position:relative;padding:0 0 18px 26px">
+      <div style="position:absolute;left:0;top:5px;width:11px;height:11px;border-radius:50%;
+        background:${color};box-shadow:0 0 0 3px var(--cd,#fff)"></div>
+      ${i < t.filas.length-1 ? `<div style="position:absolute;left:5px;top:16px;bottom:0;width:1px;background:var(--bd)"></div>`:''}
+      <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
+        <span style="font-size:15px;font-weight:700;color:var(--td)">${a.ciclo}</span>
+        <span style="font-size:14px;color:var(--tx)">${esc(a.curso||'Sin sección')}</span>
+        <span style="font-size:11.5px;color:var(--tx3)">${esc(a.nivel||'')}</span>
+        ${cambioSeccion?`<span style="font-size:11px;color:#B45309;background:#FEF3C7;padding:1px 7px;border-radius:5px">cambió de división</span>`:''}
+      </div>
+      ${nota(`${baja?'<span style="color:#EF4444">● Baja</span>':'<span style="color:#16A34A">● Activo</span>'}
+        <span style="color:var(--bd)">·</span> <span style="color:${o.col}">${o.txt}</span>
+        ${a.fechaAlta?` <span style="color:var(--bd)">·</span> alta ${fDateFull(a.fechaAlta)}`:''}`)}
+      ${baja?nota(`Baja ${a.fechaBaja?fDateFull(a.fechaBaja):''} — ${esc(a.motivoBaja||'sin motivo')}${a.notaBaja?': '+esc(a.notaBaja):''}`,'#B91C1C'):''}
+      ${d?nota(`Descuento: ${esc(d.tipo||'')} ${d.pct?d.pct+'%':''}${d.obs?' — '+esc(d.obs):''}`,'#0E7490'):''}
+      ${cfgR?nota(`Para ${a.ciclo+1}: <strong style="color:${cfgR.color}">${cfgR.icono} ${cfgR.lbl}</strong>${r.obs?' — '+esc(r.obs):''}`):''}
+      ${egresa?nota('Último año del recorrido: egresa al terminar este ciclo.','#7C3AED'):''}
+    </div>`;
+  }).join('');
+
+  const ult = t.filas[t.filas.length-1];
+  return `<div style="margin-bottom:12px">
+    <button class="btn btn-sm btn-out" onclick="buscarTrayectorias()">← Volver al listado</button>
+  </div>
+  <div class="cbox">
+    <div class="cbox-h">
+      <div>
+        <div class="cbox-t">${esc(t.nombre)}</div>
+        <div style="font-size:12px;color:var(--tx3);margin-top:2px">
+          ID colegio <strong style="font-family:monospace;color:var(--td)">${esc(t.idColegio||'sin asignar')}</strong>
+          <span style="color:var(--bd)">·</span> ${anios} ciclo${anios!==1?'s':''} registrado${anios!==1?'s':''}
+          <span style="color:var(--bd)">·</span> ${t.desde} → ${t.hasta}
+        </div>
+      </div>
+      <div style="font-size:12px;color:var(--tx3)">Sección actual: <strong style="color:var(--td)">${esc(ult.curso||'—')}</strong></div>
+    </div>
+    <div style="padding:18px 20px 6px">${hitos}</div>
+  </div>
+  ${!t.idColegio?`<div style="margin-top:10px;padding:10px 13px;background:#FFFBEB;border:1px solid #FCD34D;
+    border-radius:8px;font-size:12.5px;color:#78350F;line-height:1.55">
+    Este alumno no tiene ID del colegio, así que su recorrido se armó juntando las filas por nombre.
+    Asignale un ID desde el Padrón para que la trayectoria quede atada a la persona y no al texto del nombre.
+  </div>`:''}`;
+}
 
 function abrirModalAgregarAlumno(){
   const grps=[{lbl:'Inicial',cur:SCHOOL_CURSOS.filter(c=>SCHOOL_NIVEL(c)==='Inicial')},{lbl:'Elementary',cur:SCHOOL_CURSOS.filter(c=>SCHOOL_NIVEL(c)==='Elementary')},{lbl:'High School',cur:SCHOOL_CURSOS.filter(c=>SCHOOL_NIVEL(c)==='High School')}];
@@ -7118,7 +7337,28 @@ const REMAT_ESTADOS = {
 const REMAT_ORDEN = ['re_matricula','no_sabe','austin_evalua','baja'];
 
 // Los del último año de cada nivel egresan: no se re-matriculan.
-function esEgresado(a){ return SECTION_ADVANCE[a.curso] === null; }
+// ═══════════════════════════
+// AVANCE DE SECCIÓN AL PASAR DE AÑO
+// ═══════════════════════════
+// El mapa SECTION_ADVANCE se busca por texto exacto. "3º A Prim" (ordinal masculino, el
+// que pone Word y algunas planillas) y "3° A Prim" (símbolo de grado, el del sistema) son
+// dos textos distintos: el alumno no encontraba su curso siguiente y se quedaba trabado
+// repitiendo el mismo año sin que nadie lo notara. Se normaliza antes de buscar.
+// Devuelve: la sección siguiente · null si es el último año (egresa) · undefined si la
+// sección no se reconoce.
+function cursoSiguiente(curso){
+  const c = SCHOOL_CURSOS.includes(curso) ? curso : normalizarCurso(curso);
+  return Object.prototype.hasOwnProperty.call(SECTION_ADVANCE, c) ? SECTION_ADVANCE[c] : undefined;
+}
+
+// Sección que le corresponde el año próximo. Si no se reconoce, queda en la misma
+// (y el modal de traspaso lo avisa como "sin avance definido").
+function cursoAvanzado(curso){
+  const sig = cursoSiguiente(curso);
+  return sig === undefined ? curso : (sig || curso);
+}
+
+function esEgresado(a){ return cursoSiguiente(a.curso) === null; }
 
 // Alumnos que entran en la re-matriculación de un ciclo: activos y no egresados.
 function padronRematriculable(ciclo){
@@ -7357,8 +7597,9 @@ function _claveRV(curso, jornada){
 function seccionSiguiente(alumno){
   const actual = alumno && alumno.curso;
   if(!actual) return '';
-  if(!Object.prototype.hasOwnProperty.call(SECTION_ADVANCE, actual)) return actual;
-  return SECTION_ADVANCE[actual] || ''; // null = egresa
+  const sig = cursoSiguiente(actual);
+  if(sig === undefined) return actual;
+  return sig || ''; // null = egresa
 }
 
 // La reserva se cobra por el nivel al que el alumno VA, no por el que esta cursando.
@@ -8167,7 +8408,7 @@ function calcularTraspaso(cicloDestino){
   const pendientes= noEgresan.filter(a=>est(a)==='no_sabe'||est(a)==='austin_evalua');
   const continuan = noEgresan.filter(a=>est(a)!=='baja');
   const altas     = altasPipelineParaCiclo(cicloDestino);
-  const sinMapeo  = continuan.filter(a=>!Object.prototype.hasOwnProperty.call(SECTION_ADVANCE,a.curso));
+  const sinMapeo  = continuan.filter(a=>cursoSiguiente(a.curso) === undefined);
 
   return {
     cicloAnt, cicloDestino,
@@ -8246,8 +8487,7 @@ function generarPadronDesdeRemat(cicloNuevo){
   const continuan=padronAnt.filter(a=>{
     const est=remat[a.id+'_'+cicloNuevo]?.estado;
     const continua=est!=='baja';
-    const esEgresado=SECTION_ADVANCE[a.curso]===null;
-    return continua&&!esEgresado;
+    return continua&&!esEgresado(a);
   });
   DB.padron=DB.padron||[];
   // Se limpia lo que generó un traspaso anterior a este mismo ciclo, para poder
@@ -8261,8 +8501,7 @@ function generarPadronDesdeRemat(cicloNuevo){
   // Carry forward descuentos to new padron ids
   const descCarry={};
   continuan.forEach((a,i)=>{
-    const nuevaCurso=Object.prototype.hasOwnProperty.call(SECTION_ADVANCE,a.curso)
-      ? (SECTION_ADVANCE[a.curso]||a.curso) : a.curso;
+    const nuevaCurso=cursoAvanzado(a.curso);
     const nuevaNivel=SCHOOL_NIVEL(nuevaCurso);
     const newId='pa_gen_'+cicloNuevo+'_'+ts+'_'+i;
     DB.padron.push({
@@ -8293,7 +8532,7 @@ function generarPadronDesdeRemat(cicloNuevo){
       admisionId:String(p.id)
     });
   });
-  const egresados=padronAnt.filter(a=>SECTION_ADVANCE[a.curso]===null).length;
+  const egresados=padronAnt.filter(esEgresado).length;
   // El ciclo nuevo pasa a ser el que se ve por defecto de acá en adelante.
   // Se setea ANTES de guardar; si no, el cambio no entra en este saveDB y se pierde.
   DB.config=DB.config||{}; DB.config.cicloActivo=cicloNuevo;
