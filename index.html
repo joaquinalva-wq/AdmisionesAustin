@@ -1826,6 +1826,20 @@ async function triggerCloudSave(){
   updateSyncStatus(ok ? 'synced' : 'error');
 }
 
+// Si el usuario cierra la pestaña, cambia de solapa o apaga la pantalla dentro de los
+// 2 segundos que espera el guardado, la subida a la nube quedaría pendiente para
+// siempre. Acá se fuerza el envío sin esperar el debounce. Lo local ya está a salvo:
+// saveDB() escribe en localStorage de forma sincrónica.
+function flushCloudSave(){
+  if(!_fsSaveTimer) return;
+  clearTimeout(_fsSaveTimer); _fsSaveTimer = null;
+  triggerCloudSave();
+}
+document.addEventListener('visibilitychange', function(){
+  if(document.visibilityState === 'hidden') flushCloudSave();
+});
+window.addEventListener('pagehide', flushCloudSave);
+
 async function syncFromCloud(){
   updateSyncStatus('loading');
   const remote = await fsGet();
@@ -1937,6 +1951,19 @@ function stampChanges(){
   });
 }
 
+// Vuelca los campos de `origen` sobre el objeto `destino` SIN cambiar su identidad.
+// Es clave: media app guarda una referencia viva a un postulante (`const p = ...`) y
+// escribe sobre ella más tarde (callbacks de mail, polling del EOE, re-contactos).
+// Si el merge reemplazara el objeto, esa referencia quedaría huérfana y la escritura
+// se perdería en silencio — incluso marcas de "ya enviado", que se reenviarían.
+function _fundir(destino, origen){
+  if(!destino || typeof destino!=='object' || !origen || typeof origen!=='object') return origen;
+  if(Array.isArray(destino) !== Array.isArray(origen)) return origen;
+  Object.keys(destino).forEach(function(k){ if(!(k in origen)) delete destino[k]; });
+  Object.keys(origen).forEach(function(k){ destino[k] = origen[k]; });
+  return destino;
+}
+
 // Combina el documento de la nube con lo que hay en memoria.
 function mergeRemoto(remote){
   if(!remote) return;
@@ -1966,7 +1993,8 @@ function mergeRemoto(remote){
       let val, ts;
       if(k in loc && k in rem){
         // Empate (los dos sin marca) → gana la nube, que es la versión compartida.
-        if(lt > rt){ val = loc[k]; ts = lt; } else { val = rem[k]; ts = rt; }
+        if(lt > rt){ val = loc[k]; ts = lt; }
+        else { val = _fundir(loc[k], rem[k]); ts = rt; }
       } else if(k in loc){ val = loc[k]; ts = lt; }
       else { val = rem[k]; ts = rt; }
       // Borrado después de la última edición conocida → se queda borrado.
@@ -2092,7 +2120,9 @@ function saveDB(){
   saveLocalOnly();
   // Debounced cloud save — 2s after last change
   clearTimeout(_fsSaveTimer);
-  _fsSaveTimer = setTimeout(triggerCloudSave, 2000);
+  // Se limpia la referencia al dispararse para que flushCloudSave() sepa distinguir
+  // "hay una subida pendiente" de "ya se subió".
+  _fsSaveTimer = setTimeout(function(){ _fsSaveTimer = null; triggerCloudSave(); }, 2000);
 }
 // Seed data from real Excel export (327 postulantes)
 // Los datos de ejemplo se eliminaron: contenían 327 postulantes reales (nombres,
@@ -3662,7 +3692,7 @@ function saveEmail(e, auto){
   DB.config.emailsProtegidos = DB.config.emailsProtegidos || {};
   DB.config.emailsProtegidos[e] = true;
   saveDB();
-  clearTimeout(_fsSaveTimer); triggerCloudSave();
+  clearTimeout(_fsSaveTimer); _fsSaveTimer=null; triggerCloudSave();
   const st=document.getElementById('est-'+e);
   if(st){ st.textContent='✓ Guardado'; st.style.color='#3A6A0A'; }
   if(!auto && !cambio){ if(st){ st.textContent='✓ Sin cambios'; st.style.color='var(--tx3)'; } }
@@ -3715,7 +3745,7 @@ function saveTar(){
   saveDB();
   // Subida inmediata (igual que las plantillas): que un cierre de pestaña dentro de los
   // 2s del guardado diferido no deje la tarifa solo en local hasta la próxima sesión.
-  clearTimeout(_fsSaveTimer); triggerCloudSave();
+  clearTimeout(_fsSaveTimer); _fsSaveTimer=null; triggerCloudSave();
   toast('Tarifas actualizadas','ok');
 }
 
@@ -5025,6 +5055,7 @@ function bloquearTurno(fecha, hora, alumno){
   if(DB.bloqueos.some(b=>b.fecha===fecha&&b.hora===hora)) return;
   DB.bloqueos.push({fecha,hora,motivo:'Entrevista: '+(alumno||'')});
   calBloqueos=DB.bloqueos;
+  saveDB();
   if(DB.config.appsScriptUrl) apiCall('setBloqueo',{fecha,hora,motivo:'Entrevista: '+(alumno||'')});
 }
 
@@ -5037,8 +5068,9 @@ function liberarTurnoEntrevista(fecha, hora){
   const antes = (DB.bloqueos||[]).length;
   DB.bloqueos = (DB.bloqueos||[]).filter(b=>!(slotFecha(b)===fecha && (slotHora(b)||'')===hora && esBloqueoEntrevista(b)));
   calBloqueos = DB.bloqueos;
-  if(antes!==DB.bloqueos.length && DB.config.appsScriptUrl){
-    apiCall('setBloqueo',{fecha, hora, eliminar:true});
+  if(antes!==DB.bloqueos.length){
+    saveDB();
+    if(DB.config.appsScriptUrl) apiCall('setBloqueo',{fecha, hora, eliminar:true});
   }
 }
 
@@ -6979,7 +7011,7 @@ function crearAlumnoPadron(p){
   const yaEsta=DB.padron.find(a=>a.ciclo===ciclo && a.estado==='activo'
     && normNombrePersona(a.nombre)===normNombrePersona(p.alumno));
   if(yaEsta){
-    if(!yaEsta.admisionId) yaEsta.admisionId=String(p.id);
+    if(!yaEsta.admisionId){ yaEsta.admisionId=String(p.id); saveDB(); }
     toast(p.alumno+' ya estaba en el padrón '+ciclo+' (ID '+(yaEsta.idColegio||'—')+') — no se duplicó','info');
     return;
   }
@@ -6989,6 +7021,9 @@ function crearAlumnoPadron(p){
   const nivel=curso?normalizarNivel(SCHOOL_NIVEL(curso)):normalizarNivel(p.nivel)||'';
   const id='pa_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
   DB.padron.push({id,nombre:p.alumno||'',nivel,curso,ciclo,estado:'activo',fechaAlta:today(),fechaBaja:null,motivoBaja:null,notaBaja:'',admisionId:String(p.id),idColegio:proximoIdColegio(),jornada:p.jornada||'Jornada Completa'});
+  // La fila y el ID de colegio recién asignado tienen que quedar guardados acá mismo:
+  // quien llama puede no volver a guardar, y el ID se perdería.
+  saveDB();
 }
 
 // ─── IMPORTAR PADRÓN ────────────────────────────────
@@ -8215,7 +8250,13 @@ function generarPadronDesdeRemat(cicloNuevo){
     return continua&&!esEgresado;
   });
   DB.padron=DB.padron||[];
-  DB.padron=DB.padron.filter(a=>!(a.ciclo===cicloNuevo&&!a.admisionId));
+  // Se limpia lo que generó un traspaso anterior a este mismo ciclo, para poder
+  // re-correrlo. Se reconoce por el prefijo del id, NO por "no tiene admisionId":
+  // todo alumno que entró por admisiones arrastra su admisionId al avanzar de año,
+  // así que el filtro viejo no lo borraba y el segundo traspaso lo duplicaba.
+  const yaGenerado=DB.padron.filter(a=>a.ciclo===cicloNuevo&&String(a.id).indexOf('pa_gen_')===0).length;
+  if(yaGenerado && !confirm(`El padrón ${cicloNuevo} ya fue generado (${yaGenerado} alumnos).\n\nVolver a correr el traspaso lo rehace desde ${cicloAnt} y se pierden los cambios de sección hechos a mano en ${cicloNuevo}.\n\n¿Continuar igual?`)) return;
+  DB.padron=DB.padron.filter(a=>!(a.ciclo===cicloNuevo&&String(a.id).indexOf('pa_gen_')===0));
   const ts=Date.now();
   // Carry forward descuentos to new padron ids
   const descCarry={};
@@ -8253,9 +8294,10 @@ function generarPadronDesdeRemat(cicloNuevo){
     });
   });
   const egresados=padronAnt.filter(a=>SECTION_ADVANCE[a.curso]===null).length;
-  saveDB();
-  // El ciclo nuevo pasa a ser el que se ve por defecto de acá en adelante
+  // El ciclo nuevo pasa a ser el que se ve por defecto de acá en adelante.
+  // Se setea ANTES de guardar; si no, el cambio no entra en este saveDB y se pierde.
   DB.config=DB.config||{}; DB.config.cicloActivo=cicloNuevo;
+  saveDB();
   _ocCiclo=cicloNuevo;
   const sel=document.getElementById('oc-ciclo-sel'); if(sel) sel.value=String(cicloNuevo);
   renderOcupacion(); ocTab('padron');
