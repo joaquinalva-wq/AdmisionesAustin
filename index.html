@@ -6459,7 +6459,8 @@ function filtrarPadron(){
             ?`<span style="font-size:11px;color:#0EA5E9">proyectado</span>`
             :a.estado==='activo'
             ?`<button class="btn btn-sm btn-out" onclick="moverSeccionModal('${a.id}')" title="Cambiar de sección">Mover</button>
-              <button class="btn btn-sm btn-out" style="color:#EF4444" onclick="registrarBajaPadronModal('${a.id}')">Baja</button>`
+              <button class="btn btn-sm btn-out" style="color:#EF4444" onclick="registrarBajaPadronModal('${a.id}')">Baja</button>
+              <button class="btn btn-sm btn-ghost" style="color:var(--tx3);font-size:11px" title="Eliminar por error de carga (duplicado). No es una baja." onclick="eliminarAlumnoPadron('${a.id}')">Eliminar</button>`
             :`<button class="btn btn-sm btn-out" style="font-size:11px" onclick="reactivarAlumnoPadron('${a.id}')">Reactivar</button>`}
         </td>
       </tr>`).join('')}</tbody></table>
@@ -6549,6 +6550,22 @@ function guardarBajaPadron(id){
   saveDB(); closeM();
   updateSidebarBadges(); renderBajasEsc(); renderOcupacion(); ocTab('padron');
   toast(`Baja registrada — ${a.nombre} aparece en Bajas y se liberó la vacante`,'ok');
+}
+
+function eliminarAlumnoPadron(id){
+  const a=(DB.padron||[]).find(x=>x.id===id); if(!a) return;
+  // Borrado REAL, no baja: sirve para corregir una carga por error (duplicado, o un
+  // alumno que en realidad ya estaba y se lo volvió a dar de alta). "Baja" deja al
+  // alumno en la vista Bajas; esto lo saca por completo. stampChanges() detecta la fila
+  // que desapareció y deja lápida en DB._del, así que el borrado se propaga a la nube y
+  // el merge no lo resucita. No toca al postulante en Admisiones.
+  if(!confirm(`Vas a ELIMINAR por completo a "${a.nombre}" del padrón (ID colegio ${a.idColegio||'—'}).\n\nEsto es para corregir un error de carga — NO es una baja y no queda registrado en Bajas.\nSi el alumno realmente se va del colegio, cancelá y usá "Baja".\n\n¿Eliminar el registro?`)) return;
+  DB.padron=(DB.padron||[]).filter(x=>x.id!==id);
+  // Por si alguna baja quedó colgada apuntando a esta fila.
+  DB.bajasEscolares=(DB.bajasEscolares||[]).filter(b=>String(b.padronId)!==String(a.id));
+  saveDB();
+  updateSidebarBadges(); renderBajasEsc(); renderOcupacion(); ocTab('padron');
+  toast(`${a.nombre} eliminado del padrón (corrección de carga)`,'ok');
 }
 
 function reactivarAlumnoPadron(id){
