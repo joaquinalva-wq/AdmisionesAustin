@@ -237,6 +237,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--cr);color:var(--tx);min-h
 .pcard-c{color:var(--tx3);font-size:10.5px;margin-top:1px}
 .pcard-d{color:var(--tx3);font-size:10px;margin-top:1px}
 .pcard.inactivo{border-left:3px solid #DC2626}
+/* Marca de re-contacto: verde si fue esta semana, gris si ya quedo viejo. */
+.pcard-rc{display:inline-block;margin-top:4px;font-size:9.5px;font-weight:600;padding:1px 5px;border-radius:9px;letter-spacing:.02em}
 @media(max-width:900px){.pcols{grid-template-columns:repeat(4,1fr)}}
 
 /* TABLE */
@@ -964,6 +966,7 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
       <button class="sbi" id="nav-pipeline" onclick="showV('pipeline')"><span class="sbi-ic">⬡</span> Pipeline <span class="sbi-badge" id="badge-inac" style="display:none">!</span></button>
       <button class="sbi" id="nav-entrevistas" onclick="showV('entrevistas')"><span class="sbi-ic">📅</span> Entrevistas <span class="sbi-badge" id="badge-ent" style="display:none">0</span></button>
       <button class="sbi" id="nav-post" onclick="showV('post')"><span class="sbi-ic">◉</span> Postulantes <span class="sbi-badge green" id="badge-total" style="display:none">0</span></button>
+      <button class="sbi" id="nav-matriculados" onclick="showV('matriculados')"><span class="sbi-ic">✓</span> Matriculados <span class="sbi-badge green" id="badge-matriculados" style="display:none">0</span></button>
       <button class="sbi" id="nav-bajas" onclick="showV('bajas')"><span class="sbi-ic">↓</span> Desistieron <span class="sbi-badge" id="badge-bajas" style="display:none">0</span></button>
       <button class="sbi" id="nav-bajasesc" onclick="showV('bajasesc')"><span class="sbi-ic">⊠</span> Bajas <span class="sbi-badge" id="badge-bajasesc" style="display:none">0</span></button>
       <div class="sbsec">Gestión</div>
@@ -1225,6 +1228,34 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
             <button class="btn btn-out" onclick="exportCSV()">⬇ Exportar CSV completo</button>
             <button class="btn btn-danger" onclick="resetDB()">🗑 Borrar todos los datos</button>
           </div>
+        </div>
+      </div>
+
+      <!-- MATRICULADOS -->
+      <!-- Espejo en vivo de la columna Matriculado del Pipeline: no guarda una lista propia,
+           lee DB.postulantes en cada render, así que entrar y salir de la solapa ya la
+           actualiza. Mandar la citación NO cambia el estado: siguen en Matriculado. -->
+      <div id="view-matriculados" class="view">
+        <div class="ph"><h1>Matriculados</h1><p>Alumnos matriculados en el pipeline — citación de inicio de clases</p></div>
+        <div class="cbox" style="margin-bottom:14px">
+          <div class="cbox-h" style="flex-wrap:wrap;gap:10px">
+            <div class="cbox-t" id="matr-cnt">0 matriculados</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+              <select class="fsel2" id="matr-anio" onchange="renderMatriculados()"><option value="">Todos los ciclos</option><option value="2025">2025</option><option value="2026">2026</option><option value="2027">2027</option><option value="2028">2028</option><option value="2029">2029</option><option value="2030">2030</option><option value="2031">2031</option><option value="2032">2032</option></select>
+              <select class="fsel2" id="matr-niv" onchange="renderMatriculados()"><option value="">Todos los niveles</option><option value="Kindergarten">Kindergarten</option><option value="Elementary">Elementary</option><option value="High School">High School</option></select>
+              <input class="fsrch" id="matr-q" placeholder="🔍 Buscar..." oninput="renderMatriculados()">
+            </div>
+          </div>
+          <div style="padding:8px 14px 4px;border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:10px;font-size:12px;color:var(--tx2);flex-wrap:wrap">
+            <label style="display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" id="matr-sel-all" onchange="toggleSelectAllMatr(this)"> Seleccionar todos</label>
+            <button class="btn btn-or btn-sm" onclick="enviarCitacionMatriculados()">✉ Enviar citación a seleccionados</button>
+            <button class="btn btn-csv btn-sm" onclick="exportMatriculadosCSV()">⬇ Exportar CSV</button>
+            <span style="color:var(--tx3);font-size:11.5px">El mail sale personalizado con el nombre de cada familia. No cambia el estado.</span>
+          </div>
+          <table>
+            <thead><tr><th style="width:36px"></th><th>Estudiante</th><th>Curso</th><th>Familia / Tel</th><th>Email</th><th>Ciclo</th><th>Citación</th><th></th></tr></thead>
+            <tbody id="matr-tb"></tbody>
+          </table>
         </div>
       </div>
 
@@ -1502,8 +1533,10 @@ let DB = {
     no_asistio:{subj:'¡Que lástima! Podemos reprogramar tu entrevista — Austin EBS',body:'Hola {{padre}},\n\nLamentamos que no hayas podido llegar a la entrevista que tenías agendada. ¡Nos hubiera encantado conocerlos!\n\nElegí vos mismo/a un nuevo día y horario, sin volver a completar todo el formulario, desde este link:\n{{link_agenda}}\n\nSi preferís, respondé este mail y coordinamos un nuevo horario con gusto. Estamos a disposición para acompañarlos.\n\nEsperamos poder conocerlos pronto.\n\nUn afectuoso saludo,\nAdmisiones – Austin EBS'},
     link_agenda:{subj:'Agendá tu entrevista en Austin EBS cuando quieras',body:'Hola {{padre}},\n\n¡Nos encantaría coordinar la entrevista de {{alumno}} para que conozcan el colegio en persona!\n\nElegí el día y horario que mejor te quede, sin volver a completar el formulario, desde este link:\n{{link_agenda}}\n\nLa entrevista dura una hora y es en la planta alta de High School. Si preferís, respondé este mail y lo coordinamos juntos.\n\n¡Te esperamos!\n\nUn saludo,\nLaura Unamuno\nAdmisiones – Austin EBS'},
     nuevo:{subj:'¡Bienvenidos a Austin EBS! Información de inicio',body:'Hola {{padre}},\n\n¡Estamos muy emocionados de darles la bienvenida oficial a Austin Eco Bilingual School! {{alumno}} ya forma parte de nuestra comunidad.\n\nA continuación les compartimos información importante para el inicio del ciclo:\n\n▸ UNIFORMES\nPara la compra del uniforme escribinos a admisiones@austinebs-ah.edu.ar y te pasamos los datos del proveedor. Te recomendamos gestionarlo con anticipación para tener todo a tiempo.\n\n▸ REDES SOCIALES\nSeguinos para estar al tanto de todas las novedades:\n• Instagram: @austinebs\n• Facebook: Austin Eco Bilingual School\n\n▸ SISTEMAS DEL COLEGIO — HANDING Y ACADEU\nEn los próximos días recibirán el alta en los sistemas Handing y Acadeu con sus accesos. Si pasados algunos días no recibieron la información, por favor contactarse a admisiones@austinebs-ah.edu.ar indicando el nombre de {{alumno}}.\n\n¡Los esperamos con mucho entusiasmo!\n\nAdmisiones – Austin EBS'},
-    admin_matriculado:{subj:'NUEVO MATRICULADO: {{alumno}} — {{curso}} {{anio}}',body:'Estimado equipo de Administración,\n\nEl siguiente estudiante completó el proceso de admisión y se encuentra MATRICULADO. Por favor proceder con el alta, cobro de matrícula y solicitud de documentación.\n\n══ DATOS DEL ESTUDIANTE ══\nNombre: {{alumno}}\nNivel: {{nivel}}\nCurso: {{curso}}\nJornada: {{jornada}}\nCiclo lectivo: {{anio}}\nHermano/a Austin: {{hermano}}\nColegio anterior: {{colegio}}\n\n══ DATOS DE LA FAMILIA ══\nPadre / Madre / Tutor: {{padre}}\nEmail: {{email}}\nTeléfono: {{tel}}\n\n══ APROBACIONES ══\nAdmisiones: ✓\nEOE / Inglés: ✓\nDirección General: ✓\n\nSistema de Admisiones – Austin EBS'},
-    dg_notif:{subj:'EOE aprobó a {{alumno}} — pendiente confirmación DG',body:'Estimada Dirección General,\n\nEOE e Inglés dieron el visto bueno para el ingreso de {{alumno}} ({{curso}}, ciclo {{anio}}).\nAdmisiones confirmó la vacante.\n\nPor favor confirmar el ingreso antes del plazo indicado.\nSi no hay respuesta en 48hs, el sistema procederá automáticamente con la matrícula.\n\nDatos:\n- Nombre: {{alumno}}\n- Nivel: {{nivel}} — {{curso}}\n- Ciclo: {{anio}}\n- Familia: {{padre}}\n- Email: {{email}}\n- Teléfono: {{tel}}\n\nSaludos,\nSistema de Admisiones – Austin EBS'}
+    admin_matriculado:{subj:'NUEVO POSTULADO: {{alumno}} — {{curso}} {{anio}}',body:'Estimado equipo de Administración,\n\nEl siguiente estudiante fue aprobado en el proceso de admisión y pasó a POSTULADO. Por favor contactar a la familia para el cobro de la matrícula y la solicitud de documentación.\n\nUna vez confirmado el pago, Admisiones lo pasa a Matriculado.\n\n══ DATOS DEL ESTUDIANTE ══\nNombre: {{alumno}}\nNivel: {{nivel}}\nCurso: {{curso}}\nJornada: {{jornada}}\nCiclo lectivo: {{anio}}\nHermano/a Austin: {{hermano}}\nColegio anterior: {{colegio}}\n\n══ DATOS DE LA FAMILIA ══\nPadre / Madre / Tutor: {{padre}}\nEmail: {{email}}\nTeléfono: {{tel}}\n\n══ APROBACIONES ══\nAdmisiones: ✓\nEOE / Inglés: ✓\nDirección General: ✓\n\nSistema de Admisiones – Austin EBS'},
+    dg_notif:{subj:'EOE aprobó a {{alumno}} — pendiente confirmación DG',body:'Estimada Dirección General,\n\nEOE e Inglés dieron el visto bueno para el ingreso de {{alumno}} ({{curso}}, ciclo {{anio}}).\nAdmisiones confirmó la vacante.\n\nPor favor confirmar el ingreso antes del plazo indicado.\nSi no hay respuesta en 48hs, el sistema procederá automáticamente con la matrícula.\n\nDatos:\n- Nombre: {{alumno}}\n- Nivel: {{nivel}} — {{curso}}\n- Ciclo: {{anio}}\n- Familia: {{padre}}\n- Email: {{email}}\n- Teléfono: {{tel}}\n\nSaludos,\nSistema de Admisiones – Austin EBS'},
+    notif_nuevo_alumno:{subj:'ALTA — Nuevo alumno: {{alumno}} ({{curso}} · {{anio}})',body:'Hola,\n\nLes avisamos que {{alumno}} completó todo el proceso de admisión y ya está registrado como NUEVO ALUMNO para el ciclo {{anio}}.\n\nQueda a disposición de cada área para lo que necesiten preparar (comedor, materiales, listados, accesos).\n\nCualquier duda, escribinos a admisiones@austinebs-ah.edu.ar.\n\nSaludos,\nAdmisiones – Austin EBS'},
+    citacion_matriculados:{subj:'Austin EBS — Información para el inicio de clases de {{alumno}}',body:'Hola {{padre}},\n\nNos comunicamos desde Austin Eco Bilingual School para acercarles la información del inicio de clases de {{alumno}} en {{curso}}, ciclo {{anio}}.\n\n▸ FECHA Y HORARIO\n(completar)\n\n▸ QUÉ TRAER\n(completar)\n\n▸ UNIFORME Y MATERIALES\n(completar)\n\nCualquier consulta, escribinos a admisiones@austinebs-ah.edu.ar y con gusto los ayudamos.\n\n¡Los esperamos!\n\nUn saludo cordial,\nLaura Unamuno\nAdmisiones – Austin EBS'},
   },
   config:{nombre:'Admisiones Austin EBS',email:'admisiones@austinebs-ah.edu.ar',calendar:'https://calendar.app.google/WrfYGGSiRH3smkxL8',drive:'https://drive.google.com/drive/folders/1c0vFf1MWUcSC8-lqBjBCGDQ-hbXxGQDA',appsScriptUrl:'https://script.google.com/macros/s/AKfycbzGXKe6Azyy3q9NVSKsV_ERgDKvJmQRdjHlLG9-Q-0w-70Y2QkP3ikIwx9dHRwDFYp_9Q/exec',emailAdmin:'adm@austinebs-ah.edu.ar',emailDG:'alejandra.luna@austinebs-ah.edu.ar, sofia.sanmartin@austinebs-ah.edu.ar',eoeApiUrl:'https://eoe-austin.netlify.app/',},
   pendingNotif:[],
@@ -1638,6 +1671,33 @@ async function enviarAInbox(postulantes, familyNote){
   return false;
 }
 
+// Busca la ficha que ya existe para una familia que agendó desde el link genérico
+// (?agendar=1). Antes se exigía email + nombre EXACTAMENTE iguales, y no coincidían casi
+// nunca: la familia que había puesto "aún no sé" quedaba en Contactado con el nombre como
+// lo cargó el formulario largo ("TISSONE, Juan Cruz") y en el mini-formulario lo reescribe
+// a su manera ("Juan Cruz Tissone"). Al no matchear se creaba una ficha nueva en Citado y
+// la familia aparecía duplicada, en dos columnas del pipeline a la vez.
+// El email es la identidad de la familia; el nombre normalizado desempata entre hermanos.
+function fichaParaAutoAgenda(p){
+  const kk = s => String(s||'').trim().toLowerCase();
+  const email = kk(p.email);
+  if(!email) return null;
+  // Casos cerrados: no se reabren desde un link público.
+  const CERRADOS = ['desiste','no_queremos','rechazado_eoe'];
+  const cand = DB.postulantes.filter(x=>kk(x.email)===email && CERRADOS.indexOf(x.estado)===-1);
+  if(!cand.length) return null;
+  // 1) Mismo nombre normalizado: es la misma persona, sin ambigüedad.
+  const porNombre = cand.filter(x=>normNombrePersona(x.alumno)===normNombrePersona(p.alumno));
+  if(porNombre.length) return porNombre[0];
+  // 2) Sin match de nombre, una sola ficha abierta en la familia: es esa.
+  if(cand.length===1) return cand[0];
+  // 3) Hermanos: solo se asume si el curso y el año coinciden con uno solo. Si sigue
+  //    habiendo ambigüedad se crea ficha nueva — preferible a pisarle la entrevista
+  //    al hermano equivocado, que sería un error silencioso e invisible.
+  const porCurso = cand.filter(x=>kk(x.curso)===kk(p.curso) && String(x.anio||'')===String(p.anio||''));
+  return porCurso.length===1 ? porCurso[0] : null;
+}
+
 // Al entrar el staff, incorpora las postulaciones pendientes al sistema y las borra
 // de la bandeja. Acá sí se asignan los IDs definitivos, con DB.nextId como autoridad.
 async function procesarInbox(){
@@ -1683,22 +1743,30 @@ async function procesarInbox(){
         return;
       }
       // Auto-agenda desde el link genérico (?agendar=1): familia sin ficha o interna.
-      // Se matchea por email+alumno con una ficha existente (mismo id, sin duplicar) o
-      // se crea una nueva mínima. En ambos casos queda 'citado' y se agenda en los dos
-      // calendarios (sistema + Google Calendar de Admisiones).
+      // fichaParaAutoAgenda() reconoce a la familia que ya está en el sistema (típicamente
+      // en Contactado, porque puso "aún no sé" la fecha) y mueve ESA ficha a Citado, en vez
+      // de crear una nueva y dejarla duplicada en dos columnas. Solo si de verdad no
+      // existe se crea una ficha mínima. En ambos casos queda 'citado' y se agenda en los
+      // dos calendarios (sistema + Google Calendar de Admisiones).
       if(p.__agendarNuevo){
         if(!p.entFecha) return;
-        const kk = s => String(s||'').trim().toLowerCase();
         const ahora=new Date();
         const nota = {txt:'La familia agendó su entrevista para el '+formatFechaLinda(p.entFecha)+(p.entHora?' a las '+p.entHora:'')+' desde el link de auto-agenda.',fecha:ahora.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}),hora:ahora.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})};
-        let ficha = DB.postulantes.find(x=>kk(x.email)===kk(p.email) && kk(x.alumno)===kk(p.alumno) && x.estado!=='desiste');
+        let ficha = fichaParaAutoAgenda(p);
         if(ficha){
+          const estadoPrevio=ficha.estado;
           const fVieja=ficha.entFecha, hVieja=ficha.entHora;
           ficha.entFecha = p.entFecha; ficha.entHora = p.entHora||'';
           if(fVieja && hVieja && (fVieja!==ficha.entFecha || hVieja!==ficha.entHora)) liberarTurnoEntrevista(fVieja, hVieja);
           ficha.estado='citado'; ficha.entResultado=''; ficha.ultAccion=today();
           ficha.notas=ficha.notas||[]; ficha.notas.push(nota);
-          ficha.hist=ficha.hist||[]; ficha.hist.push({e:'citado',f:today(),nota:'auto-agenda familia'});
+          // Si en el mini-formulario escribió el nombre distinto, queda anotado: la ficha
+          // conserva el nombre con el que la cargó Admisiones, pero el staff ve por qué
+          // el mail de confirmación pudo salir con otro.
+          if(String(ficha.alumno||'').trim() !== String(p.alumno||'').trim() && p.alumno){
+            ficha.notas.push({txt:'En el link de auto-agenda escribió el nombre como "'+p.alumno+'". Se mantuvo el de la ficha.',fecha:ahora.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}),hora:ahora.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})});
+          }
+          ficha.hist=ficha.hist||[]; ficha.hist.push({e:'citado',f:today(),nota:'auto-agenda familia (venía de '+(EL[estadoPrevio]||estadoPrevio)+')'});
         } else {
           ficha = {
             id:DB.nextId++, alumno:p.alumno||'', padre:p.padre||'', email:p.email||'', tel:'',
@@ -2210,12 +2278,13 @@ function showV(v){
   document.querySelectorAll('.sbi').forEach(el=>el.classList.remove('active'));
   const ve=document.getElementById('view-'+v); if(ve) ve.classList.add('on');
   const nb=document.getElementById('nav-'+v); if(nb) nb.classList.add('active');
-  const titles={dashboard:'Dashboard',pipeline:'Pipeline de admisiones',entrevistas:'Entrevistas',post:'Postulantes',bajas:'Desistieron',bajasesc:'Bajas de alumnos',ocupacion:'Ocupación del colegio',vac:'Vacantes por curso',emails:'Plantillas de mail',tar:'Tarifas 2026',cfg:'Configuración'};
+  const titles={dashboard:'Dashboard',pipeline:'Pipeline de admisiones',entrevistas:'Entrevistas',post:'Postulantes',matriculados:'Matriculados',bajas:'Desistieron',bajasesc:'Bajas de alumnos',ocupacion:'Ocupación del colegio',vac:'Vacantes por curso',emails:'Plantillas de mail',tar:'Tarifas 2026',cfg:'Configuración'};
   document.getElementById('tb-t').textContent=titles[v]||v;
   if(v==='dashboard') renderDashboard();
   if(v==='pipeline'){ poblarCursosPipeline(); renderPipeline(); }
   if(v==='entrevistas') { renderAdminCal(); renderEntAdminLista('proximas'); if(!chequearAsistencias()) chequearRecordatorios(); }
   if(v==='post'){ poblarCursosPost(); filterT(); }
+  if(v==='matriculados') renderMatriculados();
   if(v==='bajas') renderBajas();
   if(v==='bajasesc') renderBajasEsc();
   if(v==='ocupacion') renderOcupacion();
@@ -2265,6 +2334,19 @@ function migCitadoSinFechaAgenda(){
   const viejo = 'Hola {{padre}},\n\n¡Gracias por postular a {{alumno}} en Austin Eco Bilingual School!\n\nRegistramos tu solicitud y vimos que preferís definir más adelante la fecha de la entrevista. Tu lugar en el proceso ya está reservado; sólo nos queda encontrar el momento que mejor les venga.\n\nEscribinos a admisiones@austinebs-ah.edu.ar o respondé este mail y coordinamos el día y horario. También podés elegir un turno directamente acá: {{link_calendario}}\n\nMientras tanto, si querés conocer el proyecto y los aranceles, están disponibles en: {{link_drive}}\n\nQuedamos a disposición.\n\nSaludos cordiales,\nLaura Unamuno\nAdmisiones – Austin EBS';
   if(DB.emails && DB.emails.citado_sin_fecha && DB.emails.citado_sin_fecha.body === viejo){
     DB.emails.citado_sin_fecha = {subj:'Recibimos tu postulación — elegí el día de tu entrevista', body:'Hola {{padre}},\n\n¡Gracias por postular a {{alumno}} en Austin Eco Bilingual School!\n\nRegistramos tu solicitud y vimos que preferís definir la fecha de la entrevista más adelante. Tu lugar en el proceso ya está reservado; sólo nos queda encontrar el momento que mejor les venga.\n\n▸ ELEGÍ EL DÍA Y HORARIO DE TU ENTREVISTA\nPodés reservar tu turno vos mismo/a, en menos de un minuto, desde este link:\n{{link_agenda_online}}\n\nLa entrevista dura aproximadamente 1 hora. Si preferís, también podés escribirnos a admisiones@austinebs-ah.edu.ar o responder este mail y lo coordinamos juntos.\n\nMientras tanto, si querés ir conociendo el proyecto y los aranceles, están disponibles acá:\n{{link_drive}}\n\nQuedamos a disposición para lo que necesiten.\n\nUn saludo cordial,\nLaura Unamuno\nAdmisiones – Austin EBS'};
+    saveDB();
+  }
+}
+
+// El aviso a Administración pasó a dispararse al pasar a POSTULADO (antes salía recién en
+// matriculado, cuando el cobro ya estaba hecho). El texto guardado todavía dice
+// "MATRICULADO", así que se reemplaza — pero solo si nadie lo tocó: si el equipo lo editó
+// (emailsProtegidos) o el cuerpo ya no es exactamente el default viejo, no se toca nada.
+function migAdminPostulado(){
+  if(DB.config.emailsProtegidos && DB.config.emailsProtegidos.admin_matriculado) return;
+  const viejo = 'Estimado equipo de Administración,\n\nEl siguiente estudiante completó el proceso de admisión y se encuentra MATRICULADO. Por favor proceder con el alta, cobro de matrícula y solicitud de documentación.\n\n══ DATOS DEL ESTUDIANTE ══\nNombre: {{alumno}}\nNivel: {{nivel}}\nCurso: {{curso}}\nJornada: {{jornada}}\nCiclo lectivo: {{anio}}\nHermano/a Austin: {{hermano}}\nColegio anterior: {{colegio}}\n\n══ DATOS DE LA FAMILIA ══\nPadre / Madre / Tutor: {{padre}}\nEmail: {{email}}\nTeléfono: {{tel}}\n\n══ APROBACIONES ══\nAdmisiones: ✓\nEOE / Inglés: ✓\nDirección General: ✓\n\nSistema de Admisiones – Austin EBS';
+  if(DB.emails && DB.emails.admin_matriculado && DB.emails.admin_matriculado.body === viejo){
+    DB.emails.admin_matriculado = {subj:'NUEVO POSTULADO: {{alumno}} — {{curso}} {{anio}}', body:'Estimado equipo de Administración,\n\nEl siguiente estudiante fue aprobado en el proceso de admisión y pasó a POSTULADO. Por favor contactar a la familia para el cobro de la matrícula y la solicitud de documentación.\n\nUna vez confirmado el pago, Admisiones lo pasa a Matriculado.\n\n══ DATOS DEL ESTUDIANTE ══\nNombre: {{alumno}}\nNivel: {{nivel}}\nCurso: {{curso}}\nJornada: {{jornada}}\nCiclo lectivo: {{anio}}\nHermano/a Austin: {{hermano}}\nColegio anterior: {{colegio}}\n\n══ DATOS DE LA FAMILIA ══\nPadre / Madre / Tutor: {{padre}}\nEmail: {{email}}\nTeléfono: {{tel}}\n\n══ APROBACIONES ══\nAdmisiones: ✓\nEOE / Inglés: ✓\nDirección General: ✓\n\nSistema de Admisiones – Austin EBS'};
     saveDB();
   }
 }
@@ -2323,6 +2405,7 @@ function runMigrations(){
   migCitadoConFecha();
   migNoAsistioLink();
   migCitadoSinFechaAgenda();
+  migAdminPostulado();
   migDGSegundoMail();
   migLimpiarBloqueosHuerfanos();
   if(DB.config.mig_contactado_v1) return;
@@ -2363,6 +2446,19 @@ function gcalLink(p){
 }
 function today(){ return new Date().toISOString().split('T')[0]; }
 function diasDesde(d){ if(!d) return 0; return Math.floor((new Date()-new Date(d+'T00:00:00'))/(1000*60*60*24)); }
+
+// Nombre de persona reducido a su forma comparable: sin tildes, sin mayúsculas, sin
+// comas ni puntos, y con las palabras ordenadas. Así "TISSONE, Juan Cruz",
+// "Juan Cruz Tissone" y "juan cruz tissone" dan todos la misma clave.
+// Se usa para detectar la misma persona cargada dos veces (padrón) y para reconocer
+// a la familia que vuelve por el link de auto-agenda escribiendo el nombre distinto.
+function normNombrePersona(s){
+  return String(s||'')
+    .normalize('NFD').replace(/[̀-ͯ]/g,'')
+    .toLowerCase()
+    .replace(/[^a-z0-9ñ\s]/g,' ')
+    .split(/\s+/).filter(Boolean).sort().join(' ');
+}
 function esInactivo(p){
   // Solo marcar inactivo para entrevistado y postulado (en los demás es normal que pase tiempo)
   if(!['entrevistado','postulado'].includes(p.estado)) return false;
@@ -2389,6 +2485,8 @@ function updateSidebarBadges(){
   const bt=document.getElementById('badge-total'); if(bt){ bt.textContent=tot; bt.style.display=tot>0?'inline':'none'; }
   const be=document.getElementById('badge-ent'); if(be){ be.textContent=entPend; be.style.display=entPend>0?'inline':'none'; }
   const bb=document.getElementById('badge-bajas'); if(bb){ bb.textContent=bajasN; bb.style.display=bajasN>0?'inline':'none'; }
+  const matrN=ps.filter(p=>p.estado==='matriculado').length;
+  const bm=document.getElementById('badge-matriculados'); if(bm){ bm.textContent=matrN; bm.style.display=matrN>0?'inline':'none'; }
   const besc=(DB.bajasEscolares||[]).length;
   const bbe=document.getElementById('badge-bajasesc'); if(bbe){ bbe.textContent=besc; bbe.style.display=besc>0?'inline':'none'; }
 }
@@ -2564,6 +2662,7 @@ function renderPipeline(){
       <div class="pch ${EPCLS[e]}"><span class="pch-n" style="color:${ECOL[e]}">${EL[e]}</span><span class="pch-c" style="color:${ECOL[e]}">${ps.length}</span></div>
       <div class="pcb">
         ${ps.length===0?`<div style="font-size:11px;color:var(--tx3);padding:8px 5px;text-align:center">—</div>`:''}
+        ${e==='contactado'&&ps.length?`<button class="btn btn-sm btn-out" style="width:100%;margin-bottom:6px;font-size:10.5px;padding:4px 6px" onclick="event.stopPropagation();recontactoMasivo()" title="Manda la plantilla Contactado, personalizada, a todos los de esta columna">↻ Re-contactar a ${ps.length}</button>`:''}
         ${ps.map(p=>{
           const col=cohorteColor(p.anio);
           return `<div class="pcard${esInactivo(p)?' inactivo':''}" onclick="openDetalle(${p.id})" style="${esInactivo(p)?'':`border-left:3px solid ${col.c}`}">
@@ -2573,6 +2672,7 @@ function renderPipeline(){
             <span>${esInactivo(p)?`⚠ ${diasDesde(p.ultAccion||p.fecha)}d inactivo`:fDate(p.ultAccion||p.fecha)}</span>
             ${cohorteBadge(p.anio)}
           </div>
+          ${p.ultRecontacto?`<div class="pcard-rc" style="color:${diasDesde(p.ultRecontacto)<=7?'#166534':'var(--tx3)'};background:${diasDesde(p.ultRecontacto)<=7?'#EBF7D4':'var(--cr2)'}" title="Último mail manual enviado a esta familia">↻ ${fDate(p.ultRecontacto)}${(p.recontactos||1)>1?` · ${p.recontactos}`:''}</div>`:''}
         </div>`;}).join('')}
       </div>
     </div>`;
@@ -2698,6 +2798,7 @@ function openDetalle(id){
           <input type="checkbox" id="solo-cat-${id}"> Solo mover categoría (sin enviar mail a la familia)
         </label>
       </div>
+      ${p.ultRecontacto?`<div style="margin-top:8px;font-size:11.5px;color:var(--tx2)">↻ Último mail manual a esta familia: <strong>${fDateFull(p.ultRecontacto)}</strong>${(p.recontactos||1)>1?` · ${p.recontactos} envíos`:''}</div>`:''}
       <div id="mprev-${id}"></div>
     </div>
     ${p.estado==='eoe_ingles'?`
@@ -3126,18 +3227,23 @@ function changeE(id){
   saveDB();
 
   // Acciones especiales por estado
-  if(newEst==='matriculado'){
-    enviarMailAdministracion(p);
+  if(newEst==='postulado'){
+    avisarAdministracionPostulado(p);
   }
   if(newEst==='nuevo'){
     // Alta real en EOE solo si recorrió el funnel (pasó por 'matriculado'). Un salto
     // directo a 'nuevo' cambia el estado pero no manda el alta, para no ensuciar "Altas".
+    crearAlumnoPadron(p); // registra en el padrón escolar y le asigna el ID de colegio
     if(flujoAdmisionCompleto(p)){
+      // Los tres en paralelo y sin depender entre sí: el alta al EOE es una llamada async
+      // a Firestore, el aviso a las áreas es un mail por Apps Script, y el mail a la
+      // familia sale más abajo. Si uno falla, los otros salen igual. El aviso va DESPUÉS
+      // de crearAlumnoPadron porque necesita el ID de colegio que esa función asigna.
       sincronizarConEOE(p);
+      avisarAreasNuevoAlumno(p);
     } else {
       toast('⚠ '+p.alumno+' quedó en Nuevo alumno pero NO se envió al EOE: falta el paso por Matriculado (flujo incompleto).','err');
     }
-    crearAlumnoPadron(p); // registra en el padrón escolar
     renderOcupacionCards();
   }
   if(newEst==='eoe_ingles'){
@@ -3164,14 +3270,49 @@ function changeE(id){
   dismissN(id);
 }
 
+// "Solo enviar mail" manda la plantilla del estado elegido en el desplegable, que arranca
+// en el estado actual del postulante: sobre un caso en Contactado sale, sin tocar nada, la
+// plantilla "Contactado". El toast ahora dice qué plantilla salió, porque antes no había
+// forma de saber si se había mandado la que uno creía.
 function sendMailOnly(id){
   const p=DB.postulantes.find(x=>x.id===id); if(!p) return;
   const sel=document.getElementById('new-st-'+id); if(!sel) return;
-  enviarMailAdmin(p,sel.value,(ok,mode)=>{
-    if(ok&&mode==='mailto') toast('Abriendo cliente de correo...','info');
-    else if(ok) toast(`✉ Mail enviado a ${p.email}`,'ok');
-    else toast('Configurá el Apps Script en Configuración para envío automático.','info');
+  const tpl=sel.value;
+  enviarMailAdmin(p,tpl,(ok,mode)=>{
+    if(!ok){ toast('Configurá el Apps Script en Configuración para envío automático.','info'); return; }
+    marcarRecontacto(p,tpl);
+    if(mode==='mailto') toast('Abriendo cliente de correo con la plantilla "'+(EL[tpl]||tpl)+'"...','info');
+    else toast('✉ Plantilla "'+(EL[tpl]||tpl)+'" enviada a '+p.email,'ok');
   });
+}
+
+// Un envío manual no mueve de estado, así que es siempre un re-contacto. Se registra en la
+// ficha para que el pipeline muestre cuándo fue el último: sin eso, dos personas le escribían
+// lo mismo a la misma familia con días de diferencia y nadie se enteraba.
+function marcarRecontacto(p,tpl){
+  p.recontactos=(p.recontactos||0)+1;
+  p.ultRecontacto=today();
+  p.hist=p.hist||[];
+  p.hist.push({e:p.estado,f:today(),mailOk:true,nota:'re-contacto · plantilla "'+(EL[tpl]||tpl)+'"'});
+  saveDB();
+  if(typeof renderPipeline==='function' && document.getElementById('pcols')) renderPipeline();
+}
+
+// Re-contacto masivo de la columna Contactado. Personalizado de verdad — cada mail se arma
+// con fillV sobre su ficha, así que lleva el nombre del responsable y del alumno — pero sale
+// de una sola vez. Respeta el filtro que esté aplicado en el pipeline.
+function recontactoMasivo(){
+  if(!DB.config.appsScriptUrl){ toast('El envío masivo necesita el Apps Script configurado','err'); return; }
+  const f=_filtrosPipeline();
+  const ps=DB.postulantes.filter(p=>p.estado==='contactado'&&filtraPostulante(p,f)&&String(p.email||'').trim());
+  if(!ps.length){ toast('No hay contactados con mail en esta vista','info'); return; }
+  const yaHoy=ps.filter(p=>p.ultRecontacto===today()).length;
+  if(!confirm('Se envía la plantilla "Contactado" a '+ps.length+' familia'+(ps.length>1?'s':'')+'.\n\n'
+    +'Cada mail va personalizado con el nombre del responsable y del alumno.'
+    +(yaHoy?'\n\n⚠ '+yaHoy+' ya recibieron un re-contacto HOY.':'')
+    +'\n\n¿Enviar?')) return;
+  ps.forEach(p=>{ enviarMailAdmin(p,'contactado',(ok)=>{ if(ok) marcarRecontacto(p,'contactado'); }); });
+  toast('↻ Re-contacto enviado a '+ps.length+' familia'+(ps.length>1?'s':''),'ok');
 }
 
 // ═══════════════════════════
@@ -3424,21 +3565,52 @@ function saveVac(){
 // ═══════════════════════════
 // EMAIL TEMPLATES
 // ═══════════════════════════
+// Cuándo sale cada plantilla. Antes la tarjeta decía "se envía automáticamente al cambiar
+// el estado" para TODAS menos una, y no era cierto: varias son manuales o las dispara un
+// evento. Sin saber el disparador, nadie entendía para qué servía cada plantilla (ni si
+// alguna estaba muerta), y se editaba la equivocada.
+const EMAIL_DISPARADOR={
+  contactado:'Automático al pasar a Contactado. También es el mail que se usa para re-contactar, de a uno o masivo, desde el pipeline.',
+  hermanos:'Automático cuando la familia se identifica como hermano/a o familiar del personal en el formulario.',
+  citado:'Automático al pasar a Citado, y cuando la familia reserva su entrevista por el calendario.',
+  citado_sin_fecha:'Automático cuando la familia completa el formulario y elige "aún no sé" la fecha. Incluye el link genérico de auto-agenda.',
+  entrevistado:'Automático al pasar a Entrevistado.',
+  postulado:'Automático al pasar a Postulado (a mano, por decisión de DG, o por vencimiento de las 48hs).',
+  eoe_ingles:'Automático al pasar a EOE / Inglés.',
+  matriculado:'Automático al pasar a Matriculado.',
+  nuevo:'Automático al pasar a Nuevo alumno.',
+  'lista de espera':'Automático al pasar a Lista de espera.',
+  desiste:'Automático al pasar a Desiste.',
+  desiste_recontacto:'Manual, desde el perfil del postulante o el envío masivo de la vista Desistieron.',
+  no_queremos:'Automático al pasar a No queremos.',
+  no_asistio:'Automático al marcar que la familia no asistió a la entrevista. Ofrece reprogramar.',
+  link_agenda:'Manual, con el botón "🔗 Enviar link por mail" del perfil. Manda un link personal de auto-reserva: la familia elige día sin volver a cargar sus datos y se actualiza esa misma ficha.',
+  admin_matriculado:'Automático al pasar a Postulado. Avisa a Administración para que gestione el cobro.',
+  dg_notif:'Automático cuando el EOE aprueba un caso. Incluye los botones Aprobar / Rechazar para DG.',
+  notif_nuevo_alumno:'Automático al pasar a Nuevo alumno, en paralelo al mail a la familia. La ficha de datos del alumno se agrega sola al final y no se edita.',
+  citacion_matriculados:'Manual, desde la solapa Matriculados. Se puede mandar a uno o a todos de una vez.'
+};
+
 const EMAIL_DESTINATARIO={
   contactado:'Familia',hermanos:'Familia',citado:'Familia',citado_sin_fecha:'Familia',entrevistado:'Familia',postulado:'Familia',
   eoe_ingles:'Familia',matriculado:'Familia','lista de espera':'Familia',
   desiste:'Familia',desiste_recontacto:'Familia',no_queremos:'Familia',
   seguimiento_entrevista:'Familia',no_asistio:'Familia',link_agenda:'Familia',nuevo:'Familia (onboarding)',
-  admin_matriculado:'Administración',dg_notif:'Dirección General'
+  admin_matriculado:'Administración',dg_notif:'Dirección General',
+  notif_nuevo_alumno:'Catering · Deportes · Secretaría',citacion_matriculados:'Familia'
 };
+
+// Áreas que se enteran del alta definitiva de un alumno. Van en el mismo mail (un solo
+// envío, una sola copia) para que todas vean lo mismo.
+const MAIL_NUEVO_ALUMNO_TO='catering@austin-ebs.com.ar, geronimo.dominguez@austinebs-ah.edu.ar, sofia.luna@austinebs-ah.edu.ar';
 
 function renderEmails(){
   // Se listan todas las plantillas que el sistema puede enviar. Antes quedaban ocultas
   // no_queremos (envío manual) y no_asistio (al marcar que no llegaron): se podían
   // mandar pero no editar. Se siguen excluyendo rechazado_eoe y pendiente_dg, que son
   // estados internos sin mail a la familia, y seguimiento_entrevista, que no está conectada.
-  const allTpls=[...ESTADOS,'citado_sin_fecha','no_asistio','link_agenda','desiste_recontacto','admin_matriculado','dg_notif'].filter(e=>!['seguimiento_entrevista','rechazado_eoe','pendiente_dg'].includes(e));
-  const labels={...EL,hermanos:'Hermanos / familiares del personal',citado_sin_fecha:'Citado — entrevista a confirmar',no_asistio:'No asistió a la entrevista',link_agenda:'Link para auto-agendar entrevista',desiste_recontacto:'Re-contacto a desistidos',admin_matriculado:'Notif. Administración (matriculado)',dg_notif:'Notif. Dirección General (EOE aprueba)'};
+  const allTpls=[...ESTADOS,'citado_sin_fecha','no_asistio','link_agenda','desiste_recontacto','admin_matriculado','dg_notif','notif_nuevo_alumno','citacion_matriculados'].filter(e=>!['seguimiento_entrevista','rechazado_eoe','pendiente_dg'].includes(e));
+  const labels={...EL,hermanos:'Hermanos / familiares del personal',citado_sin_fecha:'Citado — entrevista a confirmar',no_asistio:'No asistió a la entrevista',link_agenda:'Link para auto-agendar entrevista',desiste_recontacto:'Re-contacto a desistidos',admin_matriculado:'Notif. Administración (pasa a postulado)',dg_notif:'Notif. Dirección General (EOE aprueba)',notif_nuevo_alumno:'Aviso de alta — Nuevo alumno (áreas internas)',citacion_matriculados:'Citación de Matriculados'};
   document.getElementById('email-tpls').innerHTML=allTpls.map(e=>{
     const dest=EMAIL_DESTINATARIO[e]||'Familia';
     const isTeam=dest!=='Familia'&&!dest.startsWith('Familia');
@@ -3450,7 +3622,7 @@ function renderEmails(){
           <strong>${labels[e]||e}</strong>
           ${destBadge}
         </div>
-        <div class="ets">${e==='desiste_recontacto'?'Envío manual desde el perfil del postulante':'Se envía automáticamente al cambiar el estado del postulante'}</div></div>
+        <div class="ets">${EMAIL_DISPARADOR[e]||'Se envía al cambiar el estado del postulante'}</div></div>
         <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
           <span id="est-${e}" style="font-size:11px;color:var(--tx3)"></span>
           <button class="btn btn-td btn-sm" onclick="saveEmail('${e}')">Guardar</button>
@@ -3462,6 +3634,10 @@ function renderEmails(){
         <div style="margin-top:7px;font-size:11px;color:var(--tx3);line-height:2">Variables:
           <span class="etvar">{{alumno}}</span><span class="etvar">{{padre}}</span><span class="etvar">{{curso}}</span><span class="etvar">{{nivel}}</span><span class="etvar">{{anio}}</span><span class="etvar">{{jornada}}</span><span class="etvar">{{email}}</span><span class="etvar">{{tel}}</span><span class="etvar">{{colegio}}</span><span class="etvar">{{hermano}}</span><span class="etvar">{{fecha_entrevista}}</span><span class="etvar">{{hora_entrevista}}</span><span class="etvar">{{lugar_entrevista}}</span><span class="etvar">{{link_drive}}</span><span class="etvar">{{link_calendario}}</span><span class="etvar">{{link_agenda_online}}</span>
         </div>
+        ${e==='notif_nuevo_alumno'?`<div style="margin-top:12px;background:var(--cr);border:1px dashed var(--bd);border-radius:8px;padding:11px 13px">
+          <div style="font-size:11px;font-weight:600;color:var(--tx3);margin-bottom:6px">Se agrega solo al final del mail · no editable</div>
+          <pre style="margin:0;font-family:inherit;font-size:12px;color:var(--tx2);white-space:pre-wrap">${esc(fichaNuevoAlumno(null))}</pre>
+        </div>`:''}
       </div>
     </div>`;
   }).join('');
@@ -4971,8 +5147,21 @@ let _eoePollingInterval = null;
 
 function startEOEPolling(){
   stopEOEPolling();
-  pollEOEResults(); pollDGDecisiones(); // primera vez inmediata
-  _eoePollingInterval = setInterval(()=>{ pollEOEResults(); pollDGDecisiones(); }, 30000); // cada 30s
+  cicloEOE(); // primera vez inmediata
+  _eoePollingInterval = setInterval(cicloEOE, 30000); // cada 30s
+}
+
+// Una vuelta completa del circuito EOE → DG → Postulado, en orden y encadenada.
+// Encadenado a propósito: pollEOEResults puede dejar un caso recién pasado a
+// pendiente_dg, y pollDGDecisiones solo mira los que están en ese estado — lanzándolos
+// en paralelo la decisión de DG esperaba 30s de más. checkPendienteDG cierra el circuito
+// con el vencimiento de las 48hs; antes solo corría al abrir el panel, así que un caso
+// vencido no avanzaba hasta que alguien recargaba.
+function cicloEOE(){
+  pollEOEResults()
+    .then(pollDGDecisiones)
+    .catch(()=>{})
+    .then(()=>{ try{ checkPendienteDG(); }catch(e){} });
 }
 
 function stopEOEPolling(){
@@ -4997,12 +5186,14 @@ async function pollEOEResults(){
       if(!res.ok) continue;
       const doc=await res.json();
       const estado=doc.fields?.resultado?.stringValue||doc.fields?.estado?.stringValue||'';
-      // Ya procesado: no re-disparar. El PATCH de cierre escribe procesadoEn y deja el
-      // estado como "Procesado — Aprobado/Rechazado" — que contiene "aprobado", así que
-      // sin este corte volvía a matchear y re-enviaba el mail a DG en cada vuelta del poll.
-      if(doc.fields?.procesadoEn || estado.toLowerCase().includes('procesado')) continue;
-
-      if(estado.toLowerCase().includes('aprobado')||estado.toLowerCase()==='aprobado'){
+      // El PATCH de cierre deja el estado como "Procesado — Aprobado/Rechazado", así que
+      // el veredicto se lee igual con o sin ese prefijo. NO se corta por "procesado": si
+      // se cortaba, un caso cuyo cambio de estado no llegó a persistir quedaba clavado en
+      // eoe_ingles para siempre (el mail a DG ya había salido y el doc ya estaba cerrado).
+      // Así el poll lo vuelve a empujar solo. Re-mandar el mail no es riesgo: enviarMailDG
+      // es idempotente por p.dgMailEnviado. Ojo: "rechazado" no contiene "aprobado".
+      const _v=estado.toLowerCase();
+      if(_v.includes('aprobado')){
         // EOE aprobó → pendiente_dg
         p.estado='pendiente_dg';
         p.ultAccion=today();
@@ -5021,7 +5212,7 @@ async function pollEOEResults(){
         renderDashboard();
         const pv=document.getElementById('view-pipeline'); if(pv&&pv.classList.contains('on')) renderPipeline();
 
-      } else if(estado.toLowerCase().includes('rechazado')||estado.toLowerCase()==='rechazado'){
+      } else if(_v.includes('rechazado')){
         // EOE rechazó → rechazado_eoe
         p.estado='rechazado_eoe';
         p.ultAccion=today();
@@ -5068,6 +5259,7 @@ async function pollDGDecisiones(){
         p.hist=p.hist||[];
         p.hist.push({e:'postulado',f:today(),auto:true,via:'dg-mail'});
         saveDB();
+        avisarAdministracionPostulado(p);
         enviarMailAdmin(p,'postulado',()=>{});
         mostrarNotifEOE(p,'aprobado');
       } else {
@@ -5185,6 +5377,7 @@ function confirmarDG(id){
   p.hist=p.hist||[];
   p.hist.push({e:'postulado',f:today(),mailOk:false});
   saveDB();
+  avisarAdministracionPostulado(p);
   enviarMailAdmin(p,'postulado',(ok,mode)=>{
     if(ok){ p.hist[p.hist.length-1].mailOk=true; saveDB(); }
     if(ok&&mode==='mailto') toast('Postulado · Abriendo correo...','info');
@@ -5207,6 +5400,7 @@ function checkPendienteDG(){
       p.ultAccion=today();
       p.hist=p.hist||[];
       p.hist.push({e:'postulado',f:today(),mailOk:false,auto:true});
+      avisarAdministracionPostulado(p);
       enviarMailAdmin(p,'postulado',(ok)=>{ if(ok){ p.hist[p.hist.length-1].mailOk=true; saveDB(); } });
       changed=true;
     }
@@ -5245,19 +5439,76 @@ function enviarMailDG(p){
 }
 
 // ═══════════════════════════
-// MAIL A ADMINISTRACIÓN (al matricular)
+// MAIL A ADMINISTRACIÓN (al postular)
 // ═══════════════════════════
+// Administración tiene que enterarse cuando el caso llega a POSTULADO, no a matriculado:
+// ellos avisan a la familia y recién cuando paga, Admisiones lo pasa a Matriculado. Con el
+// aviso en matriculado llegaba un paso tarde, cuando el cobro ya tendría que haber ocurrido.
+// A "postulado" se llega por cuatro caminos (cambio manual, confirmación de DG por mail,
+// botón de DG en el panel, y vencimiento automático de las 48hs), así que el aviso se
+// centraliza acá con una marca en la ficha: idas y vueltas de estado no re-avisan.
+function avisarAdministracionPostulado(p){
+  if(!p || p.admMailPostulado) return;
+  p.admMailPostulado = today();
+  try{ saveDB(); }catch(e){}
+  enviarMailAdministracion(p);
+}
+
 function enviarMailAdministracion(p, manual=false){
   const adminEmail=DB.config.emailAdmin||'adm@austinebs-ah.edu.ar';
   const tmpl=DB.emails.admin_matriculado;
-  const subj=tmpl?fillV(tmpl.subj,p):`NUEVO MATRICULADO: ${esc(p.alumno)} — ${esc(p.curso)} ${p.anio}`;
-  const body=tmpl?fillV(tmpl.body,p):`Matriculado: ${esc(p.alumno)} · ${esc(p.curso)} · Ciclo ${p.anio}\nFamilia: ${esc(p.padre)} · ${esc(p.email)} · ${esc(p.tel||'—')}`;
+  const subj=tmpl?fillV(tmpl.subj,p):`NUEVO POSTULADO: ${esc(p.alumno)} — ${esc(p.curso)} ${p.anio}`;
+  const body=tmpl?fillV(tmpl.body,p):`Postulado: ${esc(p.alumno)} · ${esc(p.curso)} · Ciclo ${p.anio}\nFamilia: ${esc(p.padre)} · ${esc(p.email)} · ${esc(p.tel||'—')}`;
   if(DB.config.appsScriptUrl){
     apiCall('sendMail',{to:adminEmail,subject:subj,body,html:buildHtmlMail(body,subj)}).then(()=>{});
   } else {
     window.open('mailto:'+adminEmail+'?subject='+encodeURIComponent(subj)+'&body='+encodeURIComponent(body));
   }
   toast(manual?'✓ Mail reenviado a Administración':'📋 Resumen enviado a Administración','ok');
+}
+
+// ═══════════════════════════
+// AVISO DE ALTA A LAS ÁREAS (al pasar a Nuevo alumno)
+// ═══════════════════════════
+// Ficha de datos que viaja siempre al final del mail de alta. NO se edita desde Plantillas
+// a propósito: catering, deportes y secretaría cargan estos campos en sus propios sistemas,
+// así que tienen que llegar completos y siempre con el mismo formato. Si alguien borrara
+// una variable del cuerpo editable, el dato igual viaja acá.
+// Con p=null devuelve la ficha de ejemplo que se muestra en la vista de plantillas.
+function fichaNuevoAlumno(p){
+  const demo=!p;
+  const partes=String((p&&p.alumno)||'').trim().split(/\s+/).filter(Boolean);
+  const nombre=demo?'(nombre)':(partes[0]||'—');
+  const apellido=demo?'(apellido)':(partes.slice(1).join(' ')||'—');
+  // El ID del colegio lo asigna crearAlumnoPadron(); por eso este mail sale después.
+  const fila=demo?null:(DB.padron||[]).find(a=>String(a.admisionId)===String(p.id));
+  const idCol=demo?'(ID colegio)':((fila&&fila.idColegio)||'—');
+  return '══ DATOS DEL ALUMNO ══\n'
+    +'Nombre: '+nombre+'\n'
+    +'Apellido: '+apellido+'\n'
+    +'Email de la familia: '+(demo?'(mail)':(p.email||'—'))+'\n'
+    +'Curso: '+(demo?'(curso)':(p.curso||'—'))+'\n'
+    +'Año a ingresar: '+(demo?'(año)':(p.anio||'—'))+'\n'
+    +'ID del colegio: '+idCol;
+}
+
+// Sale en paralelo al mail a la familia y al alta en el EOE. Independiente de los dos:
+// si el EOE o el padrón fallan, el aviso igual tiene que llegar (y al revés). Una sola vez
+// por alumno — la marca queda en la ficha, así que volver a pasar por 'nuevo' no re-avisa.
+function avisarAreasNuevoAlumno(p){
+  if(!p || p.notifAreasNuevo) return;
+  p.notifAreasNuevo=today();
+  try{ saveDB(); }catch(e){}
+  const tmpl=DB.emails.notif_nuevo_alumno||{};
+  const subj=fillV(tmpl.subj||'ALTA — Nuevo alumno: {{alumno}}', p);
+  const body=fillV(tmpl.body||'{{alumno}} completó el proceso de admisión y ya es Nuevo Alumno.', p)
+    +'\n\n'+fichaNuevoAlumno(p);
+  if(DB.config.appsScriptUrl){
+    apiCall('sendMail',{to:MAIL_NUEVO_ALUMNO_TO,subject:subj,body,html:buildHtmlMail(body,subj)}).then(()=>{});
+  } else {
+    window.open('mailto:'+encodeURIComponent(MAIL_NUEVO_ALUMNO_TO)+'?subject='+encodeURIComponent(subj)+'&body='+encodeURIComponent(body));
+  }
+  toast('📨 Aviso de alta enviado a catering, deportes y secretaría','ok');
 }
 
 // ═══════════════════════════
@@ -5338,6 +5589,93 @@ function renderBajas(){
     <td><button class="btn btn-sm btn-out" onclick="openDetalle(${p.id})">Ver perfil</button></td>
   </tr>`).join('');
 }
+// ═══════════════════════════
+// MATRICULADOS
+// ═══════════════════════════
+// Sin lista propia: se arma leyendo DB.postulantes en cada render, así que refleja el
+// pipeline en el momento. Enviar la citación no mueve a nadie de estado.
+function matriculadosFiltrados(){
+  const q=(document.getElementById('matr-q')?.value||'').toLowerCase();
+  const anio=document.getElementById('matr-anio')?.value||'';
+  const niv=document.getElementById('matr-niv')?.value||'';
+  return DB.postulantes.filter(p=>
+    p.estado==='matriculado'&&
+    (!q||String(p.alumno||'').toLowerCase().includes(q)||String(p.padre||'').toLowerCase().includes(q)||String(p.curso||'').toLowerCase().includes(q))&&
+    (!anio||String(p.anio)===anio)&&(!niv||p.nivel===niv)
+  ).sort((a,b)=>String(a.curso||'').localeCompare(String(b.curso||''))||String(a.alumno||'').localeCompare(String(b.alumno||'')));
+}
+
+function renderMatriculados(){
+  const ms=matriculadosFiltrados();
+  const cnt=document.getElementById('matr-cnt');
+  if(cnt) cnt.textContent=`${ms.length} matriculado${ms.length!==1?'s':''}`;
+  const tb=document.getElementById('matr-tb');
+  if(!tb) return;
+  const selAll=document.getElementById('matr-sel-all'); if(selAll) selAll.checked=false;
+  if(ms.length===0){
+    tb.innerHTML=`<tr><td colspan="8"><div class="empty"><div class="empty-ic">◎</div><p>Todavía no hay matriculados</p></div></td></tr>`;
+    return;
+  }
+  tb.innerHTML=ms.map(p=>`<tr>
+    <td onclick="event.stopPropagation()"><input type="checkbox" class="matr-chk" data-id="${p.id}"></td>
+    <td style="cursor:pointer" onclick="openDetalle(${p.id})"><strong>${esc(p.alumno)}</strong></td>
+    <td><small style="color:var(--tx3)">${p.nivel} ·</small> ${esc(p.curso)}</td>
+    <td>${esc(p.padre)}${p.tel?`<br><small style="color:var(--tx3)">${esc(p.tel)}</small>`:''}</td>
+    <td style="color:var(--tx2);font-size:11.5px">${esc(p.email)}</td>
+    <td><span class="pill">${p.anio}</span></td>
+    <td>${p.citacionEnviada
+      ?`<span style="font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:9px;background:#EBF7D4;color:#3A6A0A" title="${(p.citacionEnvios||1)>1?p.citacionEnvios+' envíos':'Enviada una vez'}">✓ ${fDate(p.citacionEnviada)}</span>`
+      :`<span style="color:var(--tx3);font-size:11px">Sin enviar</span>`}</td>
+    <td><button class="btn btn-sm btn-out" onclick="enviarCitacionUno(${p.id})">✉ Citación</button></td>
+  </tr>`).join('');
+}
+function toggleSelectAllMatr(cb){ document.querySelectorAll('.matr-chk').forEach(c=>{ c.checked=cb.checked; }); }
+
+// Un solo envío, desde el botón de la fila.
+function enviarCitacionUno(id){
+  const p=DB.postulantes.find(x=>x.id===id); if(!p) return;
+  if(p.estado!=='matriculado'){ toast('La citación solo se manda a quienes están en Matriculado','err'); return; }
+  if(p.citacionEnviada && !confirm(`${p.alumno} ya recibió la citación el ${fDateFull(p.citacionEnviada)}.\n\n¿Reenviarla?`)) return;
+  mandarCitacion(p,()=>renderMatriculados());
+}
+
+// Envío masivo. Parece personalizado porque lo es: cada mail se arma con fillV sobre su
+// propia ficha (nombre del responsable y del alumno), pero se dispara de una sola vez.
+function enviarCitacionMatriculados(){
+  const sel=[...document.querySelectorAll('.matr-chk:checked')].map(c=>parseInt(c.dataset.id));
+  if(!sel.length){ toast('Seleccioná al menos un matriculado','err'); return; }
+  const ps=sel.map(id=>DB.postulantes.find(x=>x.id===id)).filter(p=>p&&p.estado==='matriculado'&&String(p.email||'').trim());
+  if(!ps.length){ toast('Ninguno de los seleccionados está en Matriculado con mail cargado','err'); return; }
+  const repetidos=ps.filter(p=>p.citacionEnviada).length;
+  if(!confirm(`Se envía la "Citación de Matriculados" a ${ps.length} familia${ps.length!==1?'s':''}.\n\n`
+    +`Cada mail lleva el nombre de quien lo recibe y el del alumno. Nadie cambia de estado.`
+    +(repetidos?`\n\n⚠ ${repetidos} ya la habían recibido.`:'')
+    +`\n\n¿Enviar?`)) return;
+  let n=0;
+  ps.forEach(p=>mandarCitacion(p,()=>{ n++; if(n===ps.length) renderMatriculados(); }));
+  toast(`✉ Citación enviada a ${ps.length} familia${ps.length!==1?'s':''}`,'ok');
+}
+
+function mandarCitacion(p,cb){
+  enviarMailAdmin(p,'citacion_matriculados',(ok)=>{
+    if(ok){
+      p.citacionEnviada=today();
+      p.citacionEnvios=(p.citacionEnvios||0)+1;
+      saveDB();
+    }
+    if(cb) cb(ok);
+  });
+}
+
+function exportMatriculadosCSV(){
+  const ms=matriculadosFiltrados();
+  const cols=['ID','Alumno','Padre/Tutor','Email','Teléfono','Curso','Nivel','Ciclo','Citación enviada'];
+  const rows=ms.map(p=>[p.id,p.alumno,p.padre,p.email,p.tel||'',p.curso,p.nivel,p.anio,p.citacionEnviada?fDate(p.citacionEnviada):'']);
+  const csv=cols.join(',')+'\n'+rows.map(r=>r.map(v=>'"'+String(v||'').replace(/"/g,'""')+'"').join(',')).join('\n');
+  const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,'+encodeURIComponent('﻿'+csv);
+  a.download='matriculados_'+today()+'.csv'; a.click();
+}
+
 function toggleSelectAllBajas(cb){ document.querySelectorAll('.baja-chk').forEach(c=>{ c.checked=cb.checked; }); }
 function mailMasivoBajas(){
   const sel=[...document.querySelectorAll('.baja-chk:checked')].map(c=>parseInt(c.dataset.id));
@@ -6307,6 +6645,7 @@ function renderPadron(){
     <button class="btn btn-sm" style="background:#7C3AED;color:#fff;border:none" onclick="importarPadronModal()">⬆ Importar</button>
     ${usePadron?`<button class="btn btn-sm" style="background:#2C4A5E;color:#fff;border:none" onclick="abrirTraspasoModal(${sigCiclo})" title="Cerrar ${ciclo} y generar el padrón ${sigCiclo}">→ Pasar de año</button>`:''}`:''}
   </div>
+  ${esProy?'':panelDuplicadosPadron()}
   ${esProy?'':panelDiagnosticoIds()}
   <div id="padron-tabla"></div>`;
   return html;
@@ -6395,6 +6734,54 @@ function panelDiagnosticoIds(){
     ${d.duplicados.length ? `<br>· <strong>${d.duplicados.length}</strong> ID${d.duplicados.length!==1?'s':''} repetido${d.duplicados.length!==1?'s':''}:
        ${d.duplicados.slice(0,4).map(x=>esc(x.id)+' ('+x.alumnos.map(esc).join(' / ')+')').join(', ')}` : ''}
     ${d.sinId.length ? `<br><button class="btn btn-sm btn-out" style="margin-top:7px" onclick="asignarIdsFaltantes()">Asignar IDs nuevos a los que faltan</button>` : ''}
+  </div>`;
+}
+
+// ─── DUPLICADOS EN EL PADRÓN ──────────────────────────────────
+// Un mismo alumno cargado dos veces. Pasa cuando alguien que YA estaba en el padrón
+// (alta previa al sistema, o importado) aparece además en el pipeline y se lo mueve a
+// "Nuevo alumno": changeE() llama a crearAlumnoPadron(), que solo chequea admisionId
+// —no el nombre—, así que crea una segunda fila y le consume un ID de colegio nuevo.
+// Se agrupa por nombre normalizado + ciclo, mirando solo los activos.
+function duplicadosPadron(ciclo){
+  const activos=(DB.padron||[]).filter(a=>a.ciclo===ciclo && a.estado==='activo');
+  const grupos={};
+  activos.forEach(function(a){
+    const k=normNombrePersona(a.nombre);
+    if(!k) return;
+    (grupos[k]=grupos[k]||[]).push(a);
+  });
+  return Object.keys(grupos).filter(k=>grupos[k].length>1).map(function(k){
+    // El original es el que NO vino de admisiones (ya estaba en el padrón) y, entre
+    // ellos, el del ID de colegio más bajo. El resto son las copias a eliminar.
+    const filas=grupos[k].slice().sort(function(x,y){
+      const ax=x.admisionId?1:0, ay=y.admisionId?1:0;
+      if(ax!==ay) return ax-ay;
+      return _numeroDeId(x.idColegio)-_numeroDeId(y.idColegio);
+    });
+    return {clave:k, original:filas[0], copias:filas.slice(1)};
+  });
+}
+
+function panelDuplicadosPadron(){
+  const dups=duplicadosPadron(_ocCiclo);
+  if(!dups.length) return '';
+  const filas=dups.map(function(g){
+    const o=g.original;
+    return `<div style="margin-top:8px;padding:8px 10px;background:#fff;border:1px solid #FCA5A5;border-radius:6px">
+      <div style="font-weight:600;margin-bottom:4px">${esc(o.nombre)}</div>
+      <div style="font-size:12px;color:#166534">✓ Se queda: ID <strong>${esc(o.idColegio||'—')}</strong> · ${esc(o.curso||'—')}${o.admisionId?' <span style="color:#7C3AED">(Adm)</span>':' (ya estaba en el padrón)'}</div>
+      ${g.copias.map(c=>`<div style="font-size:12px;color:#B91C1C;display:flex;align-items:center;gap:8px;margin-top:4px">
+        <span>✕ Duplicado: ID <strong>${esc(c.idColegio||'—')}</strong> · ${esc(c.curso||'—')}${c.admisionId?' <span style="color:#7C3AED">(Adm)</span>':''}</span>
+        <button class="btn btn-sm btn-out" style="color:#B91C1C;font-size:11px" onclick="eliminarAlumnoPadron('${c.id}')">Eliminar este</button>
+      </div>`).join('')}
+    </div>`;
+  }).join('');
+  return `<div style="padding:11px 13px;margin-bottom:10px;background:#FEF2F2;
+    border:1px solid #FCA5A5;border-radius:8px;font-size:12.5px;color:#7F1D1D;line-height:1.6">
+    <strong>⚠ ${dups.length} alumno${dups.length!==1?'s':''} duplicado${dups.length!==1?'s':''} en el padrón ${_ocCiclo}</strong>
+    <div style="font-size:12px;margin-top:2px">Mismo nombre cargado más de una vez. Revisá cuál corresponde y eliminá la copia — <em>eliminar no es dar de baja</em>: no queda registrado en Bajas.</div>
+    ${filas}
   </div>`;
 }
 
@@ -6585,6 +6972,17 @@ function crearAlumnoPadron(p){
   if(DB.padron.some(a=>a.admisionId===String(p.id))) return;
   // El ciclo es SIEMPRE el año para el que postuló, no el año en curso.
   const ciclo=p.anio||new Date().getFullYear();
+  // Ya está en el padrón de ese ciclo con el mismo nombre: es un alumno cuya alta es
+  // previa al sistema (o importada) que además venía en el pipeline. Chequear solo
+  // admisionId no alcanzaba —esa fila no lo tiene— y se creaba una segunda fila que
+  // además consumía un ID de colegio nuevo. Se vincula la ficha existente y listo.
+  const yaEsta=DB.padron.find(a=>a.ciclo===ciclo && a.estado==='activo'
+    && normNombrePersona(a.nombre)===normNombrePersona(p.alumno));
+  if(yaEsta){
+    if(!yaEsta.admisionId) yaEsta.admisionId=String(p.id);
+    toast(p.alumno+' ya estaba en el padrón '+ciclo+' (ID '+(yaEsta.idColegio||'—')+') — no se duplicó','info');
+    return;
+  }
   // Si Admisiones no le asignó sección a mano, se elige la división con menos
   // alumnos de ese ciclo. Antes quedaba vacía y el alumno no contaba en Ocupación.
   const curso=p.seccion || seccionConMenosAlumnos(p.curso, ciclo) || '';
