@@ -22,7 +22,7 @@ const MAIL_LOGO = 'https://admisionesaustin.com.ar/logo-email.png';
 
 // Marca de versión: sirve para confirmar que la implementación se publicó.
 // Al abrir la URL del script con ?action=ping tiene que aparecer este valor.
-const API_VERSION = '2026-09-07-v6-caminoB';
+const API_VERSION = '2026-09-17-v7-cancelar-evento';
 
 // ── Calendario ────────────────────────────────────────────────
 const CAL_ADMISIONES        = 'admisiones@austinebs-ah.edu.ar';
@@ -382,6 +382,7 @@ function handleAPI_(e) {
       case 'sendMail':      result = sendMailDirect_(data); break;
       case 'sendDGNotif':   result = sendDGNotif_(data); break;
       case 'crearEventoEntrevista': result = crearEventoEntrevista(data); break;
+      case 'cancelarEventoEntrevista': result = cancelarEventoEntrevista_(data); break;
     }
   } catch(err) {
     result = { ok: false, error: err.message };
@@ -721,6 +722,75 @@ function crearEventoEntrevista(d) {
     const ev = cal.createEvent(titulo, inicio, fin, { description: detalle, location: lugar });
     try { ev.addPopupReminder(60); } catch (_) {}
     return { ok: true, eventId: ev.getId(), actualizado: false };
+
+  } catch (err) {
+    return { ok: false, error: String(err) };
+  }
+}
+
+/**
+ * Da de baja la entrevista en el calendario de Admisiones. La llama el panel al marcar
+ * "no asistió" y cuando la familia reprograma desde el link de auto-reserva.
+ *
+ * NO MANDA NINGÚN MAIL, y esto es lo importante: el mail a la familia lo manda el panel
+ * con la plantilla que edita el equipo. Antes el panel usaba `cancelarTurno`, que manda
+ * su propio mail desde acá, y la familia terminaba recibiendo dos.
+ *
+ * Busca el evento por FECHA + HORA del turno viejo, no por la marca del alumno. Es a
+ * propósito: en la reagenda el panel pide borrar el viejo y crear el nuevo casi al mismo
+ * tiempo, y si se buscara por alumno esta función podía llegar tarde y borrar el evento
+ * nuevo. Matcheando el horario viejo eso no puede pasar.
+ *
+ * data: { fecha:'yyyy-MM-dd', hora:'HH:mm', motivo:'reprogramar'|'reprogramado', alumno? }
+ *  - motivo 'reprogramado' (la familia ya eligió otro día): se borra, porque el panel crea
+ *    el evento nuevo inmediatamente después.
+ *  - cualquier otro motivo (incluido 'reprogramar' = no asistió): se renombra con prefijo,
+ *    igual que hacía cancelarTurno_, así queda el registro de que la entrevista existió.
+ */
+function cancelarEventoEntrevista_(data) {
+  try {
+    if (!data || !data.fecha) return { ok: false, error: 'Falta fecha' };
+
+    const cal = calAdmisiones_();
+    if (!cal) return { ok: false, error: 'No se pudo abrir el calendario de Admisiones: ' + _calError };
+
+    const fecha  = aFecha_(data.fecha);
+    const hora   = data.hora ? aHora_(data.hora) : '';
+    const motivo = String(data.motivo || 'reprogramar');
+    const f = fecha.split('-');
+    const desde = new Date(Number(f[0]), Number(f[1]) - 1, Number(f[2]), 0, 0, 0);
+    const hasta = new Date(Number(f[0]), Number(f[1]) - 1, Number(f[2]), 23, 59, 59);
+
+    // Candidatos: eventos de entrevista de ese día, en ese horario.
+    let candidatos = cal.getEvents(desde, hasta).filter(function (ev) {
+      const titulo = String(ev.getTitle() || '').toUpperCase();
+      if (titulo.indexOf('ENTREVISTA') === -1) return false; // no tocar nada más de la agenda
+      if (!hora) return true;
+      return Utilities.formatDate(ev.getStartTime(), tz_(), 'HH:mm') === hora;
+    });
+
+    // Si vino el nombre del alumno y alguno de esos eventos lleva su marca, es ése y no otro
+    // (dos entrevistas en el mismo horario, por ejemplo).
+    const marca = data.alumno ? marcaAlumno_(data.alumno) : '';
+    if (marca) {
+      const conMarca = candidatos.filter(function (ev) {
+        return String(ev.getDescription() || '').indexOf(marca) !== -1;
+      });
+      if (conMarca.length) candidatos = conMarca;
+    }
+
+    if (!candidatos.length) return { ok: true, encontrados: 0 };
+
+    const prefijo = motivo === 'reprogramar' ? 'NO ASISTIÓ — ' : 'CANCELADA — ';
+    let borrados = 0, renombrados = 0;
+    candidatos.forEach(function (ev) {
+      if (motivo === 'reprogramado') { ev.deleteEvent(); borrados++; return; }
+      const t = ev.getTitle();
+      if (t.indexOf(prefijo) !== 0) ev.setTitle(prefijo + t);
+      renombrados++;
+    });
+
+    return { ok: true, encontrados: candidatos.length, borrados: borrados, renombrados: renombrados };
 
   } catch (err) {
     return { ok: false, error: String(err) };

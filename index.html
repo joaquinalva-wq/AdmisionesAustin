@@ -1743,7 +1743,7 @@ async function procesarInbox(){
           // a Admisiones le quedaban dos entrevistas para la misma familia.
           if(fVieja && hVieja && (fVieja!==ficha.entFecha || hVieja!==ficha.entHora)){
             liberarTurnoEntrevista(fVieja, hVieja);
-            cancelarEventoEntrevista(fVieja, hVieja, 'reprogramado');
+            cancelarEventoEntrevista(fVieja, hVieja, 'reprogramado', ficha.alumno);
           }
           ficha.estado = 'citado';
           ficha.entResultado = '';
@@ -1774,7 +1774,7 @@ async function procesarInbox(){
           ficha.entFecha = p.entFecha; ficha.entHora = p.entHora||'';
           if(fVieja && hVieja && (fVieja!==ficha.entFecha || hVieja!==ficha.entHora)){
             liberarTurnoEntrevista(fVieja, hVieja);
-            cancelarEventoEntrevista(fVieja, hVieja, 'reprogramado');
+            cancelarEventoEntrevista(fVieja, hVieja, 'reprogramado', ficha.alumno);
           }
           ficha.estado='citado'; ficha.entResultado=''; ficha.ultAccion=today();
           ficha.notas=ficha.notas||[]; ficha.notas.push(nota);
@@ -5143,9 +5143,12 @@ function bloquearTurno(fecha, hora, alumno){
 // `crearEventoEntrevista`. Si el Apps Script todavía no la tiene, el pedido falla solo y
 // no se manda ningún mail: el peor caso es que quede el evento viejo en el calendario, y
 // eso se avisa por pantalla para borrarlo a mano.
-function cancelarEventoEntrevista(fecha, hora, motivo){
+// `alumno` es opcional y sirve para desempatar si hay dos entrevistas en el mismo horario:
+// el script busca por fecha+hora y, si le llega el nombre, se queda con el evento que lleva
+// la marca de ese alumno.
+function cancelarEventoEntrevista(fecha, hora, motivo, alumno){
   if(!fecha || !DB.config.appsScriptUrl) return Promise.resolve(null);
-  return apiCall('cancelarEventoEntrevista',{fecha, hora, motivo:motivo||'reprogramar'})
+  return apiCall('cancelarEventoEntrevista',{fecha, hora, motivo:motivo||'reprogramar', alumno:alumno||''})
     .catch(function(){ return null; });
 }
 
@@ -5964,7 +5967,7 @@ function marcarNoAsistio(id){
   // no se usaba nunca, la familia no recibía nada y el toast igual cantaba "enviado".
   // Ahora al script sólo se le pide borrar el evento del calendario, con una acción que
   // no manda mails, para que la familia reciba uno solo.
-  cancelarEventoEntrevista(p.entFecha, p.entHora, 'reprogramar').then(function(r){
+  cancelarEventoEntrevista(p.entFecha, p.entHora, 'reprogramar', p.alumno).then(function(r){
     if(DB.config.appsScriptUrl && p.entFecha && !(r&&r.ok))
       toast('Quedó el evento viejo en Google Calendar — borralo a mano','info');
   });
