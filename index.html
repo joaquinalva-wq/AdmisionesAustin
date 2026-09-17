@@ -744,7 +744,8 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
         <select class="fsel" id="pf-como">
           <option value="">— Seleccioná —</option>
           <option>Recomendación de otra familia</option><option>Redes sociales</option>
-          <option>Página web del colegio</option><option>Búsqueda en Google</option><option>Evento del colegio</option><option>Otro</option>
+          <option>Página web del colegio</option><option>Búsqueda en Google</option><option>Evento del colegio</option>
+          <option>Jardín Duendecitos (convenio)</option><option>Otro</option>
         </select>
       </div>
       <div class="fbtns"><button class="sbtn sbtn-n" onclick="fNext(0)">Continuar →</button></div>
@@ -1496,12 +1497,22 @@ async function hashPw(pw){
 // capacidad (DB.ocupacion[sección].cap) − ocupación real (padrón activo + altas del pipeline).
 // Se calcula en el momento y no se cachea: antes existía un contador mutable (`.u`) que
 // una función de ajuste incrementaba y syncVacantesFromOcupacion() pisaba, quedando desincronizado.
+// `anio` es SIEMPRE el ciclo para el que postula la familia. `libres` responde "¿entra
+// en ese año?" y `hoy` muestra cómo está ese mismo curso en el ciclo en curso, para que
+// nunca se confunda un número con el otro.
 function vacantesDe(cursoPipeline, anio){
   const secciones = PIPELINE_TO_SECTIONS[cursoPipeline];
   if(!secciones || !secciones.length) return null;
-  let t=0, u=0;
-  ocData(anio).forEach(r=>{ if(secciones.indexOf(r.sc)!==-1){ t+=r.cap; u+=r.actual; } });
-  return {t, u, libres:Math.max(0, t-u)};
+  const cicloAct = DB.config.cicloActivo || new Date().getFullYear();
+  const destino  = parseInt(anio) || cicloAct;
+  const sumar = function(ciclo){
+    let t=0, u=0;
+    ocData(ciclo, true).forEach(r=>{ if(secciones.indexOf(r.sc)!==-1){ t+=r.cap; u+=r.actual; } });
+    return {anio:ciclo, t, u, libres:Math.max(0, t-u)};
+  };
+  const v = sumar(destino);
+  v.hoy = destino===cicloAct ? null : sumar(cicloAct);
+  return v;
 }
 const DIAS_INACTIVO = 7;
 
@@ -1727,9 +1738,12 @@ async function procesarInbox(){
           const fVieja=ficha.entFecha, hVieja=ficha.entHora;
           ficha.entFecha = p.entFecha;
           ficha.entHora = p.entHora||'';
-          // Liberar el turno anterior si la familia eligió uno distinto.
+          // Liberar el turno anterior si la familia eligió uno distinto. Además se da de
+          // baja el evento viejo en Google Calendar: liberar el horario no lo borraba y
+          // a Admisiones le quedaban dos entrevistas para la misma familia.
           if(fVieja && hVieja && (fVieja!==ficha.entFecha || hVieja!==ficha.entHora)){
             liberarTurnoEntrevista(fVieja, hVieja);
+            cancelarEventoEntrevista(fVieja, hVieja, 'reprogramado');
           }
           ficha.estado = 'citado';
           ficha.entResultado = '';
@@ -1758,7 +1772,10 @@ async function procesarInbox(){
           const estadoPrevio=ficha.estado;
           const fVieja=ficha.entFecha, hVieja=ficha.entHora;
           ficha.entFecha = p.entFecha; ficha.entHora = p.entHora||'';
-          if(fVieja && hVieja && (fVieja!==ficha.entFecha || hVieja!==ficha.entHora)) liberarTurnoEntrevista(fVieja, hVieja);
+          if(fVieja && hVieja && (fVieja!==ficha.entFecha || hVieja!==ficha.entHora)){
+            liberarTurnoEntrevista(fVieja, hVieja);
+            cancelarEventoEntrevista(fVieja, hVieja, 'reprogramado');
+          }
           ficha.estado='citado'; ficha.entResultado=''; ficha.ultAccion=today();
           ficha.notas=ficha.notas||[]; ficha.notas.push(nota);
           // Si en el mini-formulario escribió el nombre distinto, queda anotado: la ficha
@@ -3087,12 +3104,17 @@ function addNota(id){
   saveDB(); toast('Nota guardada','ok');
 }
 
+// El número grande es el del año para el que postula la familia — el que decide si entra.
+// Debajo, cómo viene ese mismo curso en el ciclo en curso, con el año escrito: antes se
+// mostraba un solo número sin decir de qué año era y se leía como si fuera el de hoy.
 function getVacDisp(curso, anio){
   const v=vacantesDe(curso, anio); if(!v) return '—';
   const lib=v.libres;
-  if(lib<=0) return `<span style="color:#DC2626;font-weight:600">Curso lleno</span>`;
-  if(lib<=3) return `<span style="color:var(--or);font-weight:600">${lib} lugar${lib!==1?'es':''} (últimos)</span>`;
-  return `<span style="color:var(--gr);font-weight:600">${lib} lugar${lib!==1?'es':''}</span>`;
+  const linea = lib<=0
+    ? `<span style="color:${OC_ROJO};font-weight:600">Sin lugar en ${v.anio}</span>`
+    : `<span style="color:${OC_VERDE};font-weight:600">${lib} lugar${lib!==1?'es':''} en ${v.anio}</span>`;
+  const detalle = `<div style="font-size:10.5px;color:var(--tx3);margin-top:2px">${v.u}/${v.t} ocupados${v.hoy?` · en ${v.hoy.anio}: ${v.hoy.u}/${v.hoy.t} (${v.hoy.libres} libre${v.hoy.libres!==1?'s':''})`:''}</div>`;
+  return linea+detalle;
 }
 
 function prevMail(id){
@@ -3265,8 +3287,8 @@ function changeE(id){
     const v=vacantesDe(p.curso, p.anio);
     if(v){
       const lib=v.libres;
-      const msg = lib<=0 ? 'Curso LLENO — sin vacantes disponibles' : lib<=3 ? lib+' vacante'+(lib>1?'s':'')+' disponibles (últimas)' : lib+' vacantes disponibles';
-      toast('Vacantes en '+p.curso+': '+msg, lib<=0?'err':'info');
+      const msg = lib<=0 ? 'LLENO — sin vacantes' : lib+' vacante'+(lib>1?'s':'')+' ('+v.u+'/'+v.t+' ocupados)';
+      toast(p.curso+' para '+v.anio+': '+msg, lib<=0?'err':'info');
     }
   }
   p.estado=newEst;
@@ -3578,14 +3600,14 @@ function renderVac(){
     return `<div style="margin-bottom:24px">
       <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1.5px solid var(--bd);margin-bottom:12px;padding-bottom:8px">
         <div style="font-size:13.5px;font-weight:700;color:var(--td)">${nivel}</div>
-        <div style="font-size:11.5px;color:var(--tx3)">${totAct} alumnos · <strong style="color:${totLib===0?'#DC2626':totLib<=5?'#D97706':'#16A34A'}">${totLib} disponibles</strong> · ${Math.round(pctT*100)}% ocupación</div>
+        <div style="font-size:11.5px;color:var(--tx3)">${totAct} alumnos · <strong style="color:${vacColor(totLib)}">${totLib} disponibles</strong> · ${Math.round(pctT*100)}% ocupación</div>
       </div>
       <div class="vacgrid" style="margin:0">${secs.map(sc=>{
         const cap=getCap(sc);
         const act=padronActivos.filter(a=>a.curso===sc).length;
         const lib=Math.max(0,cap-act);
         const pct=cap>0?Math.min(100,Math.round(act/cap*100)):0;
-        const fc=pct>=100?'full':pct>=80?'warn':'';
+        const fc=pct>=100?'full':'';
         const key=sc.replace(/[^a-zA-Z0-9]/g,'_');
         return `<div class="vacc">
           <div class="vacc-t">${sc}${pct>=100?'<span class="vacfull-badge">LLENO</span>':''}</div>
@@ -3596,7 +3618,7 @@ function renderVac(){
           <div class="vacbar"><div class="vacfill ${fc}" style="width:${pct}%"></div></div>
           <div class="vacnums">
             <span>${act} alumno${act!==1?'s':''}</span>
-            <span style="color:${lib===0?'#DC2626':lib<=3?'#D97706':'var(--gr)'}">${lib} libre${lib!==1?'s':''}</span>
+            <span style="color:${vacColor(lib)}">${lib} libre${lib!==1?'s':''}</span>
           </div>
         </div>`;
       }).join('')}</div>
@@ -5089,6 +5111,16 @@ function bloquearTurno(fecha, hora, alumno){
 // "no asistió"). Quita el bloqueo automático local y en la hoja del Apps Script para
 // que el horario vuelva a estar disponible en el formulario público. No toca bloqueos
 // manuales ni el evento de la entrevista en Google Calendar (eso lo maneja quien llama).
+// Da de baja el evento de entrevista en el Google Calendar de Admisiones. Liberar el
+// turno (setBloqueo eliminar) sólo libera el horario, no borra el evento: si la familia
+// reprogramaba, le quedaban dos entrevistas en el calendario. `sinMail` le avisa al
+// Apps Script que el mail lo manda el sistema con su propia plantilla.
+function cancelarEventoEntrevista(fecha, hora, motivo){
+  if(!fecha || !DB.config.appsScriptUrl) return Promise.resolve(null);
+  return apiCall('cancelarTurno',{fecha, hora, nuevoEstado:motivo||'reprogramar', sinMail:true})
+    .catch(function(){ return null; });
+}
+
 function liberarTurnoEntrevista(fecha, hora){
   if(!fecha||!hora) return;
   const antes = (DB.bloqueos||[]).length;
@@ -5894,17 +5926,27 @@ function marcarNoAsistio(id){
   p.notas = p.notas||[];
   p.notas.push({txt:'No asistió a la entrevista del '+formatFechaLinda(p.entFecha),fecha:new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}),hora:new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})});
   saveDB();
-  // Cancelar en Apps Script y enviar mail de reprogramación con el link de auto-reserva
-  // (la familia elige un nuevo día sin volver a completar el formulario).
-  if(DB.config.appsScriptUrl && p.entFecha){
-    apiCall('cancelarTurno',{fecha:p.entFecha, hora:p.entHora, nuevoEstado:'reprogramar', linkAgenda:linkReagenda(p)});
+  // El mail de reprogramación lo manda SIEMPRE el sistema, con la plantilla `no_asistio`
+  // y el link personal de auto-reserva. Antes, si había Apps Script configurado, el envío
+  // se delegaba a la acción `cancelarTurno` del script: la plantilla que edita el equipo
+  // no se usaba nunca, la familia no recibía nada y el toast igual cantaba "enviado".
+  // El script ahora sólo da de baja el evento del calendario.
+  cancelarEventoEntrevista(p.entFecha, p.entHora, 'reprogramar').then(function(r){
+    if(DB.config.appsScriptUrl && p.entFecha && !(r&&r.ok))
+      toast('El turno no se pudo cancelar en Google Calendar — borralo a mano','info');
+  });
+  if(!p.email){
+    toast('La ficha no tiene email: avisale vos y usá "📋 Copiar link" para pasarle la reagenda','err');
   } else {
-    enviarMailAdmin(p,'no_asistio');
+    enviarMailAdmin(p,'no_asistio',function(ok,mode){
+      if(ok && mode==='mailto') toast('Abriendo correo con el link de reprogramación...','info');
+      else if(ok) toast(`✓ Mail de reprogramación enviado a ${p.padre}`,'ok');
+      else toast('No se pudo enviar el mail de reprogramación','err');
+    });
   }
   // La entrevista no ocurrió: liberar el turno para que otra familia pueda tomarlo.
   liberarTurnoEntrevista(p.entFecha, p.entHora);
   renderAdminCal(); updateSidebarBadges();
-  toast(`Mail de reprogramación enviado a ${p.padre}`,'ok');
 }
 
 // Envía a la familia el link de auto-reserva para que elija día de entrevista por su cuenta.
@@ -6437,11 +6479,41 @@ function padronVista(ciclo){
   return {rows:cohorte, proyeccion:true, base};
 }
 
-function ocData(cicloOverride){
+// Año para el que postula una ficha del pipeline. Sin `anio` cargado se asume el ciclo
+// activo: antes la condición era `p.anio===ciclo||!p.anio`, así que una ficha sin año se
+// contaba como ocupante de TODOS los ciclos a la vez (2026, 2027, 2028…).
+function anioPostulante(p){
+  return parseInt(p.anio) || DB.config.cicloActivo || new Date().getFullYear();
+}
+
+// Postulantes del pipeline que ya tienen la vacante tomada para `ciclo` y todavía no
+// tienen fila en el padrón. `matriculado` cuenta igual que `nuevo`: reservó la vacante,
+// el lugar ya es suyo. Antes se contaban sólo los `nuevo`, así que Ocupación mostraba
+// lugares que en realidad estaban comprometidos — y no coincidía con el traspaso, que sí
+// los suma vía altasPipelineParaCiclo().
+function altasSinPadron(ciclo, sc){
+  return DB.postulantes.filter(function(p){
+    return (p.estado==='nuevo' || p.estado==='matriculado')
+      && anioPostulante(p)===ciclo
+      && (sc==null ? !p.seccion : p.seccion===sc)
+      && !(DB.padron||[]).some(function(a){ return a.admisionId===String(p.id); });
+  }).length;
+}
+
+function ocIndex(rows){ const m={}; rows.forEach(function(r){ m[r.sc]=r; }); return m; }
+
+// `_sinProy` corta la recursión: ocData(C) pide ocData(C+1) para las vacantes proyectadas.
+function ocData(cicloOverride, _sinProy){
   const ciclo = cicloOverride || _ocCiclo;
   const vista = padronVista(ciclo);
   const padronCiclo = vista.rows;
   const usePadron = padronCiclo.length > 0;
+
+  // Foto del año siguiente. La proyección de una sección NO es "la misma sección con un
+  // descuento": es la ocupación real de la sección a la que esa cohorte pasa, el año que
+  // viene. Calcularla con la misma función garantiza que "proy. de 3° A Prim 2026" y
+  // "hoy de 4° A Prim 2027" no puedan discrepar nunca.
+  const sig = _sinProy ? null : ocIndex(ocData(ciclo+1, true));
 
   return SCHOOL_CURSOS.map(sc=>{
     const od = {...(OC_DEFAULT[sc]||{base:0,cap:27}), ...(DB.ocupacion[sc]||{})};
@@ -6455,33 +6527,37 @@ function ocData(cicloOverride){
       // "No continúa" ya marcado en Re-Matrícula (decisión para el año siguiente):
       // libera el lugar en la proyección en tiempo real.
       noContinua = activosSec.filter(a=>(DB.reMatricula||{})[a.id+'_'+(ciclo+1)]?.estado==='baja').length;
-      // postulantes "nuevo" de admisiones aún no registrados en padrón
-      const nuevosSinPadron = DB.postulantes.filter(p=>
-        p.estado==='nuevo' && p.seccion===sc && (p.anio===ciclo||!p.anio) &&
-        !(DB.padron||[]).some(a=>a.admisionId===String(p.id))
-      ).length;
+      // altas de admisiones (matriculado + nuevo alumno) aún sin fila en el padrón
+      const nuevosSinPadron = altasSinPadron(ciclo, sc);
       actual  = padronActivos + nuevosSinPadron;
       nuevos  = enSec.filter(a=>a.admisionId).length + nuevosSinPadron;
     } else {
       // Legacy: OC_DEFAULT base + altas desde admisiones − bajas manuales
-      const mat = DB.postulantes.filter(p=>p.estado==='nuevo'&&(p.anio===ciclo||ciclo===new Date().getFullYear()));
-      nuevos  = mat.filter(p=>p.seccion===sc).length;
+      nuevos  = altasSinPadron(ciclo, sc);
       bajas   = (DB.bajasEscolares||[]).filter(b=>b.curso===sc).length;
       actual  = od.base + nuevos - bajas;
     }
-    const disp     = od.cap - actual;               // vacantes hoy
-    const dispProy = od.cap - (actual - noContinua); // vacantes proyectadas (contempla Re-Matrícula)
+    const disp = od.cap - actual;               // vacantes hoy, en este ciclo
+    // Proyección = la sección a la que pasa esta cohorte, en ciclo+1.
+    const scSig  = cursoSiguiente(sc);          // null = egresa · undefined = sin mapeo
+    const egresa = scSig === null;
+    const rSig   = (sig && scSig) ? sig[scSig] : null;
+    const capProy    = rSig ? rSig.cap : od.cap;
+    const actualProy = rSig ? rSig.actual : Math.max(0, actual - noContinua);
+    const dispProy   = egresa ? null : capProy - actualProy;
     const pct  = od.cap>0 ? actual/od.cap : 0;
-    return {sc, nivel:SCHOOL_NIVEL(sc), base:od.base, cap:od.cap, nuevos, bajas, noContinua, actual, disp, dispProy, pct, usePadron, proyeccion:vista.proyeccion};
+    return {sc, nivel:SCHOOL_NIVEL(sc), base:od.base, cap:od.cap, nuevos, bajas, noContinua,
+            actual, disp, pct, usePadron, proyeccion:vista.proyeccion,
+            ciclo, cicloProy:ciclo+1, scSig, egresa, capProy, actualProy, dispProy};
   });
 }
 
-function pctColor(p){
-  if(p>=1)    return '#DC2626';
-  if(p>=0.93) return '#D97706';
-  if(p>=0.75) return '#16A34A';
-  return '#6B7280';
-}
+// Ocupación se lee de un golpe: o hay lugar o no hay. El naranja intermedio ("casi
+// lleno") obligaba a interpretar el tono en vez de leer el dato, así que quedan sólo
+// rojo (sin lugar) y verde (hay lugar).
+const OC_ROJO = '#DC2626', OC_VERDE = '#16A34A';
+function pctColor(p){ return p>=1 ? OC_ROJO : OC_VERDE; }
+function vacColor(libres){ return (libres==null || libres>0) ? OC_VERDE : OC_ROJO; }
 function pctBar(p){
   const pct=Math.min(100,Math.round(p*100));
   const c=pctColor(p);
@@ -6521,22 +6597,27 @@ function renderOcupacionCards(){
   const pctGen       = totalCap>0 ? totalAlumnos/totalCap : 0;
   const totalNoCont  = all.reduce((s,r)=>s+(r.noContinua||0),0);
   const dispHoy      = Math.max(0,totalCap-totalAlumnos);
-  const dispProy     = Math.max(0,totalCap-(totalAlumnos-totalNoCont));
-  const sinSeccion   = DB.postulantes.filter(p=>p.estado==='nuevo'&&!p.seccion&&(p.anio===ciclo||!p.anio)&&
-    !(DB.padron||[]).some(a=>a.admisionId===String(p.id))).length;
+  // El total proyectado sale del mismo motor, un año más adelante: ya trae restados a
+  // los que no re-matriculan y sumados los matriculados / nuevos alumnos de ese ciclo.
+  const sigAll       = ocData(ciclo+1, true);
+  const capProy      = sigAll.reduce((s,r)=>s+r.cap,0);
+  const alumnosProy  = sigAll.reduce((s,r)=>s+r.actual,0);
+  const dispProy     = Math.max(0,capProy-alumnosProy);
+  const sinSeccion   = altasSinPadron(ciclo, null);
   const vista        = padronVista(ciclo);
   const padronCnt    = vista.rows.filter(a=>a.estado==='activo').length;
 
   const cards = [
     {lbl:'Alumnos '+ciclo,val:totalAlumnos,sub:`de ${totalCap} capacidad total`,col:'#3B82F6'},
-    {lbl:'Ocupación',val:Math.round(pctGen*100)+'%',sub:`${dispHoy} vac. hoy${totalNoCont>0?` · ${dispProy} proy.`:''}`,col:pctColor(pctGen)},
+    {lbl:'Ocupación '+ciclo,val:Math.round(pctGen*100)+'%',sub:`${dispHoy} vac. en ${ciclo}`,col:pctColor(pctGen)},
+    {lbl:'Proyectado '+(ciclo+1),val:alumnosProy,sub:`${dispProy} vac. en ${ciclo+1}${totalNoCont>0?` · ${totalNoCont} no continúa`:''}`,col:vacColor(dispProy)},
     {lbl:'Altas '+ciclo,val:totalNuevos,sub:'ingresaron via admisiones',col:'#16A34A'},
     {lbl:'Bajas '+ciclo,val:totalBajas,sub:'dejaron el colegio',col:'#EF4444'},
     vista.proyeccion
       ? {lbl:'Proyección',val:padronCnt,sub:`alumnos (desde ${vista.base})`,col:'#0EA5E9'}
       : padronCnt>0
       ? {lbl:'Padrón cargado',val:padronCnt,sub:'alumnos activos',col:'#8B5CF6'}
-      : {lbl:'Sin sección asig.',val:sinSeccion,sub:'nuevos sin sección',col:sinSeccion>0?'#D97706':'#6B7280'},
+      : {lbl:'Sin sección asig.',val:sinSeccion,sub:'altas sin sección',col:sinSeccion>0?'#D97706':'#6B7280'},
   ];
   const el=document.getElementById('oc-cards');
   if(el) el.innerHTML = cards.map(c=>`
@@ -6565,10 +6646,11 @@ function renderOcupacionBody(){
          <strong>⚠ Proyección ${_ocCiclo}</strong> — este año todavía no se cerró. Se muestra el padrón proyectado a partir de ${vistaCiclo.base}: <strong>presume que todos re-matriculan</strong>, avanza cada sección, suma los nuevos alumnos ya cargados para esos años y saca egresados y bajas marcadas. Se hace real recién al apretar <strong>Pasar de año</strong>.
        </div>`
     : '';
+  const cicloSig = _ocCiclo+1;
   const leyenda = `<div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-bottom:14px;font-size:11.5px;color:var(--tx3)">
       <span><strong style="color:var(--td)">Cap.</strong> = cupos totales (editable)</span>
-      <span><strong style="color:#16A34A">Hoy</strong> = cap − alumnos actuales</span>
-      <span><strong style="color:#0EA5E9">Proy.</strong> = suma los lugares que liberan los "No continúa" de Re-Matrícula</span>
+      <span><strong style="color:${OC_VERDE}">${_ocCiclo}</strong> = lugares libres hoy en esa sección</span>
+      <span><strong style="color:#0EA5E9">${cicloSig}</strong> = lugares libres en la sección a la que pasa esta cohorte: saca a los "No continúa" y suma los matriculados y nuevos alumnos ya cargados para ${cicloSig}</span>
     </div>`;
   body.innerHTML=bannerProy+leyenda+niveles.map(n=>{
     const rows=all.filter(r=>r.nivel===n);
@@ -6578,13 +6660,16 @@ function renderOcupacionBody(){
     const totB=rows.reduce((s,r)=>s+r.bajas,0);
     const totNC=rows.reduce((s,r)=>s+(r.noContinua||0),0);
     const dispHoy=Math.max(0,totC-totA);
-    const dispProy=Math.max(0,totC-(totA-totNC));
+    // Proyectado del nivel = lugares libres el año que viene en las secciones a las que
+    // pasa esta cohorte (los que egresan no proyectan a ninguna).
+    const conProy=rows.filter(r=>!r.egresa && r.dispProy!=null);
+    const dispProy=Math.max(0,conProy.reduce((s,r)=>s+r.dispProy,0));
     const pctT=totC>0?totA/totC:0;
     return `<div class="cbox" style="margin-bottom:20px">
       <div class="cbox-h">
         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
           <div class="cbox-t">${n}</div>
-          <span style="font-size:12px;color:var(--tx3)">${totA} alumnos · <strong style="color:#16A34A">${dispHoy}</strong> vac. hoy${totNC>0?` · <strong style="color:#0EA5E9">${dispProy}</strong> proy.`:''} · <strong style="color:${pctColor(pctT)}">${Math.round(pctT*100)}%</strong></span>
+          <span style="font-size:12px;color:var(--tx3)">${totA} alumnos · <strong style="color:${vacColor(dispHoy)}">${dispHoy}</strong> vac. ${_ocCiclo}${conProy.length?` · <strong style="color:#0EA5E9">${dispProy}</strong> vac. ${cicloSig}`:''} · <strong style="color:${pctColor(pctT)}">${Math.round(pctT*100)}%</strong></span>
         </div>
         <div style="display:flex;gap:6px">
           <span style="font-size:11px;color:var(--tx3);background:var(--cr);padding:3px 8px;border-radius:5px">+${totN} altas</span>
@@ -6594,20 +6679,25 @@ function renderOcupacionBody(){
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:10px;padding:12px 16px">
         ${rows.map(r=>{
-          const dispCol=r.disp<0?'#DC2626':r.disp===0?'#D97706':r.disp<=2?'#D97706':'#16A34A';
           const dispTxt=r.disp<0?String(r.disp):r.disp===0?'0':'+'+r.disp;
-          const hayProy=(r.noContinua||0)>0;
-          const proyTxt=r.dispProy<0?String(r.dispProy):'+'+r.dispProy;
+          const proyTxt=r.dispProy==null?'':(r.dispProy<0?String(r.dispProy):'+'+r.dispProy);
           return `<div style="background:var(--cr);border-radius:10px;padding:12px 14px;border:1px solid var(--bd)">
             <div style="font-size:11.5px;font-weight:700;color:var(--td);margin-bottom:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${r.sc}">${r.sc}</div>
             <div style="display:flex;align-items:baseline;gap:4px;margin-bottom:6px">
               <span style="font-size:28px;font-weight:800;line-height:1;color:var(--td)">${r.actual}</span>
-              <span style="font-size:11px;color:var(--tx3)">alumnos${hayProy?` · <span style="color:#0369A1">−${r.noContinua} no cont.</span>`:''}</span>
+              <span style="font-size:11px;color:var(--tx3)">alumnos${r.noContinua>0?` · <span style="color:#0369A1">−${r.noContinua} no cont.</span>`:''}</span>
             </div>
             ${pctBar(r.pct)}
             <div style="display:flex;justify-content:space-between;align-items:center;margin-top:7px">
               <span style="font-size:10.5px;color:var(--tx3)">Cap: <span onclick="editarCursoOcupacion('${r.sc}')" style="font-weight:700;cursor:pointer;color:var(--td);text-decoration:underline dotted;text-underline-offset:2px" title="Editar capacidad (cupos totales)">${r.cap}</span></span>
-              <span style="font-size:12.5px;font-weight:700;color:${dispCol}">${dispTxt} hoy${hayProy?` <span style="color:#0EA5E9">· ${proyTxt} proy.</span>`:''}</span>
+              <span style="font-size:12.5px;font-weight:700;color:${vacColor(r.disp)}">${dispTxt} <span style="font-weight:600;color:var(--tx3)">${_ocCiclo}</span></span>
+            </div>
+            <div style="font-size:10.5px;color:var(--tx3);margin-top:5px;border-top:1px dashed var(--bd);padding-top:5px">
+              ${r.egresa
+                ? `Egresa en ${_ocCiclo} — no pasa a otra sección`
+                : r.scSig
+                ? `${cicloSig}: <strong style="color:${vacColor(r.dispProy)}">${proyTxt}</strong> en ${r.scSig} <span style="opacity:.75">(${r.actualProy}/${r.capProy})</span>`
+                : `<span style="color:#D97706">Sección sin avance definido</span>`}
             </div>
           </div>`;
         }).join('')}
