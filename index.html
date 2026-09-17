@@ -2945,6 +2945,14 @@ function openDetalle(id){
         ${!p.entFecha?`<span style="font-size:11.5px;color:var(--tx3)">Sin fecha agendada aún</span>`:''}
       </div>
       ${p.entResultado?`<div style="margin-top:8px;font-size:12px;color:var(--gr);font-weight:500">✓ Resultado registrado: ${EL[p.entResultado]||p.entResultado}</div>`:''}
+      ${p.entResultado==='no_asistio'?`
+      <div style="margin-top:9px;border-top:1px solid var(--bd2);padding-top:9px">
+        <div style="font-size:12px;color:var(--tx2);margin-bottom:8px">${estadoMailNoAsistio(p)}</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-td btn-sm" onclick="reenviarMailNoAsistio(${id})">✉ Reenviar mail de reprogramación</button>
+          <button class="btn btn-out btn-sm" onclick="copiarLinkAgenda(${id})">📋 Copiar link</button>
+        </div>
+      </div>`:''}
     </div>
 
     ${p.estado==='desiste'?`
@@ -5017,7 +5025,19 @@ function openDetalleEntrevista(id){
         '</div>' +
         '<div class="fgm"><label class="flm">Observaciones</label><textarea class="ftm" id="ent-obs-res" style="min-height:70px" placeholder="Impresiones, comentarios..."></textarea></div>' +
       '</div>'
-    : tieneRes ? '<div style="background:#EBF7D4;border-radius:9px;padding:10px 13px;font-size:12.5px;color:#3A6A0A;margin-bottom:12px">✓ Resultado registrado: <strong>'+(EL[p.entResultado]||p.entResultado)+'</strong></div>' : '') +
+    : tieneRes ? '<div style="background:#EBF7D4;border-radius:9px;padding:10px 13px;font-size:12.5px;color:#3A6A0A;margin-bottom:12px">✓ Resultado registrado: <strong>'+(EL[p.entResultado]||p.entResultado)+'</strong></div>' +
+      // Registrar el resultado es de una sola vez, pero el mail puede fallar o haber salido
+      // con la versión vieja del sistema. Acá queda el estado del envío y cómo reintentarlo,
+      // sin tener que tocar nada más de la ficha.
+      (p.entResultado==='no_asistio'
+        ? '<div style="background:var(--cr);border-radius:9px;padding:10px 13px;margin-bottom:12px">'+
+            '<div style="font-size:12px;color:var(--tx2);margin-bottom:8px">'+estadoMailNoAsistio(p)+'</div>'+
+            '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
+              '<button class="btn btn-td btn-sm" onclick="reenviarMailNoAsistio('+id+')">✉ Reenviar mail de reprogramación</button>'+
+              '<button class="btn btn-out btn-sm" onclick="copiarLinkAgenda('+id+')">📋 Copiar link</button>'+
+            '</div>'+
+          '</div>'
+        : '') : '') +
 
     // Notas
     ((p.notas||[]).length > 0
@@ -5948,18 +5968,52 @@ function marcarNoAsistio(id){
     if(DB.config.appsScriptUrl && p.entFecha && !(r&&r.ok))
       toast('Quedó el evento viejo en Google Calendar — borralo a mano','info');
   });
-  if(!p.email){
-    toast('La ficha no tiene email: avisale vos y usá "📋 Copiar link" para pasarle la reagenda','err');
-  } else {
-    enviarMailAdmin(p,'no_asistio',function(ok,mode){
-      if(ok && mode==='mailto') toast('Abriendo correo con el link de reprogramación...','info');
-      else if(ok) toast(`✓ Mail de reprogramación enviado a ${p.padre}`,'ok');
-      else toast('No se pudo enviar el mail de reprogramación','err');
-    });
-  }
+  mandarMailNoAsistio(p, false);
   // La entrevista no ocurrió: liberar el turno para que otra familia pueda tomarlo.
   liberarTurnoEntrevista(p.entFecha, p.entHora);
   renderAdminCal(); updateSidebarBadges();
+}
+
+// Manda —o vuelve a mandar— el mail de reprogramación con la plantilla `no_asistio`, y deja
+// registrado en la ficha si salió. Antes no quedaba rastro del envío: si fallaba, nadie se
+// enteraba y no había forma de reintentar, porque el resultado ya estaba registrado.
+function mandarMailNoAsistio(p, reenvio){
+  if(!p.email){
+    toast('La ficha no tiene email: avisale vos y usá "📋 Copiar link" para pasarle la reagenda','err');
+    return;
+  }
+  enviarMailAdmin(p,'no_asistio',function(ok,mode){
+    const ahora=new Date();
+    const hora=ahora.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+    p.noAsistioMail={fecha:today(), hora:hora, ok:!!ok, mode:mode||''};
+    if(ok && reenvio){
+      p.notas=p.notas||[];
+      p.notas.push({txt:'Se reenvió el mail de reprogramación de la entrevista.',fecha:ahora.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}),hora:hora});
+    }
+    saveDB();
+    if(ok && mode==='mailto') toast('Abriendo correo con el link de reprogramación...','info');
+    else if(ok) toast(`✓ Mail de reprogramación enviado a ${p.padre}`,'ok');
+    else toast('No se pudo enviar el mail de reprogramación','err');
+    const cont=document.getElementById('notas-'+p.id); if(cont) cont.innerHTML=renderNotas(p);
+  });
+}
+
+function reenviarMailNoAsistio(id){
+  const p=DB.postulantes.find(x=>x.id===id); if(!p) return;
+  if(!confirm('Reenviar a '+(p.padre||'la familia')+' el mail de reprogramación con el link para que elija nuevo día?')) return;
+  mandarMailNoAsistio(p, true);
+}
+
+// Texto que se muestra en la ficha y en el modal de entrevistas. Sin registro = el resultado
+// se marcó antes de que el sistema guardara el envío: no se puede afirmar que la familia
+// recibió el mail, así que se dice eso y no "enviado".
+function estadoMailNoAsistio(p){
+  const m=p.noAsistioMail;
+  if(!m) return 'No hay registro de que se le haya enviado el mail de reprogramación. Si no estás seguro, reenvialo: es el mismo mail con el link para elegir nuevo día.';
+  const cuando='el '+fDateFull(m.fecha)+(m.hora?' a las '+m.hora:'');
+  if(!m.ok) return 'El último intento de enviar el mail de reprogramación falló '+cuando;
+  if(m.mode==='mailto') return 'Se abrió tu correo con el mail de reprogramación '+cuando+' — verificá que lo hayas mandado.';
+  return 'Mail de reprogramación enviado '+cuando;
 }
 
 // Envía a la familia el link de auto-reserva para que elija día de entrevista por su cuenta.
