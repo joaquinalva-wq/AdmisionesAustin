@@ -360,7 +360,7 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
 .vacc-t{font-size:12.5px;font-weight:600;color:var(--td);margin-bottom:8px}
 .vacbar{background:var(--cr2);border-radius:20px;height:7px;overflow:hidden;margin:6px 0}
 .vacfill{height:100%;border-radius:20px;background:var(--gr);transition:width .4s}
-.vacfill.warn{background:var(--or)}.vacfill.full{background:#DC2626}
+.vacfill.full{background:#DC2626}
 .vacnums{font-size:11px;color:var(--tx2);display:flex;justify-content:space-between}
 .vaci{padding:4px 8px;border:1.5px solid var(--bd2);border-radius:6px;font-size:12px;width:54px;text-align:center;font-family:'DM Sans',sans-serif;color:var(--tx);background:var(--cr);outline:none}
 .vaci:focus{border-color:var(--tl);background:#fff}
@@ -972,7 +972,7 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
       <button class="sbi" id="nav-bajasesc" onclick="showV('bajasesc')"><span class="sbi-ic">⊠</span> Bajas <span class="sbi-badge" id="badge-bajasesc" style="display:none">0</span></button>
       <div class="sbsec">Gestión</div>
       <button class="sbi" id="nav-ocupacion" onclick="showV('ocupacion')"><span class="sbi-ic">📊</span> Ocupación</button>
-      <button class="sbi" id="nav-vac" onclick="showV('vac')"><span class="sbi-ic">▣</span> Vacantes</button>
+      <button class="sbi" id="nav-vac" onclick="showV('vac')"><span class="sbi-ic">▣</span> Capacidad</button>
       <div class="sbsec">Comunicaciones</div>
       <button class="sbi" id="nav-emails" onclick="showV('emails')"><span class="sbi-ic">✉</span> Plantillas de mail</button>
       <button class="sbi" id="nav-tar" onclick="showV('tar')"><span class="sbi-ic">$</span> Tarifas 2026</button>
@@ -1159,12 +1159,12 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
 
       <!-- VACANTES -->
       <div id="view-vac" class="view">
-        <div class="ph"><h1>Vacantes por curso</h1><p>Definí la disponibilidad · Cuando un curso se llena el sistema lo advierte automáticamente</p></div>
+        <div class="ph"><h1>Capacidad por curso — ciclo <span id="vac-ciclo-lbl"></span></h1><p>Acá se define cuántos cupos tiene cada sección · Los alumnos y las vacantes libres se calculan solos</p></div>
         <div style="background:#fff;border-radius:var(--r2);border:1px solid var(--bd);padding:12px 17px;margin-bottom:16px;font-size:12.5px;color:var(--tx2);line-height:1.6">
-          <strong>¿Cómo funciona?</strong> Las vacantes disponibles se calculan automáticamente: <strong>Total − Alumnos activos en el padrón</strong>. Al agregar un alumno al padrón, su sección pierde una vacante. Podés editar el total por sección y guardar — eso también actualiza los datos en Ocupación.
+          <strong>¿Cómo funciona?</strong> Lo único editable acá es el <strong>Total</strong> (los cupos de la sección). Los alumnos salen del mismo cálculo que <strong>Ocupación</strong>: alumnos activos del padrón de ese ciclo <strong>+ los matriculados y nuevos alumnos ya cargados para ese año</strong>, que ya tienen la vacante tomada. El año que se muestra es el que esté elegido en Ocupación.
         </div>
         <div id="vacgrid"></div>
-        <div style="margin-top:14px"><button class="btn btn-td" onclick="saveVac()">Guardar vacantes</button></div>
+        <div style="margin-top:14px"><button class="btn btn-td" onclick="saveVac()">Guardar capacidad</button></div>
       </div>
 
       <!-- EMAILS -->
@@ -1495,8 +1495,8 @@ async function hashPw(pw){
 }
 // Vacantes de un curso del pipeline, SIEMPRE derivadas de la fuente única de verdad:
 // capacidad (DB.ocupacion[sección].cap) − ocupación real (padrón activo + altas del pipeline).
-// Se calcula en el momento y no se cachea: antes existía un contador mutable (`.u`) que
-// una función de ajuste incrementaba y syncVacantesFromOcupacion() pisaba, quedando desincronizado.
+// Se calcula en el momento y no se cachea: antes existía un contador mutable (`.u`) en
+// DB.vacantes que una función de ajuste incrementaba y otra pisaba, y quedaba desfasado.
 // `anio` es SIEMPRE el ciclo para el que postula la familia. `libres` responde "¿entra
 // en ese año?" y `hoy` muestra cómo está ese mismo curso en el ciclo en curso, para que
 // nunca se confunda un número con el otro.
@@ -2326,7 +2326,7 @@ function showV(v){
   document.querySelectorAll('.sbi').forEach(el=>el.classList.remove('active'));
   const ve=document.getElementById('view-'+v); if(ve) ve.classList.add('on');
   const nb=document.getElementById('nav-'+v); if(nb) nb.classList.add('active');
-  const titles={dashboard:'Dashboard',pipeline:'Pipeline de admisiones',entrevistas:'Entrevistas',post:'Postulantes',matriculados:'Matriculados',bajas:'Desistieron',bajasesc:'Bajas de alumnos',ocupacion:'Ocupación del colegio',vac:'Vacantes por curso',emails:'Plantillas de mail',tar:'Tarifas 2026',cfg:'Configuración'};
+  const titles={dashboard:'Dashboard',pipeline:'Pipeline de admisiones',entrevistas:'Entrevistas',post:'Postulantes',matriculados:'Matriculados',bajas:'Desistieron',bajasesc:'Bajas de alumnos',ocupacion:'Ocupación del colegio',vac:'Capacidad por curso',emails:'Plantillas de mail',tar:'Tarifas 2026',cfg:'Configuración'};
   document.getElementById('tb-t').textContent=titles[v]||v;
   if(v==='dashboard') renderDashboard();
   if(v==='pipeline'){ poblarCursosPipeline(); renderPipeline(); }
@@ -3585,26 +3585,33 @@ function abrirMailto_(email,subj,body){
 // ═══════════════════════════
 function getCap(sc){ return (DB.ocupacion&&DB.ocupacion[sc]&&DB.ocupacion[sc].cap!=null)?DB.ocupacion[sc].cap:(OC_DEFAULT[sc]?OC_DEFAULT[sc].cap:27); }
 
+// Esta vista edita la capacidad; la ocupación la lee de ocData(), el mismo motor que
+// Ocupación y que la ficha del pipeline. Antes contaba sólo filas activas del padrón, así
+// que ignoraba a los matriculados y nuevos alumnos todavía sin fila y mostraba más
+// vacantes que Ocupación para la misma sección y el mismo año.
 function renderVac(){
-  syncVacantesFromOcupacion();
   const ciclo=_ocCiclo;
-  const padronActivos=(DB.padron||[]).filter(a=>a.ciclo===ciclo&&a.estado==='activo');
+  const all=ocData(ciclo, true);
+  const porSec={}; all.forEach(r=>{ porSec[r.sc]=r; });
+  const hdr=document.getElementById('vac-ciclo-lbl');
+  if(hdr) hdr.textContent=ciclo;
   const niveles=['Inicial','Elementary','High School'];
   const container=document.getElementById('vacgrid');
   container.innerHTML=niveles.map(nivel=>{
     const secs=SCHOOL_CURSOS.filter(sc=>SCHOOL_NIVEL(sc)===nivel);
-    const totCap=secs.reduce((s,sc)=>s+getCap(sc),0);
-    const totAct=secs.reduce((s,sc)=>s+padronActivos.filter(a=>a.curso===sc).length,0);
+    const totCap=secs.reduce((s,sc)=>s+(porSec[sc]?porSec[sc].cap:getCap(sc)),0);
+    const totAct=secs.reduce((s,sc)=>s+(porSec[sc]?porSec[sc].actual:0),0);
     const totLib=Math.max(0,totCap-totAct);
     const pctT=totCap>0?totAct/totCap:0;
     return `<div style="margin-bottom:24px">
       <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1.5px solid var(--bd);margin-bottom:12px;padding-bottom:8px">
         <div style="font-size:13.5px;font-weight:700;color:var(--td)">${nivel}</div>
-        <div style="font-size:11.5px;color:var(--tx3)">${totAct} alumnos · <strong style="color:${vacColor(totLib)}">${totLib} disponibles</strong> · ${Math.round(pctT*100)}% ocupación</div>
+        <div style="font-size:11.5px;color:var(--tx3)">${totAct} alumnos · <strong style="color:${vacColor(totLib)}">${totLib} libres en ${ciclo}</strong> · ${Math.round(pctT*100)}% ocupación</div>
       </div>
       <div class="vacgrid" style="margin:0">${secs.map(sc=>{
-        const cap=getCap(sc);
-        const act=padronActivos.filter(a=>a.curso===sc).length;
+        const r=porSec[sc]||{cap:getCap(sc),actual:0,nuevos:0};
+        const cap=r.cap;
+        const act=r.actual;
         const lib=Math.max(0,cap-act);
         const pct=cap>0?Math.min(100,Math.round(act/cap*100)):0;
         const fc=pct>=100?'full':'';
@@ -3617,8 +3624,8 @@ function renderVac(){
           </div>
           <div class="vacbar"><div class="vacfill ${fc}" style="width:${pct}%"></div></div>
           <div class="vacnums">
-            <span>${act} alumno${act!==1?'s':''}</span>
-            <span style="color:${vacColor(lib)}">${lib} libre${lib!==1?'s':''}</span>
+            <span>${act} alumno${act!==1?'s':''}${r.nuevos>0?` <span style="color:var(--tx3)">(${r.nuevos} de admisiones)</span>`:''}</span>
+            <span style="color:${vacColor(lib)}">${lib} libre${lib!==1?'s':''} en ${ciclo}</span>
           </div>
         </div>`;
       }).join('')}</div>
@@ -3636,8 +3643,7 @@ function saveVac(){
       DB.ocupacion[sc]={base:prev.base||0,cap};
     }
   });
-  syncVacantesFromOcupacion();
-  saveDB(); toast('Vacantes actualizadas','ok');
+  saveDB(); renderVac(); toast('Capacidad actualizada','ok');
 }
 
 // ═══════════════════════════
@@ -5002,7 +5008,7 @@ function openDetalleEntrevista(id){
       '<div class="ent-resultado">' +
         '<div class="ent-r-title">Registrar resultado de la entrevista</div>' +
         (v ? '<div class="'+(hayVac?'info-box':'warn-box')+'" style="margin-bottom:10px">'+
-          (hayVac ? '✅ <strong>'+v.libres+'</strong> vacante'+(v.libres!==1?'s':'')+' disponibles en '+esc(p.curso)+'.' : '⚠️ Sin vacantes en '+esc(p.curso)+'. Podés pasar a Lista de espera.')+
+          (hayVac ? '✅ <strong>'+v.libres+'</strong> vacante'+(v.libres!==1?'s':'')+' en '+esc(p.curso)+' para <strong>'+v.anio+'</strong>.' : '⚠️ Sin vacantes en '+esc(p.curso)+' para <strong>'+v.anio+'</strong>. Podés pasar a Lista de espera.')+
           '</div>' : '') +
         '<div class="ent-opciones">' +
           '<div class="ent-opcion" id="rop-post" onclick="selectRes(\'post\')">✅<br>Quiere avanzar</div>' +
@@ -5041,7 +5047,6 @@ function confirmarResultado(id){
   if(!resultadoSel){ toast('Seleccioná un resultado primero','err'); return; }
   const p = DB.postulantes.find(x=>x.id===id); if(!p) return;
   const obs = (document.getElementById('ent-obs-res') ? document.getElementById('ent-obs-res').value : '').trim();
-  const v = vacantesDe(p.curso, p.anio); const hayVac = !!(v && v.libres > 0);
   let nuevoEstado;
   if(resultadoSel==='post') nuevoEstado = 'postulado'; // admin decides manually if lista de espera
   else if(resultadoSel==='esp') nuevoEstado = 'lista de espera';
@@ -5107,20 +5112,27 @@ function bloquearTurno(fecha, hora, alumno){
   if(DB.config.appsScriptUrl) apiCall('setBloqueo',{fecha,hora,motivo:'Entrevista: '+(alumno||'')});
 }
 
+// Da de baja el evento de entrevista en el Google Calendar de Admisiones. Liberar el
+// turno (setBloqueo eliminar) sólo libera el horario, no borra el evento: si la familia
+// reprogramaba, le quedaban dos entrevistas en el calendario.
+//
+// IMPORTANTE — la familia nunca puede recibir dos mails. Por eso acá NO se usa la acción
+// `cancelarTurno` del Apps Script: esa acción le manda su propio mail a la familia, y el
+// mail de reprogramación ya lo manda el sistema con la plantilla que edita el equipo.
+// Se usa una acción dedicada que sólo toca el calendario, simétrica de
+// `crearEventoEntrevista`. Si el Apps Script todavía no la tiene, el pedido falla solo y
+// no se manda ningún mail: el peor caso es que quede el evento viejo en el calendario, y
+// eso se avisa por pantalla para borrarlo a mano.
+function cancelarEventoEntrevista(fecha, hora, motivo){
+  if(!fecha || !DB.config.appsScriptUrl) return Promise.resolve(null);
+  return apiCall('cancelarEventoEntrevista',{fecha, hora, motivo:motivo||'reprogramar'})
+    .catch(function(){ return null; });
+}
+
 // Libera el turno que una entrevista tenía reservado (al reprogramarla o marcarla
 // "no asistió"). Quita el bloqueo automático local y en la hoja del Apps Script para
 // que el horario vuelva a estar disponible en el formulario público. No toca bloqueos
 // manuales ni el evento de la entrevista en Google Calendar (eso lo maneja quien llama).
-// Da de baja el evento de entrevista en el Google Calendar de Admisiones. Liberar el
-// turno (setBloqueo eliminar) sólo libera el horario, no borra el evento: si la familia
-// reprogramaba, le quedaban dos entrevistas en el calendario. `sinMail` le avisa al
-// Apps Script que el mail lo manda el sistema con su propia plantilla.
-function cancelarEventoEntrevista(fecha, hora, motivo){
-  if(!fecha || !DB.config.appsScriptUrl) return Promise.resolve(null);
-  return apiCall('cancelarTurno',{fecha, hora, nuevoEstado:motivo||'reprogramar', sinMail:true})
-    .catch(function(){ return null; });
-}
-
 function liberarTurnoEntrevista(fecha, hora){
   if(!fecha||!hora) return;
   const antes = (DB.bloqueos||[]).length;
@@ -5930,10 +5942,11 @@ function marcarNoAsistio(id){
   // y el link personal de auto-reserva. Antes, si había Apps Script configurado, el envío
   // se delegaba a la acción `cancelarTurno` del script: la plantilla que edita el equipo
   // no se usaba nunca, la familia no recibía nada y el toast igual cantaba "enviado".
-  // El script ahora sólo da de baja el evento del calendario.
+  // Ahora al script sólo se le pide borrar el evento del calendario, con una acción que
+  // no manda mails, para que la familia reciba uno solo.
   cancelarEventoEntrevista(p.entFecha, p.entHora, 'reprogramar').then(function(r){
     if(DB.config.appsScriptUrl && p.entFecha && !(r&&r.ok))
-      toast('El turno no se pudo cancelar en Google Calendar — borralo a mano','info');
+      toast('Quedó el evento viejo en Google Calendar — borralo a mano','info');
   });
   if(!p.email){
     toast('La ficha no tiene email: avisale vos y usá "📋 Copiar link" para pasarle la reagenda','err');
@@ -6456,12 +6469,17 @@ function esCicloMaterializado(ciclo){
 // egresados y suma las altas reales (nuevos alumnos) de cada año. No persiste nada.
 function padronVista(ciclo){
   const real = (DB.padron||[]).filter(a=>a.ciclo===ciclo);
-  if(esCicloMaterializado(ciclo)) return {rows:real, proyeccion:false, base:ciclo};
+  const activosReales = c => (DB.padron||[]).filter(a=>a.ciclo===c && a.estado==='activo').map(a=>({...a}));
+  if(esCicloMaterializado(ciclo)){
+    const rs = activosReales(ciclo);
+    return {rows:real.concat(filasAltasPipeline(ciclo, rs)), reales:real.length, proyeccion:false, base:ciclo};
+  }
   const ciclosMat = [...new Set((DB.padron||[]).filter(a=>a.estado==='activo').map(a=>a.ciclo))]
     .filter(c=>c<ciclo && esCicloMaterializado(c));
-  if(!ciclosMat.length) return {rows:real, proyeccion:false, base:null};
+  if(!ciclosMat.length) return {rows:real, reales:real.length, proyeccion:false, base:null};
   const base = Math.max.apply(null, ciclosMat);
-  let cohorte = (DB.padron||[]).filter(a=>a.ciclo===base && a.estado==='activo').map(a=>({...a}));
+  const baseReales = activosReales(base);
+  let cohorte = baseReales.concat(filasAltasPipeline(base, baseReales));
   for(let c=base; c<ciclo; c++){
     const avanzados = cohorte
       .filter(a=>!esEgresado(a))
@@ -6470,13 +6488,34 @@ function padronVista(ciclo){
         const nuevaCurso = cursoAvanzado(a.curso);
         return {...a, curso:nuevaCurso, nivel:SCHOOL_NIVEL(nuevaCurso), ciclo:c+1, proyectado:true};
       });
-    // Ingresantes reales del año c+1 (nuevos alumnos ya cargados en el padrón)
-    const entrantes = (DB.padron||[]).filter(a=>a.ciclo===(c+1) && a.estado==='activo').map(a=>({...a}));
-    const idsEntr = new Set(entrantes.map(a=>a.admisionId).filter(Boolean));
-    const avanzadosOk = avanzados.filter(a=>!(a.admisionId && idsEntr.has(a.admisionId)));
-    cohorte = avanzadosOk.concat(entrantes);
+    // Si alguien ya tiene fila real en c+1, esa fila manda: no se lo cuenta dos veces.
+    const reales = activosReales(c+1);
+    const idsReales = new Set(reales.map(a=>a.admisionId).filter(Boolean));
+    const yaUbicados = avanzados.filter(a=>!(a.admisionId && idsReales.has(a.admisionId))).concat(reales);
+    // Las altas del pipeline de c+1 se reparten CONTRA la cohorte ya ubicada, igual que
+    // hace el traspaso: si no, la proyección las mandaba siempre a la división A (veía el
+    // ciclo vacío) y el traspaso las mandaba a otra, y las dos pantallas discrepaban.
+    cohorte = yaUbicados.concat(filasAltasPipeline(c+1, yaUbicados));
   }
-  return {rows:cohorte, proyeccion:true, base};
+  return {rows:cohorte, reales:real.length, proyeccion:true, base};
+}
+
+// Filas "fantasma" para las altas del pipeline que todavía no están en el padrón: el
+// lugar ya está tomado, así que tienen que pesar en la ocupación igual que una fila real.
+// `ocupadas` son las filas que ya están en ese ciclo (reales o proyectadas): sobre ellas se
+// reparte, para elegir la misma división que va a elegir el traspaso. Quedan marcadas con
+// _altaPipeline para que el padrón pueda distinguirlas de las filas de verdad.
+function filasAltasPipeline(ciclo, ocupadas){
+  const conteo = {};
+  (ocupadas||[]).forEach(function(a){ if(a.curso) conteo[a.curso] = (conteo[a.curso]||0) + 1; });
+  return altasDelPipeline(ciclo).map(function(p){
+    const curso = p.seccion || seccionMenosPobladaDe(p.curso, conteo) || '';
+    if(curso) conteo[curso] = (conteo[curso]||0) + 1;
+    return {id:'alta_'+p.id+'_'+ciclo, nombre:p.alumno||'', nivel:curso?SCHOOL_NIVEL(curso):'',
+            curso:curso, ciclo:ciclo, estado:'activo', fechaAlta:p.ultAccion||'',
+            admisionId:String(p.id), idColegio:'', _altaPipeline:true, _altaCiclo:ciclo,
+            _estadoPipeline:p.estado};
+  }).filter(function(f){ return !!f.curso; });
 }
 
 // Año para el que postula una ficha del pipeline. Sin `anio` cargado se asume el ciclo
@@ -6486,18 +6525,45 @@ function anioPostulante(p){
   return parseInt(p.anio) || DB.config.cicloActivo || new Date().getFullYear();
 }
 
-// Postulantes del pipeline que ya tienen la vacante tomada para `ciclo` y todavía no
-// tienen fila en el padrón. `matriculado` cuenta igual que `nuevo`: reservó la vacante,
-// el lugar ya es suyo. Antes se contaban sólo los `nuevo`, así que Ocupación mostraba
-// lugares que en realidad estaban comprometidos — y no coincidía con el traspaso, que sí
-// los suma vía altasPipelineParaCiclo().
-function altasSinPadron(ciclo, sc){
+// FUENTE ÚNICA de "quién ocupa lugar sin estar todavía en el padrón". La usan Ocupación,
+// Vacantes por curso, la ficha del pipeline, Movimientos y el traspaso: si cada pantalla
+// arma su propia lista, los números se contradicen.
+// `matriculado` cuenta igual que `nuevo`: reservó la vacante, el lugar ya es suyo.
+function altasDelPipeline(ciclo){
   return DB.postulantes.filter(function(p){
     return (p.estado==='nuevo' || p.estado==='matriculado')
       && anioPostulante(p)===ciclo
-      && (sc==null ? !p.seccion : p.seccion===sc)
-      && !(DB.padron||[]).some(function(a){ return a.admisionId===String(p.id); });
-  }).length;
+      && !(DB.padron||[]).some(function(a){ return a.admisionId===String(p.id) && a.ciclo===ciclo; });
+  });
+}
+
+// Sección donde ocupa lugar una alta del pipeline. Es la MISMA regla que aplica el
+// traspaso (generarPadronDesdeRemat): si Admisiones todavía no le asignó sección, va a la
+// menos poblada de su curso. Antes Ocupación sólo miraba `p.seccion`, así que un
+// matriculado sin sección no restaba lugar en ninguna parte y el lugar aparecía libre
+// hasta el día del traspaso. Devuelve '' sólo si el curso del pipeline no mapea a ninguna
+// sección — ese caso se avisa aparte, no se esconde.
+function seccionDeAlta(p, ciclo, yaAsignadas){
+  return p.seccion || seccionConMenosAlumnos(p.curso, ciclo, yaAsignadas) || '';
+}
+
+// Altas por sección, en una sola pasada: ocData la llama una vez por ciclo en vez de
+// recorrer postulantes y padrón 31 veces (una por sección). El reparto es incremental
+// —cada alta ya cuenta para la siguiente— así que Ocupación muestra exactamente la
+// distribución que va a aplicar el traspaso.
+function altasPorSeccion(ciclo){
+  const m={};
+  altasDelPipeline(ciclo).forEach(function(p){
+    const s=seccionDeAlta(p, ciclo, m);
+    m[s]=(m[s]||0)+1;
+  });
+  return m;
+}
+
+// Altas cuyo curso del pipeline no corresponde a ninguna sección del colegio: no se
+// pueden imputar a ningún lado y hay que corregirlas a mano.
+function altasSinSeccion(ciclo){
+  return altasDelPipeline(ciclo).filter(function(p){ return !seccionDeAlta(p, ciclo); });
 }
 
 function ocIndex(rows){ const m={}; rows.forEach(function(r){ m[r.sc]=r; }); return m; }
@@ -6507,13 +6573,17 @@ function ocData(cicloOverride, _sinProy){
   const ciclo = cicloOverride || _ocCiclo;
   const vista = padronVista(ciclo);
   const padronCiclo = vista.rows;
-  const usePadron = padronCiclo.length > 0;
+  // "Modo base" (OC_DEFAULT) sólo mientras no haya padrón de verdad. Se mira `reales` y no
+  // la cantidad de filas: las altas del pipeline ahora vienen dentro de vista.rows y, si
+  // se contaran, una sola alta hacía creer que el padrón estaba cargado.
+  const usePadron = vista.proyeccion || vista.reales > 0;
 
   // Foto del año siguiente. La proyección de una sección NO es "la misma sección con un
   // descuento": es la ocupación real de la sección a la que esa cohorte pasa, el año que
   // viene. Calcularla con la misma función garantiza que "proy. de 3° A Prim 2026" y
   // "hoy de 4° A Prim 2027" no puedan discrepar nunca.
   const sig = _sinProy ? null : ocIndex(ocData(ciclo+1, true));
+  const altasSec = altasPorSeccion(ciclo);
 
   return SCHOOL_CURSOS.map(sc=>{
     const od = {...(OC_DEFAULT[sc]||{base:0,cap:27}), ...(DB.ocupacion[sc]||{})};
@@ -6523,17 +6593,17 @@ function ocData(cicloOverride, _sinProy){
       bajas   = enSec.filter(a=>a.estado==='baja').length;
       // alumnos del padron activos en esta sección
       const activosSec = enSec.filter(a=>a.estado==='activo');
-      const padronActivos = activosSec.length;
       // "No continúa" ya marcado en Re-Matrícula (decisión para el año siguiente):
       // libera el lugar en la proyección en tiempo real.
       noContinua = activosSec.filter(a=>(DB.reMatricula||{})[a.id+'_'+(ciclo+1)]?.estado==='baja').length;
-      // altas de admisiones (matriculado + nuevo alumno) aún sin fila en el padrón
-      const nuevosSinPadron = altasSinPadron(ciclo, sc);
-      actual  = padronActivos + nuevosSinPadron;
-      nuevos  = enSec.filter(a=>a.admisionId).length + nuevosSinPadron;
+      // Las altas de admisiones (matriculado + nuevo alumno) sin fila en el padrón ya vienen
+      // adentro de `padronVista` como filas virtuales (`_altaPipeline`), así que acá NO se
+      // suman de nuevo: se cuentan una sola vez, igual que una fila real.
+      actual  = activosSec.length;
+      nuevos  = activosSec.filter(a=>a.admisionId).length;
     } else {
       // Legacy: OC_DEFAULT base + altas desde admisiones − bajas manuales
-      nuevos  = altasSinPadron(ciclo, sc);
+      nuevos  = altasSec[sc] || 0;
       bajas   = (DB.bajasEscolares||[]).filter(b=>b.curso===sc).length;
       actual  = od.base + nuevos - bajas;
     }
@@ -6566,18 +6636,21 @@ function pctBar(p){
 
 function renderOcupacion(){
   if(!DB.ocupacion||!Object.keys(DB.ocupacion).length) DB.ocupacion={...OC_DEFAULT};
-  syncVacantesFromOcupacion();
   // Update ciclo selector
   const sel=document.getElementById('oc-ciclo-sel');
   if(sel) sel.value=String(_ocCiclo);
   // Update subtitle
   const sub=document.getElementById('oc-ph-sub');
   const vista=padronVista(_ocCiclo);
+  // `activosVista` ya incluye las altas de admisiones (vienen como filas en padronVista), así
+  // que el texto las aclara entre paréntesis en vez de sumarlas otra vez.
   const activosVista=vista.rows.filter(a=>a.estado==='activo').length;
+  const altasVista=vista.rows.filter(a=>a.estado==='activo'&&a._altaPipeline).length;
+  const masAltas=altasVista?` (incluye ${altasVista} alta${altasVista!==1?'s':''} de admisiones sin fila en el padrón)`:'';
   if(sub) sub.textContent=vista.proyeccion
-    ? `Proyección ${_ocCiclo}: ${activosVista} alumnos (presume que todos re-matriculan desde ${vista.base})`
+    ? `Proyección ${_ocCiclo}: ${activosVista} alumnos${masAltas} — avanza el padrón ${vista.base}; re-matriculan todos los que no marcaron baja`
     : activosVista>0
-    ? `Padrón ${_ocCiclo}: ${activosVista} alumnos activos`
+    ? `Padrón ${_ocCiclo}: ${activosVista} alumnos ocupan lugar${masAltas}`
     : `Ciclo ${_ocCiclo} · Modo base (importá el padrón para datos reales)`;
   renderOcupacionCards();
   ocTab(_ocTab);
@@ -6603,7 +6676,9 @@ function renderOcupacionCards(){
   const capProy      = sigAll.reduce((s,r)=>s+r.cap,0);
   const alumnosProy  = sigAll.reduce((s,r)=>s+r.actual,0);
   const dispProy     = Math.max(0,capProy-alumnosProy);
-  const sinSeccion   = altasSinPadron(ciclo, null);
+  // Altas que no se pueden ubicar en ninguna sección (curso del pipeline sin mapeo):
+  // no entran en ningún número de ocupación, por eso se muestran aparte.
+  const sinSeccion   = altasSinSeccion(ciclo).length;
   const vista        = padronVista(ciclo);
   const padronCnt    = vista.rows.filter(a=>a.estado==='activo').length;
 
@@ -6616,7 +6691,7 @@ function renderOcupacionCards(){
     vista.proyeccion
       ? {lbl:'Proyección',val:padronCnt,sub:`alumnos (desde ${vista.base})`,col:'#0EA5E9'}
       : padronCnt>0
-      ? {lbl:'Padrón cargado',val:padronCnt,sub:'alumnos activos',col:'#8B5CF6'}
+      ? {lbl:'Padrón cargado',val:padronCnt,sub:'ocupan lugar en '+ciclo,col:'#8B5CF6'}
       : {lbl:'Sin sección asig.',val:sinSeccion,sub:'altas sin sección',col:sinSeccion>0?'#D97706':'#6B7280'},
   ];
   const el=document.getElementById('oc-cards');
@@ -6643,7 +6718,7 @@ function renderOcupacionBody(){
   const vistaCiclo = padronVista(_ocCiclo);
   const bannerProy = vistaCiclo.proyeccion
     ? `<div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:10px;padding:11px 15px;margin-bottom:16px;font-size:12.5px;color:#1D4ED8;line-height:1.55">
-         <strong>⚠ Proyección ${_ocCiclo}</strong> — este año todavía no se cerró. Se muestra el padrón proyectado a partir de ${vistaCiclo.base}: <strong>presume que todos re-matriculan</strong>, avanza cada sección, suma los nuevos alumnos ya cargados para esos años y saca egresados y bajas marcadas. Se hace real recién al apretar <strong>Pasar de año</strong>.
+         <strong>⚠ Proyección ${_ocCiclo}</strong> — este año todavía no se cerró. Se muestra el padrón proyectado a partir de ${vistaCiclo.base}: avanza cada sección, <strong>saca a los egresados y a los marcados "no continúa" en Re-Matrícula</strong>, presume que el resto re-matricula y suma los matriculados y nuevos alumnos ya cargados para ${_ocCiclo}. Se hace real recién al apretar <strong>Pasar de año</strong>.
        </div>`
     : '';
   const cicloSig = _ocCiclo+1;
@@ -6706,61 +6781,15 @@ function renderOcupacionBody(){
   }).join('');
 }
 
-function renderOcNiveles(all){
-  const niveles=['Inicial','Elementary','High School'];
-  return niveles.map(n=>{
-    const rows=all.filter(r=>r.nivel===n);
-    const totA=rows.reduce((s,r)=>s+r.actual,0);
-    const totC=rows.reduce((s,r)=>s+r.cap,0);
-    const totN=rows.reduce((s,r)=>s+r.nuevos,0);
-    const totB=rows.reduce((s,r)=>s+r.bajas,0);
-    const totD=totC-totA;
-    const pctT=totC>0?totA/totC:0;
-    return `<div class="cbox" style="margin-bottom:16px">
-      <div class="cbox-h">
-        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-          <div class="cbox-t">${n}</div>
-          <span style="font-size:12px;color:var(--tx3)">${totA} alumnos · ${totD} disponibles · <strong style="color:${pctColor(pctT)}">${Math.round(pctT*100)}%</strong></span>
-        </div>
-        <div style="display:flex;gap:6px">
-          <span style="font-size:11px;color:var(--tx3);background:var(--cr);padding:3px 8px;border-radius:5px">+${totN} nuevos</span>
-          <span style="font-size:11px;color:var(--tx3);background:var(--cr);padding:3px 8px;border-radius:5px">−${totB} bajas</span>
-        </div>
-      </div>
-      ${renderOcTable(rows,false)}
-    </div>`;
-  }).join('');
-}
-
-function renderOcTable(rows, withEdit){
-  if(!rows.length) return '<p style="color:var(--tx3);padding:12px">Sin datos.</p>';
-  return `<table>
-    <thead><tr>
-      <th>Sección</th><th>Base</th><th>+Nuevos</th><th>−Bajas</th><th>Total</th><th>Cap.</th><th>Disponibles</th><th>Ocupación</th>${withEdit?'<th></th>':''}
-    </tr></thead>
-    <tbody>${rows.map(r=>`<tr>
-      <td><strong>${r.sc}</strong></td>
-      <td>${r.base}</td>
-      <td style="color:#16A34A;font-weight:500">${r.nuevos>0?'+'+r.nuevos:'—'}</td>
-      <td style="color:#EF4444;font-weight:500">${r.bajas>0?'−'+r.bajas:'—'}</td>
-      <td><strong>${r.actual}</strong></td>
-      <td style="color:var(--tx3)">${r.cap}</td>
-      <td style="color:${r.disp<0?'#DC2626':r.disp===0?'#D97706':'var(--td)'}"><strong>${r.disp<0?r.disp:r.disp===0?'Completo':'+'+r.disp}</strong></td>
-      <td style="min-width:100px">
-        <span style="font-size:13px;font-weight:600;color:${pctColor(r.pct)}">${Math.round(r.pct*100)}%</span>
-        ${pctBar(r.pct)}
-      </td>
-      ${withEdit?`<td><button class="btn btn-sm btn-out" onclick="editarCursoOcupacion('${r.sc}')">Editar</button></td>`:''}
-    </tr>`).join('')}</tbody>
-  </table>`;
-}
 
 // ─── PADRÓN ───────────────────────────────────────────
 function renderPadron(){
   const ciclo=_ocCiclo;
   const vista=padronVista(ciclo);
   const padron=vista.rows;
-  const usePadron=padron.length>0;
+  // "Pasar de año" sólo tiene sentido si hay padrón de verdad que pasar: las altas del
+  // pipeline aparecen como filas pero todavía no son padrón.
+  const usePadron=vista.reales>0;
   const esProy=vista.proyeccion;
 
   const activos=padron.filter(a=>a.estado==='activo').length;
@@ -6982,18 +7011,22 @@ function filtrarPadron(){
       </div>
       <table><thead><tr><th style="width:100px">ID colegio</th><th>Nombre</th><th>Nivel</th><th>Estado</th><th>Fecha alta</th><th></th></tr></thead>
       <tbody>${alumnos.map(a=>`<tr style="${a.estado==='baja'?'opacity:.6':''}">
-        <td>${esProy?`<span style="font-size:12px;color:var(--tx3);font-family:monospace">${esc(a.idColegio||'—')}</span>`:`<input class="fi" value="${esc(a.idColegio||'')}" placeholder="—" style="font-size:12px;padding:3px 6px;width:88px;box-sizing:border-box;font-family:monospace" onblur="setIdColegio('${a.id}',this.value)">`}</td>
+        <td>${(esProy||a._altaPipeline)?`<span style="font-size:12px;color:var(--tx3);font-family:monospace">${esc(a.idColegio||'—')}</span>`:`<input class="fi" value="${esc(a.idColegio||'')}" placeholder="—" style="font-size:12px;padding:3px 6px;width:88px;box-sizing:border-box;font-family:monospace" onblur="setIdColegio('${a.id}',this.value)">`}</td>
         <td><strong>${esc(a.nombre||'—')}</strong>${a.admisionId?` <span style="font-size:10px;color:#7C3AED;background:#EDE9FE;padding:1px 5px;border-radius:3px">Adm</span>`:''}</td>
         <td style="color:var(--tx3);font-size:12px">${a.nivel||'—'}</td>
-        <td>${a.estado==='activo'
+        <td>${(a._altaPipeline && !esProy)
+          ?`<span style="color:#7C3AED;font-size:12px;font-weight:600">● ${a._estadoPipeline==='matriculado'?'Matriculado':'Nuevo alumno'}</span>`
+          :a.estado==='activo'
           ?`<span style="color:#16A34A;font-size:12px;font-weight:600">● Activo</span>`
           :`<span style="color:#EF4444;font-size:12px">● Baja</span> <span style="color:var(--tx3);font-size:11px">${a.motivoBaja||''}</span>`}</td>
         <td style="color:var(--tx3);font-size:12px">${fDateFull(a.fechaAlta)||'—'}</td>
         <td style="display:flex;gap:4px;flex-wrap:wrap">
           ${esProy
             ?`<span style="font-size:11px;color:#0EA5E9">proyectado</span>`
+            :a._altaPipeline
+            ?`<span style="font-size:11px;color:#7C3AED" title="Ya ocupa el lugar en ${sec}. La fila del padrón se crea al apretar Pasar de año.">ocupa lugar · aún en admisiones</span>`
             :`<button class="btn btn-sm btn-ghost" style="color:var(--tx3);font-size:11px" title="Ver su recorrido año por año" onclick="verTrayectoriaDeFila('${a.id}')">Trayectoria</button>`}
-          ${esProy
+          ${(esProy||a._altaPipeline)
             ?''
             :a.estado==='activo'
             ?`<button class="btn btn-sm btn-out" onclick="moverSeccionModal('${a.id}')" title="Cambiar de sección">Mover</button>
@@ -7312,7 +7345,7 @@ function crearAlumnoPadron(p){
   DB.padron=DB.padron||[];
   if(DB.padron.some(a=>a.admisionId===String(p.id))) return;
   // El ciclo es SIEMPRE el año para el que postuló, no el año en curso.
-  const ciclo=p.anio||new Date().getFullYear();
+  const ciclo=anioPostulante(p);
   // Ya está en el padrón de ese ciclo con el mismo nombre: es un alumno cuya alta es
   // previa al sistema (o importada) que además venía en el pipeline. Chequear solo
   // admisionId no alcanzaba —esa fila no lo tiene— y se creaba una segunda fila que
@@ -7324,9 +7357,9 @@ function crearAlumnoPadron(p){
     toast(p.alumno+' ya estaba en el padrón '+ciclo+' (ID '+(yaEsta.idColegio||'—')+') — no se duplicó','info');
     return;
   }
-  // Si Admisiones no le asignó sección a mano, se elige la división con menos
-  // alumnos de ese ciclo. Antes quedaba vacía y el alumno no contaba en Ocupación.
-  const curso=p.seccion || seccionConMenosAlumnos(p.curso, ciclo) || '';
+  // Si Admisiones no le asignó sección a mano, se elige la división con menos alumnos de
+  // ese ciclo — la misma regla con la que Ocupación ya le reservó el lugar.
+  const curso=seccionDeAlta(p, ciclo);
   const nivel=curso?normalizarNivel(SCHOOL_NIVEL(curso)):normalizarNivel(p.nivel)||'';
   const id='pa_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
   DB.padron.push({id,nombre:p.alumno||'',nivel,curso,ciclo,estado:'activo',fechaAlta:today(),fechaBaja:null,motivoBaja:null,notaBaja:'',admisionId:String(p.id),idColegio:proximoIdColegio(),jornada:p.jornada||'Jornada Completa'});
@@ -7451,8 +7484,14 @@ function cursoAvanzado(curso){
 function esEgresado(a){ return cursoSiguiente(a.curso) === null; }
 
 // Alumnos que entran en la re-matriculación de un ciclo: activos y no egresados.
+// Se usa la misma vista que Ocupación para que todo el que ocupa un lugar se pueda decidir
+// acá: si una alta de admisiones todavía no tiene fila en el padrón, igual hay que poder
+// marcarla "no continúa", porque el traspaso la va a pasar al año siguiente.
+// Un ciclo proyectado no se re-matricula: primero hay que hacer el traspaso.
 function padronRematriculable(ciclo){
-  return (DB.padron||[]).filter(a => a.ciclo===ciclo && a.estado==='activo' && !esEgresado(a));
+  const v = padronVista(ciclo);
+  if(v.proyeccion) return [];
+  return v.rows.filter(a => a.estado==='activo' && !esEgresado(a));
 }
 
 // ═══════════════════════════
@@ -7713,15 +7752,28 @@ function enTresCuotas(total){
 // De las divisiones posibles de un curso, la que tenga menos alumnos activos
 // en ese ciclo. Si hay empate, la primera. Así los cursos quedan parejos sin
 // que nadie tenga que mirar los números a mano.
-function seccionConMenosAlumnos(cursoPipeline, ciclo){
+// `yaAsignadas` (opcional) suma altas todavía no escritas en el padrón, para que al
+// repartir varias de golpe no caigan todas en la misma división.
+function seccionConMenosAlumnos(cursoPipeline, ciclo, yaAsignadas){
+  const conteo = {};
+  (DB.padron||[]).forEach(function(a){
+    if(a.ciclo === ciclo && a.estado === 'activo' && a.curso)
+      conteo[a.curso] = (conteo[a.curso]||0) + 1;
+  });
+  if(yaAsignadas) Object.keys(yaAsignadas).forEach(function(k){ conteo[k] = (conteo[k]||0) + yaAsignadas[k]; });
+  return seccionMenosPobladaDe(cursoPipeline, conteo);
+}
+
+// Núcleo de la regla, sin depender de dónde salen los alumnos: recibe un mapa
+// sección → cuántos ya la ocupan. Lo usa tanto el padrón real como la proyección, para
+// que las dos repartan las altas exactamente igual.
+function seccionMenosPobladaDe(cursoPipeline, conteo){
   const opciones = PIPELINE_TO_SECTIONS[cursoPipeline] || [];
   if(!opciones.length) return '';
   if(opciones.length === 1) return opciones[0];
   let elegida = opciones[0], menor = Infinity;
   opciones.forEach(function(sec){
-    const n = (DB.padron||[]).filter(function(a){
-      return a.ciclo === ciclo && a.estado === 'activo' && a.curso === sec;
-    }).length;
+    const n = (conteo && conteo[sec]) || 0;
     if(n < menor){ menor = n; elegida = sec; }
   });
   return elegida;
@@ -8063,8 +8115,9 @@ function renderReMatricula(){
         </button>
       </div>
       <div style="padding:10px 16px;font-size:12px;color:var(--tx2);line-height:1.65">
-        El traspaso arma el padrón ${sig} con los que re-matriculan, suma las altas de
-        <strong>Nuevo alumno</strong> del pipeline y deja afuera las bajas y los egresados.
+        El traspaso arma el padrón ${sig} con los que re-matriculan, suma las altas del
+        pipeline para ${sig} (<strong>Matriculado</strong> y <strong>Nuevo alumno</strong>,
+        que en Ocupación ya están ocupando esa vacante) y deja afuera las bajas y los egresados.
         ${egresan?`<br><span style="color:var(--tx3)">${egresan} alumno${egresan!==1?'s':''} de último año egresa${egresan!==1?'n':''} y no aparece${egresan!==1?'n':''} en esta lista.</span>`:''}
       </div>
     </div>
@@ -8474,21 +8527,21 @@ function ejecutarMoverSeccion(alumnoId){
 // Altas del pipeline que entran al padrón de un ciclo: los marcados como
 // "Nuevo alumno" para ese año. Antes sólo se tomaban los de Inicial (curso que
 // empieza con K), así que un ingresante de Primaria o Secundaria quedaba afuera.
-function altasPipelineParaCiclo(ciclo){
-  return DB.postulantes.filter(function(p){
-    const relevante = (p.estado==='nuevo'||p.estado==='matriculado') && p.anio===ciclo;
-    const yaEsta = (DB.padron||[]).some(function(a){
-      return a.admisionId===String(p.id) && a.ciclo===ciclo;
-    });
-    return relevante && !yaEsta;
-  });
-}
+// Las altas que entran en el traspaso son exactamente las que Ocupación ya está contando
+// como ocupantes de ese ciclo. Antes esta función comparaba `p.anio===ciclo` con ===
+// estricto: una ficha con el año guardado como texto ("2027") no matcheaba, el traspaso la
+// dejaba afuera y Ocupación sí la contaba.
+function altasPipelineParaCiclo(ciclo){ return altasDelPipeline(ciclo); }
 
 // Resumen de lo que va a pasar en el traspaso. Se usa para el modal y para
 // generar el padrón, así que los números que se muestran son los mismos que se aplican.
 function calcularTraspaso(cicloDestino){
   const cicloAnt = cicloDestino-1;
-  const activos  = (DB.padron||[]).filter(a=>a.ciclo===cicloAnt && a.estado==='activo');
+  // Se parte de la MISMA vista que muestra Ocupación para el año que se cierra: incluye a
+  // los matriculados / nuevos alumnos de ese año que todavía no tienen fila en el padrón.
+  // Antes se leía sólo DB.padron: Ocupación los contaba ocupando lugar en el año viejo y el
+  // traspaso los dejaba afuera, así que desaparecían del colegio al pasar de año.
+  const activos  = padronVista(cicloAnt).rows.filter(a=>a.estado==='activo');
   const remat    = DB.reMatricula||{};
   const est      = a => remat[a.id+'_'+cicloDestino]?.estado || 're_matricula';
 
@@ -8503,6 +8556,7 @@ function calcularTraspaso(cicloDestino){
   return {
     cicloAnt, cicloDestino,
     activos: activos.length,
+    activosSinFila: activos.filter(a=>a._altaPipeline).length,
     egresan: egresan.length,
     bajas: bajas.length,
     pendientes: pendientes.length,
@@ -8535,9 +8589,9 @@ function abrirTraspasoModal(cicloDestino){
     </div>` : ''}
 
     <div style="background:var(--cr);border-radius:10px;padding:4px 16px 12px;margin-bottom:14px">
-      ${fila(`Activos en ${r.cicloAnt}`, r.activos, 'var(--td)')}
+      ${fila(`Activos en ${r.cicloAnt}`, r.activos, 'var(--td)', r.activosSinFila?`incluye ${r.activosSinFila} de admisiones que ocupaban lugar en ${r.cicloAnt} sin fila en el padrón`:'')}
       ${fila('Re-matriculan', '+'+r.continuan, '#16A34A', 'incluye los pendientes de definir')}
-      ${fila('Altas del pipeline', '+'+r.altas, '#16A34A', 'postulantes en estado "Nuevo alumno"')}
+      ${fila(`Altas para ${cicloDestino}`, '+'+r.altas, '#16A34A', 'matriculados y nuevos alumnos del pipeline')}
       ${fila('No continúan', '−'+r.bajas, '#EF4444', 'marcados como baja en re-matrícula')}
       ${fila('Egresan', '−'+r.egresan, '#7C3AED', 'último año: no se re-matriculan')}
       <div style="display:flex;justify-content:space-between;align-items:baseline;padding:12px 0 4px">
@@ -8570,8 +8624,11 @@ function ejecutarTraspaso(cicloDestino){
 
 function generarPadronDesdeRemat(cicloNuevo){
   const cicloAnt=cicloNuevo-1;
-  const padronAnt=(DB.padron||[]).filter(a=>a.ciclo===cicloAnt&&a.estado==='activo');
-  if(!padronAnt.length){ toast(`No hay padrón ${cicloAnt} como base`,'err'); return; }
+  if(!(DB.padron||[]).some(a=>a.ciclo===cicloAnt&&a.estado==='activo')){ toast(`No hay padrón ${cicloAnt} como base`,'err'); return; }
+  // Misma base que calcularTraspaso y que Ocupación: filas reales + las altas del pipeline
+  // de ese año que nunca llegaron a tener fila. Si se leyera sólo DB.padron, esos alumnos
+  // se perderían en el traspaso aunque el sistema los venía contando.
+  const padronAnt=padronVista(cicloAnt).rows.filter(a=>a.estado==='activo');
   const remat=DB.reMatricula||{};
   // Continúan: no marcados como baja, y no son egresados (6°Sec)
   const continuan=padronAnt.filter(a=>{
@@ -8599,7 +8656,9 @@ function generarPadronDesdeRemat(cicloNuevo){
       ciclo:cicloNuevo, estado:'activo',
       fechaAlta:today(), fechaBaja:null, motivoBaja:null, notaBaja:'',
       admisionId:a.admisionId||null,
-      idColegio:a.idColegio||''
+      // Las altas que venían del pipeline sin fila propia todavía no tienen ID del colegio:
+      // se les entrega acá, que es cuando pasan a ser padrón de verdad.
+      idColegio:a.idColegio||(a._altaPipeline?proximoIdColegio():'')
     });
     if((DB.descuentos||{})[a.id]) descCarry[newId]=DB.descuentos[a.id];
   });
@@ -8613,7 +8672,10 @@ function generarPadronDesdeRemat(cicloNuevo){
   // Primaria o Secundaria nunca llegaba al padrón.
   const nuevosPipeline=altasPipelineParaCiclo(cicloNuevo);
   nuevosPipeline.forEach((p,i)=>{
-    const seccion=p.seccion||(PIPELINE_TO_SECTIONS[p.curso]||[])[0]||'';
+    // Misma regla que Ocupación: sin sección asignada va a la división menos poblada.
+    // Antes iban TODAS a la primera (siempre la A), que además era la sección donde
+    // Ocupación no las había contado.
+    const seccion=seccionDeAlta(p, cicloNuevo);
     const nivel=seccion?SCHOOL_NIVEL(seccion):'Inicial';
     DB.padron.push({
       id:'pa_new_'+cicloNuevo+'_'+ts+'_'+i,
@@ -8665,14 +8727,24 @@ function filtrarMovimientos(){
 
   const meses={};
   if(fTipo!=='bajas'){
-    DB.postulantes.filter(p=>p.estado==='nuevo'&&p.seccion&&(p.anio===ciclo||!p.anio)).forEach(p=>{
-      if(fNivel&&SCHOOL_NIVEL(p.seccion||'')!==fNivel) return;
+    // Misma lista que usa Ocupación para contar vacantes: matriculado + nuevo alumno del
+    // año que se está mirando. Antes miraba sólo 'nuevo' y contaba las fichas sin año en
+    // todos los ciclos a la vez, así que el listado no cerraba con las tarjetas de arriba.
+    // Se leen las MISMAS filas que Ocupación usa para contar, así la sección que figura acá
+    // es exactamente la que resta vacante allá (y la que va a escribir el traspaso).
+    // `_altaCiclo` deja afuera las altas de años anteriores: en una proyección viajan hacia
+    // adelante con la cohorte, pero su movimiento pasó en su año, no en éste.
+    const filasAltas=padronVista(ciclo).rows.filter(r=>r._altaPipeline && r._altaCiclo===ciclo);
+    filasAltas.forEach(f=>{
+      const p=DB.postulantes.find(x=>String(x.id)===f.admisionId); if(!p) return;
+      const seccion=f.curso;
+      if(fNivel&&SCHOOL_NIVEL(seccion)!==fNivel) return;
       const h=p.hist&&(p.hist.find(x=>x.e==='nuevo')||p.hist.find(x=>x.e==='matriculado'));
       const fecha=h?h.f:p.ultAccion||today();
       const mes=fecha.slice(0,7);
       if(fMes&&mes!==fMes) return;
       if(!meses[mes]) meses[mes]={altas:[],bajas:[]};
-      meses[mes].altas.push({alumno:p.alumno,seccion:p.seccion,nivel:SCHOOL_NIVEL(p.seccion||'')});
+      meses[mes].altas.push({alumno:p.alumno,seccion,nivel:SCHOOL_NIVEL(seccion),estado:p.estado,asignada:!!p.seccion});
     });
   }
   if(fTipo!=='altas'){
@@ -8691,16 +8763,19 @@ function filtrarMovimientos(){
       meses[mes].bajas.push({alumno:b.alumno,curso:b.curso});
     });
   }
-  const sinSeccion=DB.postulantes.filter(p=>p.estado==='nuevo'&&!p.seccion&&(p.anio===ciclo||!p.anio));
+  // Altas cuyo curso del pipeline no corresponde a ninguna sección: son las únicas que no
+  // ocupan lugar en ningún lado, porque no hay dónde imputarlas. Hay que corregirlas.
+  const sinSeccion=altasSinSeccion(ciclo);
   const mesesOrd=Object.keys(meses).sort().reverse();
 
   let html='';
   if(sinSeccion.length&&fTipo!=='bajas'&&!fMes){
     html+=`<div class="cbox" style="margin-bottom:14px;border:1px solid #FDE68A;background:#FFFBEB">
-      <div class="cbox-h"><div class="cbox-t" style="color:#92400E">⚠ Matriculados sin sección (${sinSeccion.length})</div></div>
-      <table><thead><tr><th>Alumno</th><th>Curso pipeline</th><th>Ciclo</th><th></th></tr></thead>
+      <div class="cbox-h"><div class="cbox-t" style="color:#92400E">⚠ Altas ${ciclo} sin sección posible (${sinSeccion.length})</div></div>
+      <div style="padding:0 16px;font-size:12px;color:#92400E">El curso que tienen cargado no corresponde a ninguna sección del colegio, así que <strong>no están restando vacante en ningún curso</strong>. Asignales la sección a mano.</div>
+      <table><thead><tr><th>Alumno</th><th>Estado</th><th>Curso pipeline</th><th>Ciclo</th><th></th></tr></thead>
       <tbody>${sinSeccion.map(p=>`<tr>
-        <td><strong>${esc(p.alumno)}</strong></td><td>${esc(p.curso||'—')}</td><td>${p.anio||'—'}</td>
+        <td><strong>${esc(p.alumno)}</strong></td><td>${EL[p.estado]||p.estado}</td><td>${esc(p.curso||'—')}</td><td>${anioPostulante(p)}</td>
         <td><button class="btn btn-sm btn-out" onclick="openDetalle(${p.id})">Asignar</button></td>
       </tr>`).join('')}</tbody></table></div>`;
   }
@@ -8721,7 +8796,7 @@ function filtrarMovimientos(){
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
         ${d.altas.length?`<div>
           <div style="font-size:11px;font-weight:600;color:#16A34A;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Altas vía admisiones</div>
-          ${d.altas.map(a=>`<div style="padding:6px 0;border-bottom:1px solid var(--bd);font-size:13px"><strong>${a.alumno}</strong><br><span style="color:var(--tx3);font-size:11.5px">${a.seccion}${a.nivel?' · '+a.nivel:''}</span></div>`).join('')}
+          ${d.altas.map(a=>`<div style="padding:6px 0;border-bottom:1px solid var(--bd);font-size:13px"><strong>${esc(a.alumno)}</strong><br><span style="color:var(--tx3);font-size:11.5px">${a.seccion}${a.asignada?'':' <span title="Sección tentativa: se le asigna la división menos poblada hasta que Admisiones elija">(tentativa)</span>'}${a.nivel?' · '+a.nivel:''} · ${EL[a.estado]||a.estado}</span></div>`).join('')}
         </div>`:'<div></div>'}
         ${d.bajas.length?`<div>
           <div style="font-size:11px;font-weight:600;color:#EF4444;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Bajas de alumnos</div>
@@ -9142,28 +9217,17 @@ function guardarCursoOcupacion(sc){
   const cap=parseInt(document.getElementById('oc-cap')?.value)||27;
   if(!DB.ocupacion) DB.ocupacion={};
   DB.ocupacion[sc]={base,cap};
-  syncVacantesFromOcupacion();
   saveDB();
   closeM();
   renderOcupacion();
   toast(`Sección ${sc} actualizada`,'ok');
 }
 
-function syncVacantesFromOcupacion(){
-  // Sync DB.vacantes (pipeline) from ocData() section caps and actuals
-  const data=ocData(); // [{sc, cap, actual, disp, ...}]
-  const bySection={};
-  data.forEach(r=>{ bySection[r.sc]={cap:r.cap, actual:r.actual}; });
-  DB.vacantes=DB.vacantes||{};
-  Object.entries(PIPELINE_TO_SECTIONS).forEach(([pipeline, sections])=>{
-    let totalCap=0, totalActual=0;
-    sections.forEach(sc=>{
-      if(bySection[sc]){ totalCap+=bySection[sc].cap; totalActual+=bySection[sc].actual; }
-    });
-    if(!DB.vacantes[pipeline]) DB.vacantes[pipeline]={t:totalCap,u:totalActual};
-    else { DB.vacantes[pipeline].t=totalCap; DB.vacantes[pipeline].u=totalActual; }
-  });
-}
+// `DB.vacantes` era una copia derivada: se recalculaba en cada render con el ciclo que
+// estuviera seleccionado en Ocupación y se guardaba en la nube. Nadie la leía —las
+// vacantes se calculan en vivo con vacantesDe()— pero viajaba como un número sin año
+// pegado, listo para que alguien lo tomara por bueno. Se dejó de mantener; el campo sigue
+// existiendo en el documento para no romper clientes viejos.
 
 function exportOcupacionCSV(){
   const all=ocData();
@@ -9176,20 +9240,28 @@ function exportOcupacionCSV(){
 
   // El resumen es por sección y no llevaba ningún ID: para cruzar con administración
   // hacía falta abrir otro archivo. Va el detalle alumno por alumno con su ID.
-  const detalle=(DB.padron||[]).filter(a=>a.ciclo===_ocCiclo).sort(cmpSeccionNombre);
+  // Se usa la misma vista que Ocupación (incluye las altas de admisiones que ya ocupan
+  // lugar pero todavía no tienen fila) para que el detalle sume exactamente el resumen.
+  const detalle=padronVista(_ocCiclo).rows.slice().sort(cmpSeccionNombre);
   if(detalle.length){
     lineas.push('');
     lineas.push(esc_('DETALLE POR ALUMNO'));
     lineas.push(['ID colegio','Alumno','Sección','Nivel','Estado','Fecha alta','Fecha baja','Motivo de baja'].map(esc_).join(','));
     detalle.forEach(a=>lineas.push([
       a.idColegio||'', a.nombre||'', a.curso||'', a.nivel||SCHOOL_NIVEL(a.curso||''),
-      a.estado==='activo'?'Activo':'Baja', a.fechaAlta||'', a.fechaBaja||'', a.motivoBaja||''
+      a._altaPipeline
+        ? (a._altaCiclo===_ocCiclo
+            ? (a._estadoPipeline==='matriculado'?'Matriculado (admisiones)':'Nuevo alumno (admisiones)')
+            : 'Proyectado (alta '+a._altaCiclo+')')
+        : a.estado==='activo'?'Activo':'Baja',
+      a.fechaAlta||'', a.fechaBaja||'', a.motivoBaja||''
     ].map(esc_).join(',')));
   }
 
   const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,'+encodeURIComponent('﻿'+lineas.join('\n'));
   a.download='ocupacion_austin_'+today()+'.csv'; a.click();
-  const sinId=detalle.filter(x=>!x.idColegio).length;
+  // Las altas de admisiones todavía no tienen ID del colegio por diseño: no son un faltante.
+  const sinId=detalle.filter(x=>!x.idColegio && !x._altaPipeline).length;
   toast(`CSV exportado — ${all.length} secciones · ${detalle.length} alumnos`+(sinId?` · ${sinId} sin ID`:''), sinId?'info':'ok');
 }
 
