@@ -1076,6 +1076,9 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
           ⚠️ <strong>Importante:</strong> Si una entrevista <strong>no se realizó</strong> (la familia no llegó), marcala como "No asistió" para que el sistema envíe el mail de reprogramación en lugar del mail post-entrevista. No lo marques como "realizada" si no fue.
         </div>
 
+        <!-- Aviso de recordatorios pendientes (entrevistas de mañana sin el mail enviado) -->
+        <div id="ent-recordatorio-aviso"></div>
+
         <!-- SEMANA NAV -->
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px">
           <div style="display:flex;gap:8px;align-items:center">
@@ -1085,6 +1088,7 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
             <button class="btn btn-ghost btn-sm" onclick="adminCalHoy()">Hoy</button>
           </div>
           <div style="display:flex;gap:8px">
+            <button class="btn btn-td btn-sm" onclick="abrirRecordatoriosEntrevista()">✉ Recordatorios</button>
             <button class="btn btn-td btn-sm" onclick="abrirConfigDisponibilidad()">⚙ Configurar disponibilidad</button>
             <button class="btn btn-out btn-sm" onclick="compartirCalendario()">🔗 Compartir calendario</button>
             <button class="btn btn-out btn-sm" onclick="abrirRecordatorio()">🔔 Recordatorio</button>
@@ -1098,7 +1102,8 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
         <div class="cbox">
           <div class="cbox-h">
             <div class="cbox-t" id="ent-list-titulo">Todas las entrevistas</div>
-            <div style="display:flex;gap:6px">
+            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+              <input class="fsrch" id="ent-q" placeholder="🔍 Buscar alumno o familia..." oninput="buscarEntAdmin()" style="width:215px">
               <button class="btn btn-out btn-sm" onclick="filterEntAdmin('proximas')">Próximas</button>
               <button class="btn btn-out btn-sm" onclick="filterEntAdmin('pasadas_sin_resultado')">⚠ Sin resultado</button>
               <button class="btn btn-out btn-sm" onclick="filterEntAdmin('todas')">Todas</button>
@@ -1543,6 +1548,7 @@ let DB = {
     no_queremos:{subj:'Proceso de admisión — Austin EBS',body:'Hola {{padre}},\n\nQueremos agradecerles sinceramente el tiempo y la confianza depositada en Austin Eco Bilingual School durante este proceso.\n\nLuego de evaluar con mucho cuidado las posibilidades de incorporación para el ciclo lectivo, lamentablemente no contamos con las vacantes necesarias para incorporar a {{alumno}} en esta ocasión.\n\nLes deseamos lo mejor en este proceso de encontrar la escuela que mejor acompañe su búsqueda, y esperamos que encuentren pronto el lugar ideal.\n\nQuedamos a disposición por cualquier consulta.\n\nUn afectuoso saludo,\nLaura Unamuno\nAdmisiones – Austin EBS'},
     seguimiento_entrevista:{subj:'¿Cómo fue la entrevista? — Austin EBS',body:'Hola {{padre}},\n\nFue un placer recibirlos en la entrevista. Esperamos que {{alumno}} y ustedes hayan quedado tan contentos como nosotros.\n\nSi desean continuar con el proceso de admisión, por favor respondé este mail confirmando tu interés. Con eso podremos avanzar con los pasos de reserva de vacante.\n\nSi por algún motivo decidieron no continuar, también podés avisarnos por este medio — lo entendemos perfectamente y siempre será bienvenida la familia si desean retomar en el futuro.\n\nEsperamos tu respuesta.\n\nUn afectuoso saludo,\nAdmisiones – Austin EBS'},
     no_asistio:{subj:'¡Que lástima! Podemos reprogramar tu entrevista — Austin EBS',body:'Hola {{padre}},\n\nLamentamos que no hayas podido llegar a la entrevista que tenías agendada. ¡Nos hubiera encantado conocerlos!\n\nElegí vos mismo/a un nuevo día y horario, sin volver a completar todo el formulario, desde este link:\n{{link_agenda}}\n\nSi preferís, respondé este mail y coordinamos un nuevo horario con gusto. Estamos a disposición para acompañarlos.\n\nEsperamos poder conocerlos pronto.\n\nUn afectuoso saludo,\nAdmisiones – Austin EBS'},
+    recordatorio_entrevista:{subj:'¡Te esperamos! Tu entrevista en Austin EBS es el {{fecha_entrevista}}',body:'Hola {{padre}},\n\n¡Ya falta poquito! Queremos recordarte que los esperamos junto a {{alumno}} para la entrevista en Austin Eco Bilingual School. Nos hace muy felices que vengan a conocernos.\n\n▸ LOS DATOS DE TU ENTREVISTA\nEstudiante: {{alumno}} — {{curso}}\nDía: {{fecha_entrevista}}\nHora: {{hora_entrevista}}\nLugar: {{lugar_entrevista}}\nDuración aproximada: 1 hora\n\nVengan con todas sus preguntas y con muchas ganas: es un encuentro tranquilo, para charlar con calma y recorrer juntos el colegio.\n\nSi surgió algún imprevisto y necesitás cambiar el día, respondé este mail y lo reprogramamos sin ningún problema.\n\n¡Nos vemos muy pronto!\n\nUn afectuoso saludo,\nLaura Unamuno\nAdmisiones – Austin EBS'},
     link_agenda:{subj:'Agendá tu entrevista en Austin EBS cuando quieras',body:'Hola {{padre}},\n\n¡Nos encantaría coordinar la entrevista de {{alumno}} para que conozcan el colegio en persona!\n\nElegí el día y horario que mejor te quede, sin volver a completar el formulario, desde este link:\n{{link_agenda}}\n\nLa entrevista dura una hora y es en la planta alta de High School. Si preferís, respondé este mail y lo coordinamos juntos.\n\n¡Te esperamos!\n\nUn saludo,\nLaura Unamuno\nAdmisiones – Austin EBS'},
     nuevo:{subj:'¡Bienvenidos a Austin EBS! Información de inicio',body:'Hola {{padre}},\n\n¡Estamos muy emocionados de darles la bienvenida oficial a Austin Eco Bilingual School! {{alumno}} ya forma parte de nuestra comunidad.\n\nA continuación les compartimos información importante para el inicio del ciclo:\n\n▸ UNIFORMES\nPara la compra del uniforme escribinos a admisiones@austinebs-ah.edu.ar y te pasamos los datos del proveedor. Te recomendamos gestionarlo con anticipación para tener todo a tiempo.\n\n▸ REDES SOCIALES\nSeguinos para estar al tanto de todas las novedades:\n• Instagram: @austinebs\n• Facebook: Austin Eco Bilingual School\n\n▸ SISTEMAS DEL COLEGIO — HANDING Y ACADEU\nEn los próximos días recibirán el alta en los sistemas Handing y Acadeu con sus accesos. Si pasados algunos días no recibieron la información, por favor contactarse a admisiones@austinebs-ah.edu.ar indicando el nombre de {{alumno}}.\n\n¡Los esperamos con mucho entusiasmo!\n\nAdmisiones – Austin EBS'},
     admin_matriculado:{subj:'NUEVO POSTULADO: {{alumno}} — {{curso}} {{anio}}',body:'Estimado equipo de Administración,\n\nEl siguiente estudiante fue aprobado en el proceso de admisión y pasó a POSTULADO. Por favor contactar a la familia para el cobro de la matrícula y la solicitud de documentación.\n\nUna vez confirmado el pago, Admisiones lo pasa a Matriculado.\n\n══ DATOS DEL ESTUDIANTE ══\nNombre: {{alumno}}\nNivel: {{nivel}}\nCurso: {{curso}}\nJornada: {{jornada}}\nCiclo lectivo: {{anio}}\nHermano/a Austin: {{hermano}}\nColegio anterior: {{colegio}}\n\n══ DATOS DE LA FAMILIA ══\nPadre / Madre / Tutor: {{padre}}\nEmail: {{email}}\nTeléfono: {{tel}}\n\n══ APROBACIONES ══\nAdmisiones: ✓\nEOE / Inglés: ✓\nDirección General: ✓\n\nSistema de Admisiones – Austin EBS'},
@@ -3675,6 +3681,7 @@ const EMAIL_DISPARADOR={
   desiste:'Automático al pasar a Desiste.',
   desiste_recontacto:'Manual, desde el perfil del postulante o el envío masivo de la vista Desistieron.',
   no_queremos:'Automático al pasar a No queremos.',
+  recordatorio_entrevista:'Manual, desde el calendario de entrevistas ("✉ Recordatorios"). El sistema avisa cuando hay entrevistas al día siguiente sin recordatorio y los manda de una sola vez. Cada familia lo recibe una vez por entrevista.',
   no_asistio:'Automático al marcar que la familia no asistió a la entrevista. Ofrece reprogramar.',
   link_agenda:'Manual, con el botón "🔗 Enviar link por mail" del perfil. Manda un link personal de auto-reserva: la familia elige día sin volver a cargar sus datos y se actualiza esa misma ficha.',
   admin_matriculado:'Automático al pasar a Postulado. Avisa a Administración para que gestione el cobro.',
@@ -3687,7 +3694,7 @@ const EMAIL_DESTINATARIO={
   contactado:'Familia',hermanos:'Familia',citado:'Familia',citado_sin_fecha:'Familia',entrevistado:'Familia',postulado:'Familia',
   eoe_ingles:'Familia',matriculado:'Familia','lista de espera':'Familia',
   desiste:'Familia',desiste_recontacto:'Familia',no_queremos:'Familia',
-  seguimiento_entrevista:'Familia',no_asistio:'Familia',link_agenda:'Familia',nuevo:'Familia (onboarding)',
+  seguimiento_entrevista:'Familia',recordatorio_entrevista:'Familia',no_asistio:'Familia',link_agenda:'Familia',nuevo:'Familia (onboarding)',
   admin_matriculado:'Administración',dg_notif:'Dirección General',
   notif_nuevo_alumno:'Catering · Deportes · Secretaría',citacion_matriculados:'Familia'
 };
@@ -3696,13 +3703,17 @@ const EMAIL_DESTINATARIO={
 // envío, una sola copia) para que todas vean lo mismo.
 const MAIL_NUEVO_ALUMNO_TO='catering@austin-ebs.com.ar, geronimo.dominguez@austinebs-ah.edu.ar, sofia.luna@austinebs-ah.edu.ar';
 
+// Nombre legible de cada plantilla que no es un estado del pipeline. Vive acá afuera para
+// que la vista de Plantillas y el aviso de guardado digan lo mismo y nadie vea la clave cruda.
+const TPL_LABELS={hermanos:'Hermanos / familiares del personal',citado_sin_fecha:'Citado — entrevista a confirmar',recordatorio_entrevista:'Recordatorio de entrevista',no_asistio:'No asistió a la entrevista',link_agenda:'Link para auto-agendar entrevista',desiste_recontacto:'Re-contacto a desistidos',admin_matriculado:'Notif. Administración (pasa a postulado)',dg_notif:'Notif. Dirección General (EOE aprueba)',notif_nuevo_alumno:'Aviso de alta — Nuevo alumno (áreas internas)',citacion_matriculados:'Citación de Matriculados'};
+
 function renderEmails(){
   // Se listan todas las plantillas que el sistema puede enviar. Antes quedaban ocultas
   // no_queremos (envío manual) y no_asistio (al marcar que no llegaron): se podían
   // mandar pero no editar. Se siguen excluyendo rechazado_eoe y pendiente_dg, que son
   // estados internos sin mail a la familia, y seguimiento_entrevista, que no está conectada.
-  const allTpls=[...ESTADOS,'citado_sin_fecha','no_asistio','link_agenda','desiste_recontacto','admin_matriculado','dg_notif','notif_nuevo_alumno','citacion_matriculados'].filter(e=>!['seguimiento_entrevista','rechazado_eoe','pendiente_dg'].includes(e));
-  const labels={...EL,hermanos:'Hermanos / familiares del personal',citado_sin_fecha:'Citado — entrevista a confirmar',no_asistio:'No asistió a la entrevista',link_agenda:'Link para auto-agendar entrevista',desiste_recontacto:'Re-contacto a desistidos',admin_matriculado:'Notif. Administración (pasa a postulado)',dg_notif:'Notif. Dirección General (EOE aprueba)',notif_nuevo_alumno:'Aviso de alta — Nuevo alumno (áreas internas)',citacion_matriculados:'Citación de Matriculados'};
+  const allTpls=[...ESTADOS,'citado_sin_fecha','recordatorio_entrevista','no_asistio','link_agenda','desiste_recontacto','admin_matriculado','dg_notif','notif_nuevo_alumno','citacion_matriculados'].filter(e=>!['seguimiento_entrevista','rechazado_eoe','pendiente_dg'].includes(e));
+  const labels={...EL,...TPL_LABELS};
   document.getElementById('email-tpls').innerHTML=allTpls.map(e=>{
     const dest=EMAIL_DESTINATARIO[e]||'Familia';
     const isTeam=dest!=='Familia'&&!dest.startsWith('Familia');
@@ -3758,7 +3769,7 @@ function saveEmail(e, auto){
   const st=document.getElementById('est-'+e);
   if(st){ st.textContent='✓ Guardado'; st.style.color='#3A6A0A'; }
   if(!auto && !cambio){ if(st){ st.textContent='✓ Sin cambios'; st.style.color='var(--tx3)'; } }
-  if(!auto) toast(`Plantilla "${EL[e]||e}" guardada`,'ok');
+  if(!auto) toast(`Plantilla "${TPL_LABELS[e]||EL[e]||e}" guardada`,'ok');
 }
 
 // ═══════════════════════════
@@ -4935,18 +4946,46 @@ function renderAdminCal(){
     </div>`;
   }
   grid.innerHTML = html;
-  renderEntAdminLista('proximas');
+  renderAvisoRecordatorios();
+  // Sin argumento: mantiene el filtro o la búsqueda que el usuario tenía puesta. Antes
+  // volvía a "próximas" y le borraba el resultado cada vez que se redibujaba el calendario.
+  renderEntAdminLista();
 }
 
 function adminCalPrev(){ if(adminCalOffset>-52){adminCalOffset--; renderAdminCal();} }
 function adminCalNext(){ if(adminCalOffset<52){adminCalOffset++; renderAdminCal();} }
 function adminCalHoy(){ adminCalOffset=0; renderAdminCal(); }
 
+let entFiltroAdmin = 'proximas';
+
 function renderEntAdminLista(filtro){
   const el = document.getElementById('ent-lista-admin'); if(!el) return;
+  if(filtro) entFiltroAdmin = filtro; else filtro = entFiltroAdmin;
   const titulo = document.getElementById('ent-list-titulo');
   const hoy = today();
+  const qEl = document.getElementById('ent-q');
+  const q = (qEl ? qEl.value : '').trim().toLowerCase();
   let ps = DB.postulantes.filter(p=>p.entFecha);
+
+  // Con texto escrito la búsqueda manda sobre el filtro y sobre la semana del calendario:
+  // la pregunta que resuelve es "cuándo es la entrevista de tal familia", así que tiene que
+  // mirar todas las fechas. Las que todavía no pasaron van primero.
+  if(q){
+    ps = ps.filter(p=>[p.alumno,p.padre,p.email,p.tel,p.curso].some(v=>String(v||'').toLowerCase().includes(q)));
+    ps.sort(function(a,b){
+      const af = a.entFecha>=hoy, bf = b.entFecha>=hoy;
+      if(af!==bf) return af ? -1 : 1;
+      const ka=(a.entFecha||'')+(a.entHora||''), kb=(b.entFecha||'')+(b.entHora||'');
+      return af ? ka.localeCompare(kb) : kb.localeCompare(ka);
+    });
+    if(titulo) titulo.textContent = ps.length
+      ? `Resultados de "${q}" — ${ps.length} entrevista${ps.length!==1?'s':''}`
+      : `Resultados de "${q}"`;
+    if(ps.length===0){ el.innerHTML=`<div class="empty" style="padding:24px"><div class="empty-ic">🔍</div><p>Ninguna entrevista coincide con "${esc(q)}"</p></div>`; return; }
+    el.innerHTML = ps.map(p=>filaEntAdmin(p, hoy, true)).join('');
+    return;
+  }
+
   if(filtro==='proximas'){ ps=ps.filter(p=>p.entFecha>=hoy); if(titulo) titulo.textContent='Próximas entrevistas'; }
   else if(filtro==='pasadas_sin_resultado'){ ps=ps.filter(p=>p.entFecha<hoy&&!p.entResultado); if(titulo) titulo.textContent='⚠ Sin resultado'; }
   else { if(titulo) titulo.textContent='Todas las entrevistas'; }
@@ -4954,26 +4993,53 @@ function renderEntAdminLista(filtro){
 
   if(ps.length===0){ el.innerHTML=`<div class="empty" style="padding:24px"><div class="empty-ic">📅</div><p>Sin entrevistas en este filtro</p></div>`; return; }
 
-  el.innerHTML = ps.map(p=>{
-    const esPasada = p.entFecha < hoy;
-    const sinRes = esPasada && !p.entResultado;
-    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 18px;border-bottom:1px solid var(--bd);font-size:12.5px;${sinRes?'background:#FEF2F2;':''}">
-      <div>
-        <strong>${esc(p.alumno)}</strong>${p.hermano==='si'?' ★':''}
-        <span style="color:var(--tx3);margin:0 6px">·</span>${esc(p.padre)}
-        <span style="color:var(--tx3);margin:0 6px">·</span><span class="pill">${esc(p.curso)}</span>
-      </div>
-      <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
-        <span style="color:var(--tl);font-weight:600">${formatFechaLinda(p.entFecha)} ${p.entHora||''}</span>
-        ${p.entResultado?`<span style="background:#EBF7D4;color:#3A6A0A;font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:12px">✓ ${EL[p.entResultado]||p.entResultado}</span>`:''}
-        ${sinRes?`<button class="btn btn-or btn-sm" onclick="openDetalleEntrevista(${p.id})">Registrar resultado</button>
-                  <button class="btn btn-danger btn-sm" onclick="marcarNoAsistio(${p.id})">No asistió</button>`:`<div style="display:flex;gap:5px"><button class="btn btn-out btn-sm" onclick="openDetalleEntrevista(${p.id})">Entrevista</button><button class="btn btn-td btn-sm" onclick="openDetalle(${p.id})">Gestionar →</button></div>`}
-      </div>
-    </div>`;
-  }).join('');
+  el.innerHTML = ps.map(p=>filaEntAdmin(p, hoy, false)).join('');
 }
 
-function filterEntAdmin(f){ renderEntAdminLista(f); }
+// Una fila de la lista de entrevistas. En los resultados de búsqueda se agrega el año y el
+// botón para saltar el calendario a esa semana: buscar sirve para saber cuándo es, así que
+// la fecha tiene que quedar a la vista aunque sea de otro mes.
+function filaEntAdmin(p, hoy, esBusqueda){
+  const esPasada = p.entFecha < hoy;
+  const sinRes = esPasada && !p.entResultado;
+  return `<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 18px;border-bottom:1px solid var(--bd);font-size:12.5px;${sinRes?'background:#FEF2F2;':''}">
+    <div>
+      <strong>${esc(p.alumno)}</strong>${p.hermano==='si'?' ★':''}
+      <span style="color:var(--tx3);margin:0 6px">·</span>${esc(p.padre)}
+      <span style="color:var(--tx3);margin:0 6px">·</span><span class="pill">${esc(p.curso)}</span>
+      ${esBusqueda?`<div style="font-size:11px;color:var(--tx3);margin-top:2px">${esc(p.email||'')}${p.tel?' · '+esc(p.tel):''}</div>`:''}
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
+      <span style="color:var(--tl);font-weight:600">${formatFechaLinda(p.entFecha)}${esBusqueda?' de '+p.entFecha.split('-')[0]:''} ${p.entHora||''}</span>
+      ${esBusqueda&&esPasada?`<span style="font-size:10.5px;color:var(--tx3)">ya pasó</span>`:''}
+      ${p.entResultado?`<span style="background:#EBF7D4;color:#3A6A0A;font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:12px">✓ ${EL[p.entResultado]||p.entResultado}</span>`:''}
+      ${esBusqueda?`<button class="btn btn-ghost btn-sm" onclick="verSemanaEnt('${p.entFecha}')">📅 Ver semana</button>`:''}
+      ${sinRes?`<button class="btn btn-or btn-sm" onclick="openDetalleEntrevista(${p.id})">Registrar resultado</button>
+                <button class="btn btn-danger btn-sm" onclick="marcarNoAsistio(${p.id})">No asistió</button>`:`<div style="display:flex;gap:5px"><button class="btn btn-out btn-sm" onclick="openDetalleEntrevista(${p.id})">Entrevista</button><button class="btn btn-td btn-sm" onclick="openDetalle(${p.id})">Gestionar →</button></div>`}
+    </div>
+  </div>`;
+}
+
+// Los botones de filtro limpian la búsqueda: si no, se veía "Próximas entrevistas" con el
+// resultado de un nombre todavía filtrado y parecía que el filtro no hacía nada.
+function filterEntAdmin(f){
+  const qEl=document.getElementById('ent-q'); if(qEl) qEl.value='';
+  renderEntAdminLista(f);
+}
+
+function buscarEntAdmin(){ renderEntAdminLista(); }
+
+// Lleva la grilla semanal a la semana de esa fecha, para ver la entrevista en contexto.
+function verSemanaEnt(fecha){
+  if(!fecha) return;
+  const lunesDe = function(d){ const x=new Date(d); x.setHours(0,0,0,0); x.setDate(x.getDate()-((x.getDay()||7)-1)); return x; };
+  const lHoy = lunesDe(new Date());
+  const lFecha = lunesDe(new Date(fecha+'T00:00:00'));
+  adminCalOffset = Math.round((lFecha-lHoy)/(7*24*60*60*1000));
+  renderAdminCal();
+  const grid=document.getElementById('admin-cal-grid');
+  if(grid) grid.scrollIntoView({behavior:'smooth',block:'center'});
+}
 
 // ── DETALLE DE ENTREVISTA (modal) ──────────────────────────────
 function openDetalleEntrevista(id){
@@ -5010,6 +5076,15 @@ function openDetalleEntrevista(id){
         '<button class="btn btn-td btn-sm" onclick="guardarFechaDesdeDetalle('+id+')">Guardar fecha</button>' +
       '</div>' +
     '</div>' +
+
+    // Recordatorio: sólo tiene sentido en una entrevista que todavía no pasó.
+    (!esPasada && !tieneRes && p.entFecha
+      ? '<div style="background:var(--cr);border-radius:10px;padding:12px 14px;margin-bottom:12px">' +
+          '<div style="font-size:11px;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px">Mail de recordatorio</div>' +
+          '<div style="font-size:12px;color:var(--tx2);margin-bottom:9px">'+estadoRecordatorio(p)+'</div>' +
+          '<button class="btn btn-td btn-sm" onclick="enviarRecordatorioUno('+id+')">✉ '+(recordatorioEnviado(p)?'Reenviar recordatorio':'Enviar recordatorio')+'</button>' +
+        '</div>'
+      : '') +
 
     // Registrar resultado si pasó y no tiene resultado
     (esPasada && !tieneRes ?
@@ -6017,6 +6092,201 @@ function estadoMailNoAsistio(p){
   if(!m.ok) return 'El último intento de enviar el mail de reprogramación falló '+cuando;
   if(m.mode==='mailto') return 'Se abrió tu correo con el mail de reprogramación '+cuando+' — verificá que lo hayas mandado.';
   return 'Mail de reprogramación enviado '+cuando;
+}
+
+// ═══════════════════════════
+// RECORDATORIO DE ENTREVISTA
+// ═══════════════════════════
+// Mail cariñoso que le recuerda a la familia el día, la hora y el lugar. Sale desde el
+// calendario de entrevistas, mirando las que están realmente agendadas en el panel.
+//
+// IMPORTANTE — la familia nunca puede recibir dos mails. El envío queda registrado en
+// `p.recordatorioMail` junto con el turno (fecha + hora) al que corresponde: mientras la
+// entrevista siga en ese turno el sistema la muestra como enviada y no la vuelve a
+// seleccionar. Si la entrevista se reprograma cambia el turno y el recordatorio se habilita
+// solo, porque ahora hay un dato nuevo que avisar.
+//
+// El trigger de 24hs del Apps Script (`enviarRecordatorios_`) queda apagado por esto mismo:
+// mandaba un texto fijo que el equipo no podía editar y sería un segundo mail.
+
+function slotEntrevista(p){ return (p.entFecha||'')+' '+(p.entHora||''); }
+
+function recordatorioEnviado(p){
+  const m=p.recordatorioMail;
+  return !!(m && m.ok && m.slot===slotEntrevista(p));
+}
+
+function estadoRecordatorio(p){
+  const m=p.recordatorioMail;
+  if(!m) return 'Todavía no se envió el recordatorio de esta entrevista.';
+  const cuando='el '+fDateFull(m.fecha)+(m.hora?' a las '+m.hora:'');
+  if(m.slot!==slotEntrevista(p)) return 'El último recordatorio se mandó '+cuando+', para el turno anterior. La entrevista cambió de día u hora: conviene mandarlo de nuevo.';
+  if(!m.ok) return 'El último intento de enviar el recordatorio falló '+cuando;
+  if(m.mode==='mailto') return 'Se abrió tu correo con el recordatorio '+cuando+' — verificá que lo hayas mandado.';
+  return 'Recordatorio enviado '+cuando;
+}
+
+// Entrevistas agendadas dentro de la ventana elegida, sin resultado registrado y que
+// todavía no pasaron. `dias` = '1' es sólo el día de mañana; '3' y '7' cuentan desde hoy.
+function entrevistasParaRecordar(dias){
+  const n=Number(dias||1);
+  const ahora=new Date();
+  const base=new Date(); base.setHours(0,0,0,0);
+  const desde=new Date(base); if(n===1) desde.setDate(base.getDate()+1);
+  const hasta=new Date(base); hasta.setDate(base.getDate()+n);
+  const desdeStr=toDateStr(desde), hastaStr=toDateStr(hasta);
+  return DB.postulantes.filter(function(p){
+    if(!p.entFecha || p.entResultado) return false;
+    if(p.entFecha<desdeStr || p.entFecha>hastaStr) return false;
+    // Una entrevista de hoy a la mañana no se recuerda a la tarde.
+    return new Date(p.entFecha+'T'+(p.entHora||'23:59')+':00') > ahora;
+  }).sort(function(a,b){
+    return ((a.entFecha||'')+(a.entHora||'')).localeCompare((b.entFecha||'')+(b.entHora||''));
+  });
+}
+
+// Manda el recordatorio a una familia y deja registrado el envío contra su turno.
+function mandarRecordatorio(p, cb){
+  if(!p.email){ if(cb) cb(false,'sin-email'); return; }
+  enviarMailAdmin(p,'recordatorio_entrevista',function(ok,mode){
+    const ahora=new Date();
+    p.recordatorioMail={
+      slot:slotEntrevista(p), fecha:today(),
+      hora:ahora.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}),
+      ok:!!ok, mode:mode||''
+    };
+    saveDB();
+    if(cb) cb(!!ok, mode);
+  });
+}
+
+// Aviso arriba del calendario: entrevistas de mañana que todavía no recibieron el mail.
+// No manda nada solo — avisa y deja el envío a un click, que es quien decide.
+function renderAvisoRecordatorios(){
+  const el=document.getElementById('ent-recordatorio-aviso'); if(!el) return;
+  const pend=entrevistasParaRecordar('1').filter(p=>p.email && !recordatorioEnviado(p));
+  if(!pend.length){ el.innerHTML=''; return; }
+  el.innerHTML='<div class="warn-box" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">'+
+    '<span>🔔 <strong>'+pend.length+' entrevista'+(pend.length!==1?'s':'')+' mañana</strong> sin el mail de recordatorio: '+
+      esc(pend.map(p=>p.alumno).join(' · '))+'</span>'+
+    '<button class="btn btn-td btn-sm" onclick="abrirRecordatoriosEntrevista()" style="flex-shrink:0">✉ Enviar recordatorio</button>'+
+  '</div>';
+}
+
+let recEntVentana='1';
+
+function abrirRecordatoriosEntrevista(){
+  document.getElementById('mt').textContent='✉ Recordatorio de entrevista';
+  document.getElementById('mb').innerHTML=
+    '<div class="info-box" style="margin-bottom:14px">'+
+      'Mail cariñoso que le recuerda a la familia el día, la hora y el lugar de la entrevista. '+
+      'El texto se edita en <strong>Plantillas de mail → Recordatorio de entrevista</strong>.<br>'+
+      'Cada familia lo recibe <strong>una sola vez por entrevista</strong>. Si la entrevista se reprograma, el sistema lo vuelve a ofrecer.'+
+    '</div>'+
+    '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">'+
+      '<label style="font-size:11.5px;color:var(--tx2);font-weight:600">Entrevistas de</label>'+
+      '<select class="fsel2" id="rec-ent-ventana" onchange="cambiarVentanaRecordatorios()">'+
+        '<option value="1"'+(recEntVentana==='1'?' selected':'')+'>Mañana</option>'+
+        '<option value="3"'+(recEntVentana==='3'?' selected':'')+'>Los próximos 3 días</option>'+
+        '<option value="7"'+(recEntVentana==='7'?' selected':'')+'>Los próximos 7 días</option>'+
+      '</select>'+
+      '<span style="font-size:11.5px;color:var(--tx3)">Se marcan solas las que faltan enviar</span>'+
+    '</div>'+
+    '<div id="rec-ent-lista">'+renderListaRecordatoriosEnt()+'</div>';
+  document.getElementById('mf').innerHTML=
+    '<button class="btn btn-out" onclick="closeM()">Cerrar</button>'+
+    '<button class="btn btn-primary" id="rec-ent-btn" onclick="enviarRecordatoriosSeleccionados()">Enviar recordatorio</button>';
+  openM();
+  actualizarBotonRecordatorios();
+}
+
+function cambiarVentanaRecordatorios(){
+  const sel=document.getElementById('rec-ent-ventana');
+  recEntVentana=sel?sel.value:'1';
+  const cont=document.getElementById('rec-ent-lista');
+  if(cont) cont.innerHTML=renderListaRecordatoriosEnt();
+  actualizarBotonRecordatorios();
+}
+
+function renderListaRecordatoriosEnt(){
+  const ps=entrevistasParaRecordar(recEntVentana);
+  if(!ps.length) return '<div class="empty" style="padding:22px"><div class="empty-ic">📅</div><p>Sin entrevistas agendadas en esos días</p></div>';
+  return ps.map(function(p){
+    const enviado=recordatorioEnviado(p);
+    const sinMail=!p.email;
+    const chip = sinMail
+      ? '<span style="background:#FEE2E2;color:#991B1B;font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:12px">Sin email</span>'
+      : enviado
+        ? '<span style="background:#EBF7D4;color:#3A6A0A;font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:12px">✓ Enviado</span>'
+        : '<span style="background:var(--cr2);color:var(--tx2);font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:12px">Falta enviar</span>';
+    return '<label style="display:flex;align-items:center;gap:11px;padding:9px 2px;border-bottom:1px solid var(--bd);font-size:12.5px;'+(sinMail?'opacity:.6;':'cursor:pointer')+'">'+
+      '<input type="checkbox" class="rec-ent-chk" value="'+p.id+'"'+(sinMail?' disabled':'')+(!sinMail&&!enviado?' checked':'')+' onchange="actualizarBotonRecordatorios()" style="width:15px;height:15px;accent-color:var(--td);flex-shrink:0">'+
+      '<div style="flex:1;min-width:0">'+
+        '<div><strong>'+esc(p.alumno)+'</strong>'+(p.hermano==='si'?' ★':'')+' <span style="color:var(--tx3)">·</span> '+esc(p.padre||'')+'</div>'+
+        '<div style="font-size:11px;color:var(--tx3);margin-top:1px">'+formatFechaLinda(p.entFecha)+' '+(p.entHora||'')+' · '+esc(p.curso||'')+(p.email?' · '+esc(p.email):'')+'</div>'+
+        (enviado?'<div style="font-size:10.5px;color:var(--tx3);margin-top:1px">'+estadoRecordatorio(p)+'</div>':'')+
+      '</div>'+
+      chip+
+    '</label>';
+  }).join('');
+}
+
+function actualizarBotonRecordatorios(){
+  const btn=document.getElementById('rec-ent-btn'); if(!btn) return;
+  const n=document.querySelectorAll('.rec-ent-chk:checked').length;
+  btn.textContent = n ? 'Enviar recordatorio a '+n+' familia'+(n!==1?'s':'') : 'Enviar recordatorio';
+  btn.disabled = n===0;
+  btn.style.opacity = n===0?'.5':'1';
+}
+
+function enviarRecordatoriosSeleccionados(){
+  const chks=[].slice.call(document.querySelectorAll('.rec-ent-chk:checked'));
+  if(!chks.length){ toast('No hay ninguna familia seleccionada','err'); return; }
+  const ps=chks.map(c=>DB.postulantes.find(p=>p.id===Number(c.value))).filter(Boolean);
+  if(!ps.length) return;
+  // Reenviar es legítimo (la familia lo perdió, cambió algo), pero nunca sin decirlo.
+  const repes=ps.filter(recordatorioEnviado);
+  if(repes.length && !confirm(repes.length+(repes.length===1?' familia ya recibió':' familias ya recibieron')+' el recordatorio de esta misma entrevista:\n\n'+repes.map(p=>'• '+p.alumno).join('\n')+'\n\n¿Mandárselo igual?')) return;
+  if(!DB.config.appsScriptUrl && ps.length>1){
+    toast('Sin Apps Script configurado el envío es de a uno (abre el correo por cada familia)','err'); return;
+  }
+  if(!confirm('Enviar el mail de recordatorio a '+ps.length+(ps.length===1?' familia':' familias')+'?\n\n'+ps.map(p=>'• '+p.alumno+' — '+formatFechaLinda(p.entFecha)+' '+(p.entHora||'')).join('\n'))) return;
+
+  const btn=document.getElementById('rec-ent-btn');
+  let i=0, ok=0, fail=0;
+  // De a uno, en fila: son pocos y así no se le hacen diez pedidos simultáneos al Apps Script.
+  (function siguiente(){
+    if(i>=ps.length){
+      const cont=document.getElementById('rec-ent-lista');
+      if(cont) cont.innerHTML=renderListaRecordatoriosEnt();
+      actualizarBotonRecordatorios();
+      renderAdminCal();
+      if(fail) toast('Enviados '+ok+' · fallaron '+fail+' — reintentá los que quedaron marcados','err');
+      else toast('✓ Recordatorio enviado a '+ok+(ok===1?' familia':' familias'),'ok');
+      return;
+    }
+    const p=ps[i++];
+    if(btn){ btn.disabled=true; btn.textContent='Enviando… '+i+'/'+ps.length; }
+    mandarRecordatorio(p,function(res){ if(res) ok++; else fail++; setTimeout(siguiente,250); });
+  })();
+}
+
+// Envío individual, desde el detalle de la entrevista.
+function enviarRecordatorioUno(id){
+  const p=DB.postulantes.find(x=>x.id===id); if(!p) return;
+  if(!p.email){ toast('La ficha no tiene email: avisale por teléfono','err'); return; }
+  const rep=recordatorioEnviado(p);
+  const msg=rep
+    ? (p.padre||'La familia')+' ya recibió el recordatorio de esta entrevista. ¿Mandárselo de nuevo?'
+    : 'Enviar el mail de recordatorio de la entrevista a '+(p.padre||'la familia')+'?';
+  if(!confirm(msg)) return;
+  mandarRecordatorio(p,function(ok,mode){
+    if(ok&&mode==='mailto') toast('Abriendo correo con el recordatorio...','info');
+    else if(ok) toast('✓ Recordatorio enviado a '+(p.padre||p.email),'ok');
+    else toast('No se pudo enviar el recordatorio','err');
+    renderAdminCal();
+    openDetalleEntrevista(id);
+  });
 }
 
 // Envía a la familia el link de auto-reserva para que elija día de entrevista por su cuenta.

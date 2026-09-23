@@ -22,7 +22,7 @@ const MAIL_LOGO = 'https://admisionesaustin.com.ar/logo-email.png';
 
 // Marca de versión: sirve para confirmar que la implementación se publicó.
 // Al abrir la URL del script con ?action=ping tiene que aparecer este valor.
-const API_VERSION = '2026-09-17-v7-cancelar-evento';
+const API_VERSION = '2026-09-23-v8-recordatorio-panel';
 
 // ── Calendario ────────────────────────────────────────────────
 const CAL_ADMISIONES        = 'admisiones@austinebs-ah.edu.ar';
@@ -33,9 +33,14 @@ const DURACION_ENTREVISTA_MIN = 60;
 // El panel de admisiones ya manda su propio mail cuando se mueve la ficha a
 // "Entrevistado". Si además lo mandara el trigger, la familia recibiría el
 // mismo mail dos veces. Por eso el post-entrevista automático queda apagado:
-// la fuente de verdad es el panel. El recordatorio de 24hs sí queda prendido
-// porque el panel no lo manda.
-const RECORDATORIO_AUTOMATICO   = true;
+// la fuente de verdad es el panel.
+//
+// Desde 2026-09-23 el recordatorio también lo manda el panel, con la plantilla
+// "Recordatorio de entrevista" que edita el equipo y mirando las entrevistas
+// realmente agendadas. El trigger de acá mandaba un texto fijo, no editable, y
+// sólo a las familias que reservaron por el formulario público: dejarlo prendido
+// significaba un segundo mail para esas familias. Queda apagado por eso.
+const RECORDATORIO_AUTOMATICO   = false;
 const POST_ENTREVISTA_AUTOMATICO = false;
 
 // ── Camino B: decisión de Dirección General por mail ──────────
@@ -982,9 +987,11 @@ function paginaDG_(titulo, texto, color) {
 // ── TRIGGERS AUTOMÁTICOS ───────────────────────────────────────
 
 /**
- * Recordatorio 24hs antes.
- * Ejecutar una vez: instalarTriggers_API()
- * Se corre todos los días a las 8am.
+ * Recordatorio 24hs antes — APAGADO (RECORDATORIO_AUTOMATICO = false).
+ * El recordatorio lo manda el panel de admisiones con la plantilla que edita el
+ * equipo ("Recordatorio de entrevista"), para todas las entrevistas agendadas y
+ * sin repetir. Esta función queda como referencia; no borrar el trigger hace
+ * falta, con la bandera en false no envía nada.
  */
 function enviarRecordatorios_() {
   if (!RECORDATORIO_AUTOMATICO) return;
