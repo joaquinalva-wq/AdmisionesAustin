@@ -5002,6 +5002,8 @@ function renderEntAdminLista(filtro){
 function filaEntAdmin(p, hoy, esBusqueda){
   const esPasada = p.entFecha < hoy;
   const sinRes = esPasada && !p.entResultado;
+  // Una entrevista que todavía no pasó se puede borrar (la familia canceló).
+  const futura = !esPasada && !p.entResultado;
   return `<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 18px;border-bottom:1px solid var(--bd);font-size:12.5px;${sinRes?'background:#FEF2F2;':''}">
     <div>
       <strong>${esc(p.alumno)}</strong>${p.hermano==='si'?' ★':''}
@@ -5015,7 +5017,7 @@ function filaEntAdmin(p, hoy, esBusqueda){
       ${p.entResultado?`<span style="background:#EBF7D4;color:#3A6A0A;font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:12px">✓ ${EL[p.entResultado]||p.entResultado}</span>`:''}
       ${esBusqueda?`<button class="btn btn-ghost btn-sm" onclick="verSemanaEnt('${p.entFecha}')">📅 Ver semana</button>`:''}
       ${sinRes?`<button class="btn btn-or btn-sm" onclick="openDetalleEntrevista(${p.id})">Registrar resultado</button>
-                <button class="btn btn-danger btn-sm" onclick="marcarNoAsistio(${p.id})">No asistió</button>`:`<div style="display:flex;gap:5px"><button class="btn btn-out btn-sm" onclick="openDetalleEntrevista(${p.id})">Entrevista</button><button class="btn btn-td btn-sm" onclick="openDetalle(${p.id})">Gestionar →</button></div>`}
+                <button class="btn btn-danger btn-sm" onclick="marcarNoAsistio(${p.id})">No asistió</button>`:`<div style="display:flex;gap:5px">${futura?`<button class="btn btn-ghost btn-sm" onclick="borrarEntrevista(${p.id})" title="Borrar la entrevista — la familia canceló. No le manda ningún mail y libera el horario." style="color:#DC2626;padding:5px 7px">🗑</button>`:''}<button class="btn btn-out btn-sm" onclick="openDetalleEntrevista(${p.id})">Entrevista</button><button class="btn btn-td btn-sm" onclick="openDetalle(${p.id})">Gestionar →</button></div>`}
     </div>
   </div>`;
 }
@@ -5123,7 +5125,10 @@ function openDetalleEntrevista(id){
     ? '<button class="btn btn-out" onclick="closeM()">Cerrar</button>' +
       '<button class="btn btn-danger btn-sm" onclick="marcarNoAsistio('+id+');closeM()">No asistió</button>' +
       '<button class="btn btn-or" onclick="confirmarResultado('+id+')">Confirmar resultado y enviar mail</button>'
-    : '<button class="btn btn-out" onclick="closeM()">Cerrar</button>' +
+    : ((p.entFecha && !tieneRes && !esPasada)
+        ? '<button class="btn btn-danger btn-sm" onclick="borrarEntrevista('+id+',true)" style="margin-right:auto" title="La familia canceló: borra la entrevista, libera el horario y no manda ningún mail">🗑 Borrar entrevista</button>'
+        : '') +
+      '<button class="btn btn-out" onclick="closeM()">Cerrar</button>' +
       '<button class="btn btn-td" onclick="closeM();setTimeout(()=>openDetalle('+id+'),80)">Gestionar estado →</button>';
 
   openM();
@@ -5177,6 +5182,52 @@ function guardarFechaDesdeDetalle(id){
   p.ultAccion=today();
   saveDB(); toast('Fecha de entrevista guardada — el turno quedó bloqueado','ok');
   updateSidebarBadges(); renderDashboard(); openDetalle(id);
+}
+
+// Borra una entrevista que todavía no ocurrió, para cuando la familia avisa que no puede
+// venir. NO manda ningún mail: la familia ya avisó ella, y escribirle acá sería un segundo
+// mail sobre el mismo tema. Hace las tres cosas que la cancelación implica:
+//   1. libera el horario, para que vuelva a aparecer disponible en el formulario público;
+//   2. borra el evento del Google Calendar de Admisiones (motivo 'reprogramado' = borra);
+//   3. limpia fecha y hora de la ficha.
+// El estado del pipeline NO se toca a propósito: queda "Citado" sin fecha, que es un estado
+// que el sistema ya contempla (badge de citados sin fecha en Pipeline) y desde donde se le
+// puede volver a agendar. No se borra `recordatorioMail`: si se reagenda, el slot cambia y
+// el recordatorio se habilita solo, avisando que el anterior era del turno viejo.
+function borrarEntrevista(id, desdeModal){
+  const p = DB.postulantes.find(x=>x.id===id); if(!p) return;
+  if(!p.entFecha){ toast('Esta ficha no tiene entrevista agendada','info'); return; }
+  if(p.entResultado){ toast('La entrevista ya tiene resultado registrado: no se puede borrar','err'); return; }
+
+  const fecha = p.entFecha, hora = p.entHora||'';
+  const cuando = formatFechaLinda(fecha) + (hora ? ' a las '+hora : '');
+  if(!confirm('Borrar la entrevista de '+p.alumno+' del '+cuando+'.\n\n'+
+              'NO se le manda ningún mail a la familia.\n'+
+              (hora ? 'El horario queda libre para que otra familia lo reserve.\n' : '')+
+              '\n¿Confirmás?')) return;
+
+  const ahora = new Date();
+  p.entFecha = ''; p.entHora = '';
+  p.ultAccion = today();
+  p.notas = p.notas||[];
+  p.notas.push({
+    txt:'Se borró la entrevista del '+formatFechaLinda(fecha)+(hora?' a las '+hora:'')+' (la familia canceló antes de la fecha). El horario quedó liberado. No se envió ningún mail.',
+    fecha:ahora.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}),
+    hora:ahora.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})
+  });
+  saveDB();
+
+  liberarTurnoEntrevista(fecha, hora);
+  cancelarEventoEntrevista(fecha, hora, 'reprogramado', p.alumno).then(function(r){
+    if(DB.config.appsScriptUrl && !(r&&r.ok))
+      toast('Quedó el evento viejo en Google Calendar — borralo a mano','info');
+  });
+
+  if(desdeModal) closeM();
+  toast(hora ? '🗑 Entrevista borrada — el horario del '+formatFechaLinda(fecha)+' '+hora+' quedó disponible'
+             : '🗑 Entrevista borrada',
+        'ok');
+  renderAdminCal(); updateSidebarBadges(); renderDashboard();
 }
 
 // Agenda la entrevista: bloquea el horario y pide al Apps Script que cree el evento
