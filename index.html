@@ -2423,6 +2423,11 @@ function migDGSegundoMail(){
 // sin resultado cargado). No se libera nunca un turno con entrevista viva.
 function migLimpiarBloqueosHuerfanos(){
   if(DB.config.mig_bloq_huerfanos_v1) return;
+  // Espera a que la nube haya bajado, igual que migDGNoReenviarBacklog: renderPanel() corre
+  // ANTES del sync, así que con el DB vacío del arranque no habría ninguna entrevista viva
+  // contra la que comparar — quemaría la bandera sin limpiar nada, y en el peor caso
+  // liberaría turnos que sí están tomados.
+  if(!DB.postulantes || !DB.postulantes.length) return;
   const activos = new Set(
     DB.postulantes
       .filter(p=>p.entFecha && p.entHora && !p.entResultado && p.estado!=='desiste' && p.estado!=='baja')
@@ -2648,7 +2653,9 @@ function renderDashboard(){
   }).join('');
 
   // Recientes
-  const rec=[...ps].sort((a,b)=>(b.ultAccion||b.fecha).localeCompare(a.ultAccion||a.fecha)).slice(0,8);
+  // Las dos fechas van con ||'': un postulante sin ultAccion ni fecha tiraba el sort y con
+  // él todo el panel, que es lo primero que se ve al entrar.
+  const rec=[...ps].sort((a,b)=>String(b.ultAccion||b.fecha||'').localeCompare(String(a.ultAccion||a.fecha||''))).slice(0,8);
   document.getElementById('dash-rec').innerHTML=rec.length===0
     ?`<tr><td colspan="6"><div class="empty"><div class="empty-ic">📋</div><p>Aún no hay postulantes. Las nuevas postulaciones aparecerán aquí.</p></div></td></tr>`
     :rec.map(p=>`<tr onclick="openDetalle(${p.id})"${esInactivo(p)?' class="inactivo-row"':''}>
@@ -3069,7 +3076,12 @@ function guardarEdicionPostulante(id){
   setSi('hermano',document.getElementById('ed-he').value,'Hermano en Austin');
   setSi('dir',v('ed-dir'),'Localidad');
   setSi('padreNac',v('ed-pnac'),'Nacimiento del responsable');
-  p.nivel=NIVEL(p.curso); // el nivel se deriva del curso, nunca se carga a mano
+  // El nivel se deriva del curso, nunca se carga a mano — pero pasa por setSi como
+  // cualquier otro campo. Antes se asignaba acá directamente, fuera de la cuenta de
+  // cambios: si el nivel estaba mal guardado y el curso bien, corregirlo no contaba como
+  // cambio, el guardado salía por el return de abajo y el dato corregido nunca llegaba al
+  // EOE. Esa era la razón por la que reabrir la ficha y guardar no arreglaba un nivel mal.
+  setSi('nivel',NIVEL(p.curso),'Nivel');
 
   if(!cambios.length){ toast('No hubo cambios para guardar',''); openDetalle(id); return; }
 
@@ -3504,8 +3516,9 @@ function saveNuevo(){
   const padre=(document.getElementById('nm-pa').value||'').trim();
   const email=(document.getElementById('nm-em').value||'').trim();
   const curso=document.getElementById('nm-cu').value;
-  // Validar email duplicado
-  if(DB.postulantes.find(p=>p.email.toLowerCase()===email.toLowerCase()&&p.estado!=='desiste')){
+  // Validar email duplicado. El ||'' importa: esto recorre TODOS los postulantes, así que
+  // uno solo sin email bloqueaba el alta manual por completo.
+  if(DB.postulantes.find(p=>String(p.email||'').toLowerCase()===email.toLowerCase()&&p.estado!=='desiste')){
     toast('⚠ Este email ya tiene una postulación activa','err'); return;
   }
   if(!alumno||!padre||!email){ toast('Completá los campos obligatorios','err'); return; }
@@ -5378,7 +5391,9 @@ function eoeFieldsMatriculados(p){
     emailPadre:      { stringValue: p.email || '' },
     nombreMadre:     { stringValue: '' },
     emailMadre:      { stringValue: '' },
-    fechaNacimiento: { stringValue: p.nacimiento || '' },
+    // El campo de la ficha es `nac`. Decía `p.nacimiento`, que no existe: la fecha de
+    // nacimiento le llegaba vacía al EOE aunque estuviera cargada en el panel.
+    fechaNacimiento: { stringValue: p.nac || '' },
     observaciones:   { stringValue: notasTxt || ('Matriculado desde sistema de admisiones. Curso original: '+p.curso) },
     // string, no número: es el mismo valor que el docId y el EOE lo espera como texto.
     admisionesId:    { stringValue: String(p.id) }
@@ -5922,7 +5937,7 @@ function eoeFieldsRevision(p){
     anioIngreso:{integerValue:String(p.anio||new Date().getFullYear())},
     email:{stringValue:p.email||''},telefono:{stringValue:(p.tel||'').replace(/\D/g,'')},
     nombrePadre:{stringValue:p.padre||''},emailPadre:{stringValue:p.email||''},
-    fechaNacimiento:{stringValue:p.nacimiento||''},
+    fechaNacimiento:{stringValue:p.nac||''},   // `nac`, no `nacimiento`: ver eoeFieldsMatriculados
     observaciones:{stringValue:notasTxt},
     // string, no número: es el mismo valor que el docId y el EOE lo espera como texto.
     admisionesId:{stringValue:String(p.id)}
@@ -5982,7 +5997,7 @@ function renderBajas(){
   const niv=document.getElementById('bajas-niv')?.value||'';
   const bajas=DB.postulantes.filter(p=>
     p.estado==='desiste'&&
-    (!q||p.alumno.toLowerCase().includes(q)||p.padre.toLowerCase().includes(q)||p.curso.toLowerCase().includes(q))&&
+    (!q||[p.alumno,p.padre,p.curso].some(v=>String(v||'').toLowerCase().includes(q)))&&
     (!anio||String(p.anio)===anio)&&(!niv||p.nivel===niv)
   ).sort((a,b)=>(b.ultAccion||b.fecha||'').localeCompare(a.ultAccion||a.fecha||''));
   const cnt=document.getElementById('bajas-cnt');
@@ -6129,7 +6144,7 @@ function renderBajasEsc(){
   };
   const delCiclo=(DB.bajasEscolares||[]).filter(b=>{ const c=cicloDe(b); return c===null || c===_ocCiclo; });
   const lista=delCiclo.filter(b=>
-    !q||b.alumno.toLowerCase().includes(q)||b.curso.toLowerCase().includes(q)||(b.motivo||'').toLowerCase().includes(q)
+    !q||[b.alumno,b.curso,b.motivo].some(v=>String(v||'').toLowerCase().includes(q))
   ).sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
   const cnt=document.getElementById('bajasesc-cnt');
   if(cnt) cnt.textContent=`${delCiclo.length} baja${delCiclo.length!==1?'s':''} en ${_ocCiclo}`;
@@ -9367,7 +9382,9 @@ function filtrarDescuentos(){
   const desc=DB.descuentos||{};
   let lista=(DB.padron||[]).filter(a=>a.ciclo===ciclo&&a.estado==='activo'&&desc[a.id]);
   if(q) lista=lista.filter(a=>(a.nombre||'').toLowerCase().includes(q)||(a.curso||'').toLowerCase().includes(q));
-  lista.sort((a,b)=>a.curso.localeCompare(b.curso)||a.nombre.localeCompare(b.nombre));
+  // El mismo comparador que el resto del padrón: ordena las secciones en orden progresivo
+  // (S2 → 6° Sec) en vez de alfabético, y tolera una fila sin curso o sin nombre.
+  lista.sort(cmpSeccionNombre);
   const tb=document.getElementById('desc-tabla'); if(!tb) return;
   if(!lista.length){
     tb.innerHTML=`<div class="cbox"><p style="color:var(--tx3);padding:14px">Sin descuentos en ciclo ${ciclo}. Usá el botón "+" para agregar.</p></div>`;
@@ -9427,7 +9444,7 @@ function buscarAlumnoDesc(q){
   const ciclo=_ocCiclo;
   const hits=(DB.padron||[]).filter(a=>a.ciclo===ciclo&&a.estado==='activo'&&(a.nombre||'').toLowerCase().includes(q.toLowerCase())).slice(0,8);
   sugg.style.display=hits.length?'block':'none';
-  sugg.innerHTML=hits.map(a=>`<div style="padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--bd);font-size:13px" onmousedown="selAlumnoDesc('${a.id}','${a.nombre.replace(/'/g,"\\'").replace(/"/g,'&quot;')}','${esc(a.curso)}')"><strong>${esc(a.nombre)}</strong> <span style="color:var(--tx3);font-size:11px">${esc(a.curso)}</span></div>`).join('');
+  sugg.innerHTML=hits.map(a=>`<div style="padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--bd);font-size:13px" onmousedown="selAlumnoDesc('${a.id}','${String(a.nombre||'').replace(/'/g,"\\'").replace(/"/g,'&quot;')}','${esc(a.curso)}')"><strong>${esc(a.nombre)}</strong> <span style="color:var(--tx3);font-size:11px">${esc(a.curso)}</span></div>`).join('');
 }
 
 function selAlumnoDesc(id,nombre,curso){
