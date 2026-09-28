@@ -5322,17 +5322,37 @@ function renderDesiste(){
 // el MISMO doc, sin duplicados. El updateMask se arma desde las claves del body, así solo
 // se tocan esos campos y NUNCA se pisan los que el EOE devuelve (resultado, estado
 // resuelto, revisadoPor, fechaRevision, estudianteId, dadoDeAltaPor, fechaAlta...).
-// Sin token, igual que el create de hoy: las reglas del EOE deben permitir el update.
+// Va firmado con el token de la sesión: Admisiones y el EOE comparten el mismo proyecto
+// Firebase (eoe-aebs), así que el staff logueado acá ya cumple `request.auth != null` del
+// otro lado. Con eso las reglas del EOE pueden seguir exigiendo auth para el update —que es
+// lo que protege los datos de las familias— sin abrirlas ni montar una service account.
+// Sin sesión el PATCH se rechaza, y quien llama lo reporta en vez de fallar en silencio.
 async function upsertEOE(col, docId, fields){
   const mask = Object.keys(fields)
     .map(k=>'updateMask.fieldPaths='+encodeURIComponent(k))
     .join('&');
   const url = `${FS_BASE}/${col}/${encodeURIComponent(String(docId))}?${mask}`;
+  const tk = await fsToken();
+  const headers = {'Content-Type':'application/json'};
+  if(tk) headers['Authorization'] = 'Bearer '+tk;
   return fetch(url, {
     method:'PATCH',
-    headers:{'Content-Type':'application/json'},
+    headers,
     body:JSON.stringify({fields})
   });
+}
+
+// Traduce el nivel del sistema al vocabulario del EOE.
+// Acá los niveles son 'Inicial' | 'Elementary' | 'High School' (ver SCHOOL_NIVEL); el EOE
+// los nombra 'Inicial' | 'Primario' | 'Secundario'. El mapeo viejo comparaba contra
+// 'Kindergarten' —que es sólo una etiqueta de los filtros y nunca llega hasta acá—, así que
+// todo Inicial caía en el último else y viajaba al EOE marcado como "Secundario".
+function nivelEOEDe(nivel){
+  const n = String(nivel||'');
+  if(n==='Elementary') return 'Primario';
+  if(n==='High School') return 'Secundario';
+  if(n==='Inicial' || n==='Kindergarten') return 'Inicial';
+  return n;
 }
 
 // Campos de DATOS (sin estado ni timestamp) que Admisiones manda a matriculados-pendientes.
@@ -5341,10 +5361,7 @@ function eoeFieldsMatriculados(p){
   const partes = (p.alumno||'').trim().split(' ');
   const nombre = partes[0] || '';
   const apellido = partes.slice(1).join(' ') || '';
-  const nivelEOE = p.nivel === 'Kindergarten' ? 'Inicial'
-                 : p.nivel === 'Elementary'   ? 'Primario'
-                 : p.nivel === 'High School'  ? 'Secundario'
-                 : p.nivel || '';
+  const nivelEOE = nivelEOEDe(p.nivel);
   const cursoMatch = (p.curso||'').match(/(\d+)/);
   const cursoNum = cursoMatch ? cursoMatch[1]+'°' : p.curso||'';
   const notasTxt = (p.notas||[]).map(n=>'['+n.fecha+'] '+n.txt).join(' | ');
@@ -5363,7 +5380,8 @@ function eoeFieldsMatriculados(p){
     emailMadre:      { stringValue: '' },
     fechaNacimiento: { stringValue: p.nacimiento || '' },
     observaciones:   { stringValue: notasTxt || ('Matriculado desde sistema de admisiones. Curso original: '+p.curso) },
-    admisionesId:    { integerValue: String(p.id) }
+    // string, no número: es el mismo valor que el docId y el EOE lo espera como texto.
+    admisionesId:    { stringValue: String(p.id) }
   };
 }
 
@@ -5419,6 +5437,85 @@ function stopEOEPolling(){
   if(_eoePollingInterval){ clearInterval(_eoePollingInterval); _eoePollingInterval=null; }
 }
 
+// Lee el veredicto del EOE. Devuelve 'aprobado' | 'rechazado' | 'descartado-eoe' | ''.
+//
+// Sólo vale el campo `resultado`, y con match exacto. Antes se hacía includes() sobre
+// resultado-o-estado, y eso tenía dos agujeros: 'descartado-eoe' no contiene ni 'aprobado' ni
+// 'rechazado', así que el caso quedaba clavado en eoe_ingles para siempre sin que nadie se
+// enterara; y el propio estado 'procesado' del EOE no dice nada del veredicto.
+//
+// El bloque legacy es para los casos que quedaron a mitad de camino con el esquema viejo,
+// cuando el veredicto venía en `estado`. Match exacto contra esos dos textos y nada más: un
+// 'procesado' del EOE nuevo no entra acá.
+function leerVeredictoEOE(f){
+  const r=String(f.resultado?.stringValue||'').trim().toLowerCase();
+  if(r==='aprobado'||r==='rechazado'||r==='descartado-eoe') return r;
+  if(r) return ''; // el EOE puso algo que no conocemos: no adivinar
+
+  const legacy=String(f.estado?.stringValue||'').trim().toLowerCase();
+  if(legacy==='aprobado'||legacy==='procesado — aprobado'||legacy==='procesado - aprobado') return 'aprobado';
+  if(legacy==='rechazado'||legacy==='procesado — rechazado'||legacy==='procesado - rechazado') return 'rechazado';
+  return '';
+}
+
+// Copia la devolución del EOE a la ficha. Son campos que escribe SÓLO el EOE; acá se leen y
+// se guardan para que queden en la ficha y en el mail a Dirección General.
+// Ojo: `observacionesEOE` ≠ `observaciones` — el segundo es el campo de Admisiones (las notas
+// que mandamos nosotros), y sobreescribirlo borraría lo que cargó el equipo.
+function guardarDevolucionEOE(p, f){
+  const s=k=>String(f[k]?.stringValue||'').trim();
+  const bandera=s('bandera').toLowerCase();
+  if(bandera) p.eoeBandera=bandera;
+  const obs=s('observacionesEOE');
+  if(obs) p.eoeObservaciones=obs;
+  const motivo=s('motivoRechazo')||s('motivoArchivo');
+  if(motivo) p.eoeMotivo=motivo;
+  const quien=s('revisadoPor');
+  if(quien) p.eoeRevisadoPor=quien;
+  const cuando=s('fechaRevision');
+  if(cuando) p.eoeFechaRevision=cuando;
+
+  // Nota en la ficha para que el equipo vea la devolución sin abrir nada más.
+  const partes=[];
+  if(bandera) partes.push('bandera '+bandera.toUpperCase());
+  if(quien) partes.push('revisó '+quien);
+  if(obs) partes.push('Observaciones del EOE: '+obs);
+  if(motivo) partes.push('Motivo: '+motivo);
+  if(partes.length){
+    const txt='Devolución del EOE — '+partes.join(' · ');
+    p.notas=p.notas||[];
+    // Si el caso se vuelve a mandar al EOE a mano, el poll lo relee: sin esto la misma
+    // devolución quedaba escrita dos veces en la ficha.
+    if(!p.notas.some(n=>n.txt===txt)){
+      const ahora=new Date();
+      p.notas.push({
+        txt,
+        fecha:ahora.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}),
+        hora:ahora.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})
+      });
+    }
+  }
+}
+
+// Marca del lado del EOE que Admisiones ya movió el pipeline con ese veredicto.
+// NO se toca `estado` ni ningún otro campo del EOE (resultado, bandera, revisadoPor,
+// fechaRevision, observacionesEOE, motivoRechazo, motivoArchivo): son suyos. Antes escribíamos
+// estado='Procesado — Aprobado', que le pisaba su propio 'procesado'. Tampoco se borra el
+// documento: el EOE sigue haciendo update sobre él.
+async function marcarPipelineAvanzado(url, authH, destino){
+  const fields={
+    pipelineAvanzado:{booleanValue:true},
+    pipelineAvanzadoEn:{integerValue:String(Date.now())},
+    pipelineDestino:{stringValue:destino}
+  };
+  const mask=Object.keys(fields).map(k=>'updateMask.fieldPaths='+encodeURIComponent(k)).join('&');
+  return fetch(url+'?'+mask,{
+    method:'PATCH',
+    headers:{'Content-Type':'application/json',...authH},
+    body:JSON.stringify({fields})
+  });
+}
+
 async function pollEOEResults(){
   // Casos locales en estado eoe_ingles
   const pendientes = DB.postulantes.filter(p=>p.estado==='eoe_ingles'&&p.eoeDocId);
@@ -5436,16 +5533,15 @@ async function pollEOEResults(){
       const res=await fetch(url,{headers:_authH});
       if(!res.ok) continue;
       const doc=await res.json();
-      const estado=doc.fields?.resultado?.stringValue||doc.fields?.estado?.stringValue||'';
-      // El PATCH de cierre deja el estado como "Procesado — Aprobado/Rechazado", así que
-      // el veredicto se lee igual con o sin ese prefijo. NO se corta por "procesado": si
-      // se cortaba, un caso cuyo cambio de estado no llegó a persistir quedaba clavado en
-      // eoe_ingles para siempre (el mail a DG ya había salido y el doc ya estaba cerrado).
-      // Así el poll lo vuelve a empujar solo. Re-mandar el mail no es riesgo: enviarMailDG
-      // es idempotente por p.dgMailEnviado. Ojo: "rechazado" no contiene "aprobado".
-      const _v=estado.toLowerCase();
-      if(_v.includes('aprobado')){
-        // EOE aprobó → pendiente_dg
+      const f=doc.fields||{};
+      const veredicto=leerVeredictoEOE(f);
+      if(!veredicto) continue; // el caso sigue abierto en el EOE: puede tardar semanas
+
+      // La devolución del EOE se guarda en la ficha ANTES de mover el pipeline: el mail a
+      // Dirección General la incluye, y si algo falla después queda igual registrada.
+      guardarDevolucionEOE(p, f);
+
+      if(veredicto==='aprobado'){
         p.estado='pendiente_dg';
         p.ultAccion=today();
         const dl=new Date(); dl.setHours(dl.getHours()+48);
@@ -5454,29 +5550,35 @@ async function pollEOEResults(){
         p.hist.push({e:'pendiente_dg',f:today(),auto:true,mailOk:false});
         saveDB();
         enviarMailDG(p);
-        // Marcar como procesado en Firestore
-        await fetch(url,{method:'PATCH',headers:{'Content-Type':'application/json',..._authH},
-          body:JSON.stringify({fields:{estado:{stringValue:'Procesado — Aprobado'},procesadoEn:{integerValue:String(Date.now())}}})
-        });
-        // Notificar en UI
+        await marcarPipelineAvanzado(url, _authH, 'pendiente_dg');
         mostrarNotifEOE(p,'aprobado');
-        renderDashboard();
-        const pv=document.getElementById('view-pipeline'); if(pv&&pv.classList.contains('on')) renderPipeline();
 
-      } else if(_v.includes('rechazado')){
-        // EOE rechazó → rechazado_eoe
+      } else if(veredicto==='rechazado'){
         p.estado='rechazado_eoe';
         p.ultAccion=today();
         p.hist=p.hist||[];
         p.hist.push({e:'rechazado_eoe',f:today(),auto:true});
         saveDB();
-        await fetch(url,{method:'PATCH',headers:{'Content-Type':'application/json',..._authH},
-          body:JSON.stringify({fields:{estado:{stringValue:'Procesado — Rechazado'},procesadoEn:{integerValue:String(Date.now())}}})
-        });
+        await marcarPipelineAvanzado(url, _authH, 'rechazado_eoe');
         mostrarNotifEOE(p,'rechazado');
-        renderDashboard();
-        const pv=document.getElementById('view-pipeline'); if(pv&&pv.classList.contains('on')) renderPipeline();
+
+      } else if(veredicto==='descartado-eoe'){
+        // El EOE archivó el caso: sale del pipeline y NO avanza a Dirección General. Se usa
+        // el mismo estado que el rechazo porque es el único terminal que ya existe sin mail
+        // a la familia, pero el motivo del archivo queda en la nota y la notificación dice
+        // "archivó", para que el equipo distinga un archivado de un rechazo pedagógico.
+        p.estado='rechazado_eoe';
+        p.eoeArchivado=true;
+        p.ultAccion=today();
+        p.hist=p.hist||[];
+        p.hist.push({e:'rechazado_eoe',f:today(),auto:true,via:'eoe-archivado'});
+        saveDB();
+        await marcarPipelineAvanzado(url, _authH, 'archivado');
+        mostrarNotifEOE(p,'archivado');
       }
+
+      renderDashboard();
+      const pv=document.getElementById('view-pipeline'); if(pv&&pv.classList.contains('on')) renderPipeline();
     } catch(e){ /* continúa con el siguiente */ }
   }
 }
@@ -5538,23 +5640,44 @@ async function pollDGDecisiones(){
   }
 }
 
+// Emoji de la bandera del EOE. Verde = sin observaciones, amarilla = con reservas,
+// naranja = con condiciones (están en observacionesEOE), roja = no recomendado.
+const EOE_BANDERAS={verde:'🟢',amarilla:'🟡',naranja:'🟠',roja:'🔴'};
+function banderaEOE(p){
+  const b=String(p&&p.eoeBandera||'').toLowerCase();
+  return EOE_BANDERAS[b] ? EOE_BANDERAS[b]+' bandera '+b : '';
+}
+
+// resultado: 'aprobado' | 'rechazado' | 'archivado'.
+// 'archivado' es el caso que el EOE dio de baja (resultado 'descartado-eoe'): termina en el
+// mismo estado que un rechazo, pero decirle "rechazó" al equipo sería mentirle — no hubo
+// rechazo pedagógico, el EOE cerró el caso. Por eso el texto es distinto.
 function mostrarNotifEOE(p, resultado){
   const aprobado = resultado==='aprobado';
+  const archivado = resultado==='archivado';
+  const titulo = aprobado ? '✓ EOE aprobó a' : (archivado ? '📥 EOE archivó el caso de' : '✗ EOE rechazó a');
+  const detalle = aprobado ? 'Pasó a Pendiente Dir. General'
+                : (archivado ? 'Salió del pipeline — no avanza a Dir. General' : 'Volvió a Admisiones como Rechazado EOE');
+  const band = banderaEOE(p);
+  const extra = [band, p.eoeMotivo?('Motivo: '+p.eoeMotivo):''].filter(Boolean).join(' · ');
   const nc=document.getElementById('notif-cont');
   if(!nc) return;
   const d=document.createElement('div');
   d.className='notif-b'+(aprobado?'':' warn');
   d.innerHTML=`
     <div class="notif-t">
-      <h4>${aprobado?'✓ EOE aprobó a':'✗ EOE rechazó a'} ${esc(p.alumno)}</h4>
-      <p>${esc(p.curso)} — ${aprobado?'Pasó a Pendiente Dir. General':'Volvió a Admisiones como Rechazado EOE'}</p>
+      <h4>${titulo} ${esc(p.alumno)}</h4>
+      <p>${esc(p.curso)} — ${detalle}</p>
+      ${extra?`<p style="margin-top:3px;opacity:.85">${esc(extra)}</p>`:''}
     </div>
     <div class="notif-a">
       <button class="nbtn ${aprobado?'nbtn-v':'nbtn-v warn-v'}" onclick="openDetalle(${p.id});this.closest('.notif-b').remove()">Ver perfil</button>
       <button class="nbtn nbtn-d" onclick="this.closest('.notif-b').remove()">Cerrar</button>
     </div>`;
   nc.prepend(d);
-  toast(`${aprobado?'✓ EOE aprobó':'✗ EOE rechazó'} a ${p.alumno}`, aprobado?'ok':'err');
+  const tt = aprobado ? '✓ EOE aprobó a ' : (archivado ? '📥 EOE archivó el caso de ' : '✗ EOE rechazó a ');
+  // El archivado no es un error: el EOE cerró el caso, no rechazó al chico.
+  toast(`${tt}${p.alumno}${band?' ('+band+')':''}`, aprobado?'ok':(archivado?'info':'err'));
 }
 
 // ═══════════════════════════
@@ -5662,6 +5785,21 @@ function checkPendienteDG(){
 // ═══════════════════════════
 // MAIL A DIRECCIÓN GENERAL
 // ═══════════════════════════
+// Bloque con la devolución del EOE que se cuelga al final del mail a DG. Devuelve '' si el
+// EOE no mandó nada (casos aprobados a mano desde el panel, o del esquema viejo), así que el
+// mail queda exactamente como hoy cuando no hay devolución.
+function bloqueDevolucionEOE(p){
+  if(!p) return '';
+  const band=banderaEOE(p);
+  const l=[];
+  if(band) l.push('Nivel de alerta: '+band.toUpperCase());
+  if(p.eoeObservaciones) l.push('Observaciones del EOE: '+p.eoeObservaciones);
+  if(p.eoeMotivo) l.push('Motivo: '+p.eoeMotivo);
+  if(p.eoeRevisadoPor) l.push('Revisó: '+p.eoeRevisadoPor);
+  if(!l.length) return '';
+  return '\n\n———————————————\nDEVOLUCIÓN DEL EOE\n'+l.join('\n');
+}
+
 function enviarMailDG(p){
   // Idempotente: una sola notificación a DG por caso. Sin esto, cualquier re-entrada
   // (re-detección del poll, revert de estado, reintento) volvía a mandar el mail y las
@@ -5672,7 +5810,12 @@ function enviarMailDG(p){
   const dgEmail=DB.config.emailDG||'alejandra.luna@austinebs-ah.edu.ar';
   const tmpl=DB.emails.dg_notif;
   const subj=tmpl?fillV(tmpl.subj,p):`EOE aprobó a ${esc(p.alumno)} — pendiente confirmación DG`;
-  const body=tmpl?fillV(tmpl.body,p):`EOE aprobó a ${esc(p.alumno)} (${esc(p.curso)}, ciclo ${p.anio}). Familia: ${esc(p.padre)} · ${esc(p.email)}`;
+  const bodyTmpl=tmpl?fillV(tmpl.body,p):`EOE aprobó a ${esc(p.alumno)} (${esc(p.curso)}, ciclo ${p.anio}). Familia: ${esc(p.padre)} · ${esc(p.email)}`;
+  // La devolución del EOE se agrega DESPUÉS del cuerpo editable, no dentro de la plantilla:
+  // la plantilla dg_notif la administra el equipo desde Plantillas y no hay que tocarla, y
+  // así tampoco depende de que alguien acuerde de poner una variable nueva. Un aprobado con
+  // bandera naranja no es lo mismo que uno verde: DG necesita verlo para decidir.
+  const body=bodyTmpl+bloqueDevolucionEOE(p);
   if(DB.config.appsScriptUrl){
     // Camino B: Apps Script arma el mail con los botones Aprobar/Rechazar firmados
     // (el token secreto vive en Apps Script, no acá). El cuerpo editable va como intro.
@@ -5768,13 +5911,21 @@ function avisarAreasNuevoAlumno(p){
 // Campos de DATOS (sin estado ni timestamp) que Admisiones manda a admisiones-revision.
 function eoeFieldsRevision(p){
   const partes=(p.alumno||'').trim().split(' ');
-  const nivelEOE=p.nivel==='Kindergarten'?'Inicial':p.nivel==='Elementary'?'Primario':'Secundario';
+  // `observaciones` es el campo de ADMISIONES: el EOE lo muestra en la ficha del caso como
+  // "Observaciones de Admisiones". Lo que el EOE devuelve viaja aparte, en `observacionesEOE`.
+  const notasTxt=(p.notas||[]).map(n=>'['+n.fecha+'] '+n.txt).join(' | ');
   return {
     nombre:{stringValue:partes[0]||''},apellido:{stringValue:partes.slice(1).join(' ')||''},
-    nivel:{stringValue:nivelEOE},curso:{stringValue:p.curso||''},
+    nivel:{stringValue:nivelEOEDe(p.nivel)},
+    // El EOE lee `cursoSolicitado` y acepta `curso` como alternativa: van los dos.
+    curso:{stringValue:p.curso||''},cursoSolicitado:{stringValue:p.curso||''},
     anioIngreso:{integerValue:String(p.anio||new Date().getFullYear())},
     email:{stringValue:p.email||''},telefono:{stringValue:(p.tel||'').replace(/\D/g,'')},
-    nombrePadre:{stringValue:p.padre||''},admisionesId:{integerValue:String(p.id)}
+    nombrePadre:{stringValue:p.padre||''},emailPadre:{stringValue:p.email||''},
+    fechaNacimiento:{stringValue:p.nacimiento||''},
+    observaciones:{stringValue:notasTxt},
+    // string, no número: es el mismo valor que el docId y el EOE lo espera como texto.
+    admisionesId:{stringValue:String(p.id)}
   };
 }
 
@@ -5800,12 +5951,19 @@ async function sincronizarConEOEEvaluacion(p){
 // ni timestamp, para no reabrir un caso resuelto ni revertir un alta. Usa el docId
 // guardado (para casos viejos con id autogenerado, así no se crea un duplicado; para los
 // nuevos coincide con p.id). El updateMask acotado deja intactos los campos del EOE.
+// El update de esas colecciones exige sesión (las reglas piden request.auth != null). Si la
+// sesión venció, el PATCH vuelve 403 y antes eso se perdía en un catch vacío: el equipo
+// corregía un teléfono, veía "datos actualizados" y al EOE le seguía llegando el viejo.
+// Ahora se avisa. No se reintenta: con recargar y volver a guardar alcanza.
 function propagarEdicionEOE(p){
+  const avisar=col=>res=>{ if(!res||!res.ok) toast('⚠ El dato se guardó acá, pero no llegó al EOE ('+col+(res&&res.status?' '+res.status:'')+') — reintentá tras recargar','err'); };
   if(p.eoeDocId){
-    upsertEOE('admisiones-revision', p.eoeDocId, eoeFieldsRevision(p)).catch(()=>{});
+    upsertEOE('admisiones-revision', p.eoeDocId, eoeFieldsRevision(p))
+      .then(avisar('revisión')).catch(avisar('revisión'));
   }
   if(p.eoeMatDocId){
-    upsertEOE('matriculados-pendientes', p.eoeMatDocId, eoeFieldsMatriculados(p)).catch(()=>{});
+    upsertEOE('matriculados-pendientes', p.eoeMatDocId, eoeFieldsMatriculados(p))
+      .then(avisar('alta')).catch(avisar('alta'));
   }
 }
 
