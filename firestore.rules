@@ -1,0 +1,182 @@
+rules_version = '2';
+
+// ═════════════════════════════════════════════════════════════════════════════
+// Reglas de Firestore — proyecto eoe-aebs
+//
+// En este proyecto conviven DOS sistemas:
+//   · el EOE            (Equipo de Orientación Escolar)
+//   · Admisiones        (admisionesaustin.com.ar)
+//
+// Esta versión fusiona la propuesta del EOE con lo que Admisiones necesita.
+// Publicar la propuesta del EOE tal cual deja Admisiones sin base de datos:
+// su catch-all final (`if false`) cierra toda colección no listada, y ahí
+// faltaban `admisiones-db`, `postulaciones-inbox` y `dg-decisiones`.
+//
+// Las dos reglas de oro de Firestore que explican el diseño:
+//   1. Las reglas se combinan con OR. Un `allow ... if false` NO revoca lo que
+//      otra regla ya permitió — por eso el catch-all permisivo tenía que salir.
+//   2. Lo que no está listado, no se puede. De ahí el catch-all `if false`.
+//
+// ⚠️ NO PUBLICAR sin antes cargar al equipo del EOE en `eoe-usuarios`:
+//    si no, nadie del EOE puede entrar.
+// ═════════════════════════════════════════════════════════════════════════════
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
+
+    function miDoc() {
+      return /databases/$(database)/documents/eoe-usuarios/$(request.auth.token.email.lower());
+    }
+
+    // Usuario del EOE: autenticado, cargado en eoe-usuarios y activo.
+    function esUsuarioEOE() {
+      return request.auth != null
+        && request.auth.token.email != null
+        && exists(miDoc())
+        && get(miDoc()).data.activo == true;
+    }
+
+    function esCoordinacionEOE() {
+      return esUsuarioEOE() && get(miDoc()).data.rol == 'coordinacion';
+    }
+
+    // Staff de Admisiones: lista blanca explícita.
+    // NO se usa `eoe-usuarios` a propósito. Cargar al equipo de Admisiones ahí
+    // les daría acceso a eoe-casos, estudiantes, notas y protocolos — datos
+    // clínicos de otro equipo que Admisiones no tiene por qué ver.
+    // Al sumar a alguien al panel de Admisiones hay que agregarlo acá también.
+    function esStaffAdmisiones() {
+      return request.auth != null
+        && request.auth.token.email != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email.lower() in [
+             'admisiones@austinebs-ah.edu.ar',
+             'joaquin.alva@activelearning.com.ar',
+             'joaquin.alva@austinebs-ah.edu.ar'
+           ];
+    }
+
+    // Campos del veredicto: los escribe SOLO el EOE.
+    // Admisiones los lee para rutear el pipeline y para el mail a Dirección
+    // General, pero nunca los escribe (marca su avance en `pipelineAvanzado`).
+    function camposDelEOE() {
+      return ['resultado','bandera','estado','revisadoPor','fechaRevision',
+              'observacionesEOE','motivoRechazo','motivoArchivo'];
+    }
+
+    function noTocaCamposDelEOE() {
+      return !request.resource.data.diff(resource.data)
+                .affectedKeys().hasAny(camposDelEOE());
+    }
+
+
+    // ═══ EOE — interno ═══════════════════════════════════════════════════════
+
+    // Cada uno lee su propio documento (lo necesita el login).
+    // Solo coordinación lista, crea o modifica. Nadie borra: se desactiva.
+    match /eoe-usuarios/{email} {
+      allow get:    if request.auth != null
+                    && request.auth.token.email.lower() == email;
+      allow get, list, create, update: if esCoordinacionEOE();
+      allow delete: if false;
+    }
+
+    // Se escribe, no se corrige. Una auditoría editable no sirve de nada.
+    match /eoe-auditoria/{id} {
+      allow read, create:   if esUsuarioEOE();
+      allow update, delete: if false;
+    }
+
+    // Config y plantillas de mail: todos leen, solo coordinación edita.
+    match /eoe-config/{doc} {
+      allow read:  if esUsuarioEOE();
+      allow write: if esCoordinacionEOE();
+    }
+
+    // Expediente del EOE y archivo permanente. Admisiones nunca entra acá.
+    match /eoe-casos/{id}            { allow read, write: if esUsuarioEOE(); }
+    match /admisiones-historial/{id} { allow read, write: if esUsuarioEOE(); }
+
+    // Trayectorias estudiantiles y seguimiento.
+    match /estudiantes/{id} {
+      allow read, write: if esUsuarioEOE();
+      match /{sub=**} { allow read, write: if esUsuarioEOE(); }
+    }
+    match /alertas-seguimiento/{id} {
+      allow read, write: if esUsuarioEOE();
+      match /{sub=**} { allow read, write: if esUsuarioEOE(); }
+    }
+    match /notas/{id}                   { allow read, write: if esUsuarioEOE(); }
+    match /protocolos/{id}              { allow read, write: if esUsuarioEOE(); }
+    match /protocolos-diag/{id}         { allow read, write: if esUsuarioEOE(); }
+    match /eventos-institucionales/{id} { allow read, write: if esUsuarioEOE(); }
+
+
+    // ═══ ADMISIONES — interno ════════════════════════════════════════════════
+
+    // La base de datos del panel: postulantes, padrón, entrevistas, plantillas
+    // de mail, tarifas, config. Sin esta regla el panel no abre.
+    match /admisiones-db/{doc} {
+      allow read, write: if esStaffAdmisiones();
+    }
+
+    // Bandeja del formulario público de familias. Alta abierta porque la
+    // familia no tiene cuenta, pero acotada: un solo string, sin campos extra
+    // y con tope de tamaño. Leerla y vaciarla es solo del staff.
+    match /postulaciones-inbox/{doc} {
+      allow create: if request.resource.data.keys().hasOnly(['data','ts','procesado'])
+                    && request.resource.data.data is string
+                    && request.resource.data.data.size() < 50000;
+      allow read, update, delete: if esStaffAdmisiones();
+    }
+
+    // El clic de Dirección General en el mail (Aprobar / Rechazar). Lo escribe
+    // Apps Script, que corre sin sesión de Firebase: por eso el create queda
+    // abierto. El daño posible es acotado —solo se puede crear una decisión— y
+    // el panel aplica la primera que encuentra y la marca procesada.
+    match /dg-decisiones/{id} {
+      allow create: if true;
+      allow read, update, delete: if esStaffAdmisiones();
+    }
+
+
+    // ═══ FRONTERA EOE ↔ ADMISIONES ═══════════════════════════════════════════
+
+    // El caso que Admisiones manda a revisar y el EOE cierra semanas después.
+    //
+    // Admisiones escribe autenticado (comparte este proyecto Firebase, así que
+    // la sesión del staff ya sirve). Por eso el create dejó de estar abierto a
+    // internet, y no hace falta ni service account ni abrir el update.
+    //
+    // La doble condición del update es el contrato hecho regla: Admisiones
+    // puede corregir los datos de la familia, pero el veredicto, la bandera y
+    // el estado son del EOE y no los puede tocar ni por error ni a propósito.
+    //
+    // Admisiones NO borra el documento: el EOE hace update sobre él al cerrar,
+    // y si no existe el cierre falla. El delete queda solo del lado del EOE.
+    match /admisiones-revision/{id} {
+      allow create: if esUsuarioEOE() || esStaffAdmisiones();
+      allow read:   if esUsuarioEOE() || esStaffAdmisiones();
+      allow update: if esUsuarioEOE() || (esStaffAdmisiones() && noTocaCamposDelEOE());
+      allow delete: if esUsuarioEOE();
+    }
+
+    // El alta, que Admisiones escribe recién cuando el circuito terminó
+    // (EOE aprobó + Dirección General confirmó). Acá no hay campos reservados:
+    // el `estado` de esta colección lo maneja Admisiones.
+    match /matriculados-pendientes/{id} {
+      allow create, read, update: if esUsuarioEOE() || esStaffAdmisiones();
+      allow delete: if esUsuarioEOE();
+    }
+
+
+    // ═══ Todo lo demás: cerrado ══════════════════════════════════════════════
+    // Sin esto, una colección nueva nacería sin reglas. Mejor que falle a que
+    // quede abierta.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
