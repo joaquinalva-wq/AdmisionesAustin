@@ -269,7 +269,26 @@ service cloud.firestore {
       // La familia deja anotado el turno que tomó (o lo borra al cancelar). El motor lo
       // reescribe desde `entrevistas` en la corrida siguiente, así que aunque alguien con
       // el token escribiera cualquier cosa acá, no cambia qué turno tiene de verdad.
-      allow update: if soloCambia(['turno','actualizadoEn']);
+      //
+      // `turno` es un map de cuatro strings, o `null` cuando la familia cancela:
+      // sin el `== null` la cancelación se rechaza. Los topes de tamaño están para
+      // que nadie con un token válido use este campo como depósito de datos.
+      // `fecha` y `hora` van con `<=` y no `==` a propósito: el tope frena igual, y
+      // una igualdad estricta rompería si un turno quedara como '9:30' y no '09:30'.
+      allow update: if soloCambia(['turno','actualizadoEn'])
+                    && request.resource.data.actualizadoEn is number
+                    && (request.resource.data.turno == null || (
+                         request.resource.data.turno.keys()
+                           .hasOnly(['entrevistaId','fecha','hora','modalidad'])
+                         && request.resource.data.turno.entrevistaId is string
+                         && request.resource.data.turno.entrevistaId.size() <= 64
+                         && request.resource.data.turno.fecha is string
+                         && request.resource.data.turno.fecha.size() <= 10
+                         && request.resource.data.turno.hora is string
+                         && request.resource.data.turno.hora.size() <= 5
+                         && request.resource.data.turno.modalidad is string
+                         && request.resource.data.turno.modalidad.size() <= 20
+                       ));
     }
 
 
