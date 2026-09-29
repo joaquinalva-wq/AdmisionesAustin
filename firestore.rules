@@ -71,6 +71,18 @@ service cloud.firestore {
                 .affectedKeys().hasAny(camposDelEOE());
     }
 
+    // Una escritura que toca SOLO los campos de la lista. Lo usa la agenda pública del
+    // EOE, donde escribe la familia sin cuenta: acota qué puede cambiar de un turno.
+    function soloCambia(campos) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(campos);
+    }
+
+    // El casoId al que corresponde un token de agendamiento. Si el token no existe, el
+    // get() devuelve null, leer .data falla y la regla deniega: no se reserva sin link.
+    function casoDelToken(token) {
+      return get(/databases/$(database)/documents/agendamiento-publico/$(token)).data.casoId;
+    }
+
 
     // ═══ EOE — interno ═══════════════════════════════════════════════════════
 
@@ -80,6 +92,14 @@ service cloud.firestore {
       allow get:    if request.auth != null
                     && request.auth.token.email.lower() == email;
       allow get, list, create, update: if esCoordinacionEOE();
+
+      // Cada uno marca su propio último acceso al entrar. Solo ese campo: no puede
+      // cambiarse el rol ni reactivarse solo. Sin esto la columna "último acceso" de la
+      // pantalla de Usuarios queda congelada para todos menos coordinación.
+      allow update: if request.auth != null
+                    && request.auth.token.email.lower() == email
+                    && soloCambia(['ultimoAcceso']);
+
       allow delete: if false;
     }
 
@@ -108,6 +128,20 @@ service cloud.firestore {
       allow read, write: if esUsuarioEOE();
       match /{sub=**} { allow read, write: if esUsuarioEOE(); }
     }
+    // Fila de espera de mails. El EOE deja el pedido acá desde el navegador; el motor de
+    // Apps Script lo levanta cada 5 minutos y lo manda.
+    //
+    // El motor entra con cuenta de servicio, que NO pasa por estas reglas (las service
+    // accounts con permiso de Datastore las saltean): por eso puede marcar el documento
+    // como enviado aunque acá el update esté cerrado.
+    //
+    // Cerrado igual que eoe-auditoria: desde el navegador nadie edita ni borra un envío ya
+    // encolado. Si se pudiera, un mail ya mandado podría reescribirse y el registro mentiría.
+    match /cola-mails/{id} {
+      allow read, create:   if esUsuarioEOE();
+      allow update, delete: if false;
+    }
+
     match /notas/{id}                   { allow read, write: if esUsuarioEOE(); }
     match /protocolos/{id}              { allow read, write: if esUsuarioEOE(); }
     match /protocolos-diag/{id}         { allow read, write: if esUsuarioEOE(); }
@@ -169,6 +203,73 @@ service cloud.firestore {
     match /matriculados-pendientes/{id} {
       allow create, read, update: if esUsuarioEOE() || esStaffAdmisiones();
       allow delete: if esUsuarioEOE();
+    }
+
+
+    // ═══ EOE — agenda pública (la familia entra SIN CUENTA) ══════════════════
+    //
+    // Módulo `agendar.html` del EOE: la familia llega desde un link con un token que
+    // recibió por mail y elige su turno de entrevista sin autenticarse.
+    //
+    // Nada de esto es de Admisiones. Sus entrevistas no son una colección de Firestore:
+    // viven como campos (entFecha / entHora) dentro de admisiones-db/v2, y los turnos del
+    // formulario público los maneja Apps Script. No hay colisión de nombres.
+
+    // Turnos de entrevista del EOE. Conviven dos mundos: el equipo, que puede todo, y la
+    // familia, que sólo ve los turnos LIBRES. Un turno reservado guarda el casoId y el
+    // token de otra familia: si fuera legible, con abrir la página se vería quién tiene
+    // entrevista y cuándo. Son datos de menores — por eso tampoco se guarda nunca el
+    // nombre del estudiante acá: ese vive en el expediente, que exige cuenta.
+    match /entrevistas/{id} {
+      allow read, write: if esUsuarioEOE();
+
+      // ⚠️ Para el `list`, Firestore evalúa esta condición contra cada documento
+      // candidato: agendar.html tiene que consultar filtrando por estado == 'libre', y
+      // ningún documento de la colección puede quedar sin el campo `estado`. Si no, la
+      // consulta entera se rechaza y la familia ve la pantalla sin horarios.
+      allow get, list: if resource.data.estado == 'libre';
+
+      // Tomar un turno libre. El casoId que escribe tiene que ser el de SU token: no
+      // puede reservar a nombre de otra familia.
+      allow update: if resource.data.estado == 'libre'
+                    && request.resource.data.estado == 'reservado'
+                    && request.resource.data.reservadoPor == 'familia'
+                    && request.resource.data.sincronizado == false
+                    && request.resource.data.tokenReserva is string
+                    && request.resource.data.casoId == casoDelToken(request.resource.data.tokenReserva)
+                    && soloCambia(['estado','casoId','reservadoEn','reservadoPor',
+                                   'tokenReserva','sincronizado']);
+
+      // Cancelar el propio turno. Hay que aportar el mismo token con el que se reservó
+      // —que la familia tiene en su link y que nadie más puede leer, porque un turno
+      // reservado no es legible sin cuenta.
+      allow update: if resource.data.estado == 'reservado'
+                    && resource.data.tokenReserva is string
+                    && resource.data.tokenReserva != ''
+                    && request.resource.data.tokenReserva == resource.data.tokenReserva
+                    && request.resource.data.estado == 'cancelado'
+                    && request.resource.data.canceladoPor == 'familia'
+                    && request.resource.data.sincronizado == false
+                    && soloCambia(['estado','canceladoPor','canceladoEn',
+                                   'tokenReserva','sincronizado']);
+    }
+
+    // Lo mínimo que necesita ver agendar.html: nombre del estudiante y el turno que tiene.
+    // Nada de mail, teléfono, observaciones ni bandera — eso se queda en eoe-casos.
+    //
+    // `get` abierto y `list` cerrado es toda la seguridad de esta colección: el id del
+    // documento es un token aleatorio de 48 caracteres hex que sólo está en el mail de esa
+    // familia. Sin el token no se llega a nada, y la colección no se puede recorrer.
+    match /agendamiento-publico/{token} {
+      allow read, write: if esUsuarioEOE();
+
+      allow get:  if true;
+      allow list: if false;
+
+      // La familia deja anotado el turno que tomó (o lo borra al cancelar). El motor lo
+      // reescribe desde `entrevistas` en la corrida siguiente, así que aunque alguien con
+      // el token escribiera cualquier cosa acá, no cambia qué turno tiene de verdad.
+      allow update: if soloCambia(['turno','actualizadoEn']);
     }
 
 
