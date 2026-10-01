@@ -7,18 +7,24 @@ rules_version = '2';
 //   · el EOE            (Equipo de Orientación Escolar)
 //   · Admisiones        (admisionesaustin.com.ar)
 //
-// Esta versión fusiona la propuesta del EOE con lo que Admisiones necesita.
-// Publicar la propuesta del EOE tal cual deja Admisiones sin base de datos:
-// su catch-all final (`if false`) cierra toda colección no listada, y ahí
-// faltaban `admisiones-db`, `postulaciones-inbox` y `dg-decisiones`.
+// Este archivo es la fuente de verdad del ruleset de los DOS sistemas. Vive en
+// el repo de Admisiones (github.com/joaquinalva-wq/AdmisionesAustin) y se publica
+// a mano desde la consola de Firebase. El EOE no publica: propone cambios y acá
+// se revisan, porque un catch-all mal puesto le deja a Admisiones la base de
+// datos cerrada y el panel no abre.
 //
 // Las dos reglas de oro de Firestore que explican el diseño:
 //   1. Las reglas se combinan con OR. Un `allow ... if false` NO revoca lo que
-//      otra regla ya permitió — por eso el catch-all permisivo tenía que salir.
-//   2. Lo que no está listado, no se puede. De ahí el catch-all `if false`.
+//      otra regla ya permitió — por eso no puede haber ningún catch-all permisivo.
+//   2. Lo que no está listado, no se puede. De ahí el catch-all `if false` final.
 //
-// ⚠️ NO PUBLICAR sin antes cargar al equipo del EOE en `eoe-usuarios`:
-//    si no, nadie del EOE puede entrar.
+// Y una trampa que explica varias condiciones de más abajo: `resource.data` es un
+// Map, y leer una clave que NO existe devuelve error, no null — la regla deniega.
+// Donde la ausencia de un campo tiene que PERMITIR algo, hay que preguntar con
+// `'campo' in request.resource.data` antes de tocarlo.
+//
+// ⚠️ Antes de publicar, el equipo del EOE tiene que estar cargado en
+//    `eoe-usuarios` con `activo: true`. Si no, nadie del EOE puede entrar.
 // ═════════════════════════════════════════════════════════════════════════════
 
 service cloud.firestore {
@@ -280,14 +286,22 @@ service cloud.firestore {
       // reescribe desde `entrevistas` en la corrida siguiente, así que aunque alguien con
       // el token escribiera cualquier cosa acá, no cambia qué turno tiene de verdad.
       //
-      // `turno` es un map de cuatro strings, o `null` cuando la familia cancela:
-      // sin el `== null` la cancelación se rechaza. Los topes de tamaño están para
-      // que nadie con un token válido use este campo como depósito de datos.
-      // `fecha` y `hora` van con `<=` y no `==` a propósito: el tope frena igual, y
-      // una igualdad estricta rompería si un turno quedara como '9:30' y no '09:30'.
+      // `turno` es un map de cuatro strings, o se vacía cuando la familia cancela.
+      // Los topes de tamaño están para que nadie con un token válido use este campo
+      // como depósito de datos. `fecha` y `hora` van con `<=` y no `==` a propósito:
+      // el tope frena igual, y una igualdad estricta rompería si un turno quedara
+      // como '9:30' en vez de '09:30'.
+      //
+      // Las dos primeras condiciones de cada campo NO son decorativas. En Rules,
+      // `request.resource.data` es un Map, y leer una clave que no existe devuelve
+      // ERROR, no null: la regla deniega. Sin el `in`, cancelar con deleteField()
+      // se rechazaría —lo contrario de lo buscado— y una escritura que tocara solo
+      // `turno` también, por el `actualizadoEn` ausente que hasOnly sí permite.
       allow update: if soloCambia(['turno','actualizadoEn'])
+                    && 'actualizadoEn' in request.resource.data
                     && request.resource.data.actualizadoEn is number
-                    && (request.resource.data.turno == null || (
+                    && (!('turno' in request.resource.data)
+                        || request.resource.data.turno == null || (
                          request.resource.data.turno.keys()
                            .hasOnly(['entrevistaId','fecha','hora','modalidad'])
                          && request.resource.data.turno.entrevistaId is string
