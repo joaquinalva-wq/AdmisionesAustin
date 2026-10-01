@@ -86,12 +86,22 @@ service cloud.firestore {
 
     // ═══ EOE — interno ═══════════════════════════════════════════════════════
 
-    // Cada uno lee su propio documento (lo necesita el login).
-    // Solo coordinación lista, crea o modifica. Nadie borra: se desactiva.
+    // Directorio del equipo del EOE. Todos leen, solo coordinación edita.
+    // Nadie borra: se desactiva con `activo: false`.
     match /eoe-usuarios/{email} {
+      // Cada uno lee su propio documento. NO es redundante con el `list` de abajo:
+      // esUsuarioEOE() exige `activo == true`, así que alguien desactivado no entraría
+      // por ahí y el login no podría distinguir "dado de baja" de "nunca existió".
       allow get:    if request.auth != null
                     && request.auth.token.email.lower() == email;
-      allow get, list, create, update: if esCoordinacionEOE();
+
+      // Todo el EOE lee el directorio de su propio equipo: quién lleva cada caso, quién
+      // hace cada entrevista y de qué color se pinta en la agenda. Sin esto los
+      // desplegables de responsable salen vacíos y la agenda queda en gris.
+      // Solo lectura — el alta, el cambio de rol y la baja siguen siendo de coordinación.
+      allow get, list: if esUsuarioEOE();
+
+      allow create, update: if esCoordinacionEOE();
 
       // Cada uno marca su propio último acceso al entrar. Solo ese campo: no puede
       // cambiarse el rol ni reactivarse solo. Sin esto la columna "último acceso" de la
