@@ -13,6 +13,18 @@ rules_version = '2';
 // se revisan, porque un catch-all mal puesto le deja a Admisiones la base de
 // datos cerrada y el panel no abre.
 //
+// ⚠️ ACUERDO CON EL EOE (02/10/2026) — avisar ANTES de publicar.
+//    Toda condición nueva en `entrevistas` o en `agendamiento-publico` se avisa al
+//    EOE antes de publicarla, y el EOE avisa antes de proponer cambios ahí.
+//
+//    El motivo no es protocolo. Firestore devuelve `permission-denied` sin decir qué
+//    condición de la regla falló, y agendar.html no puede distinguir "te ganaron el
+//    horario" de "la regla te rechazó". Así que una condición nueva mal calibrada se
+//    le presenta a la familia como un mensaje creíble que invita a reintentar, y el
+//    error se descubre días después por el reporte de una familia, con turnos
+//    ocupados de más en el medio. Así tardó en verse el bug de `lugar`.
+//    Revisarlo juntos antes de publicar cuesta media hora.
+//
 // Las dos reglas de oro de Firestore que explican el diseño:
 //   1. Las reglas se combinan con OR. Un `allow ... if false` NO revoca lo que
 //      otra regla ya permitió — por eso no puede haber ningún catch-all permisivo.
@@ -236,6 +248,9 @@ service cloud.firestore {
     // token de otra familia: si fuera legible, con abrir la página se vería quién tiene
     // entrevista y cuándo. Son datos de menores — por eso tampoco se guarda nunca el
     // nombre del estudiante acá: ese vive en el expediente, que exige cuenta.
+    //
+    // ⚠️ Bloque bajo el acuerdo de aviso previo del encabezado: una condición nueva
+    //    acá le llega a la familia como "alguien te ganó el horario". Avisar al EOE.
     match /entrevistas/{id} {
       allow read, write: if esUsuarioEOE();
 
@@ -312,6 +327,9 @@ service cloud.firestore {
     // `get` abierto y `list` cerrado es toda la seguridad de esta colección: el id del
     // documento es un token aleatorio de 48 caracteres hex que sólo está en el mail de esa
     // familia. Sin el token no se llega a nada, y la colección no se puede recorrer.
+    //
+    // ⚠️ Bloque bajo el acuerdo de aviso previo del encabezado. Acá ya pasó una vez:
+    //    `lugar` faltaba en el hasOnly y el agendamiento se denegaba en silencio.
     match /agendamiento-publico/{token} {
       allow read, write: if esUsuarioEOE();
 
