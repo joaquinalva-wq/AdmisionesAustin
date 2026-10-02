@@ -1,0 +1,43 @@
+{
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**",
+      "*.csv",
+      "*.md",
+      "*.gs",
+      "*.rules",
+      "CNAME",
+      "admiv1.html",
+      "Onboarding-Admisiones-Austin.html",
+      "Manual del Sistema*.html"
+    ],
+    "headers": [
+      {
+        "source": "/index.html",
+        "headers": [
+          { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
+        ]
+      },
+      {
+        "source": "/logo-email.png",
+        "headers": [
+          { "key": "Cache-Control", "value": "public, max-age=604800" }
+        ]
+      },
+      {
+        "source": "**",
+        "headers": [
+          { "key": "Strict-Transport-Security", "value": "max-age=31536000; includeSubDomains" },
+          { "key": "X-Content-Type-Options", "value": "nosniff" },
+          { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+        ]
+      }
+    ]
+  },
+  "firestore": {
+    "rules": "firestore.rules"
+  }
+}
