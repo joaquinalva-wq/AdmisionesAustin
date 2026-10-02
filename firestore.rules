@@ -268,6 +268,40 @@ service cloud.firestore {
                     && request.resource.data.sincronizado == false
                     && soloCambia(['estado','canceladoPor','canceladoEn',
                                    'tokenReserva','sincronizado']);
+
+      // Tomar un turno libre desde el enlace público (sin token, sin expediente).
+      // Es el hermano del primer `allow update`, con tres diferencias:
+      //
+      //   casoId == ''          todavía no hay expediente: lo crea el EOE al aceptar.
+      //   tokenReserva == ''    nadie puede cancelar este turno desde un link, porque
+      //                         quien reservó no tiene token y no se le da uno.
+      //   sincronizado == true  al revés que en el otro camino. El motor levanta los
+      //                         `false` y busca el caso del turno; con casoId vacío
+      //                         fallaría en cada corrida. Todavía no hay nada que hacer.
+      //
+      // El `exists` + `entrevistaId` del final es lo que sostiene todo el enlace
+      // abierto, y no estaba en lo que mandó el EOE. Sin él, `solicitudId` podía ser
+      // cualquier string inventado: se reservaban turnos sin crear ninguna solicitud,
+      // y entonces el equipo veía horarios bloqueados que NO aparecen en su agenda,
+      // sin nada que descartar con un clic — justo la mitigación que el enlace dice
+      // tener. Exigir que la solicitud exista Y apunte a este turno obliga a dejar
+      // una solicitud visible por cada horario que se ocupa.
+      //
+      // ⚠️ Esto impone un orden: primero se crea la solicitud, después se reserva el
+      //    turno con su id. Es el orden natural (el turno necesita el id de la
+      //    solicitud), pero si agendar.html lo hiciera al revés, hay que invertirlo.
+      allow update: if resource.data.estado == 'libre'
+                    && request.resource.data.estado == 'reservado'
+                    && request.resource.data.reservadoPor == 'publico'
+                    && request.resource.data.casoId == ''
+                    && request.resource.data.tokenReserva == ''
+                    && request.resource.data.sincronizado == true
+                    && request.resource.data.solicitudId is string
+                    && request.resource.data.solicitudId != ''
+                    && exists(/databases/$(database)/documents/solicitudes-publicas/$(request.resource.data.solicitudId))
+                    && get(/databases/$(database)/documents/solicitudes-publicas/$(request.resource.data.solicitudId)).data.entrevistaId == id
+                    && soloCambia(['estado','casoId','solicitudId','reservadoPor',
+                                   'reservadoEn','sincronizado','tokenReserva']);
     }
 
     // Lo mínimo que necesita ver agendar.html: nombre del estudiante y el turno que tiene.
@@ -326,6 +360,85 @@ service cloud.firestore {
                              || (request.resource.data.turno.lugar is string
                                  && request.resource.data.turno.lugar.size() <= 300))
                        ));
+    }
+
+
+    // Lo que deja una familia que entró por un enlace ABIERTO, sin token: datos de
+    // contacto y el turno que eligió. No es un caso todavía — es un pedido que alguien
+    // del EOE revisa y acepta, y recién entonces se crea el expediente desde el
+    // navegador del equipo, ya autenticado.
+    //
+    // El create es abierto porque quien escribe no tiene cuenta: ese es todo el punto
+    // del enlace. Lo que lo hace seguro es que no otorga nada más — sin ser del EOE no
+    // se puede leer, listar, editar ni borrar, ni siquiera la solicitud propia. Y la
+    // forma está cerrada con hasOnly: ni un campo de más, sobre todo `casoId` y
+    // `estado`, que si fueran libres dejarían entrar una solicitud ya aprobada.
+    //
+    // ⚠️ Los `in` de los campos opcionales son la corrección más importante respecto
+    //    de lo que mandó el EOE, y son el MISMO bug que les rompió el agendamiento:
+    //    `familiaTelefono`, `curso` y `contacto` se validaban con `.size()` a secas.
+    //    hasOnly permite que un campo falte, y leer una clave ausente de un Map da
+    //    ERROR, no null → la regla deniega. Una familia que no completaba el teléfono
+    //    recibía "error de permisos", el mismo modo engañoso de fallar.
+    //    Tampoco tenían `is string`: un `curso` numérico también denegaba.
+    match /solicitudes-publicas/{id} {
+      allow read, write: if esUsuarioEOE();
+
+      allow create: if request.resource.data.keys().hasOnly([
+                         'apellido','nombre','curso','contacto','familiaEmail',
+                         'familiaTelefono','entrevistaId','turno','estado','casoId',
+                         'creadoEn'])
+                    // Obligatorios. Sin apellido, nombre y mail el EOE no puede
+                    // responderle a nadie, así que los tres van con size() > 0.
+                    && request.resource.data.estado == 'pendiente'
+                    && request.resource.data.casoId == ''
+                    && request.resource.data.entrevistaId is string
+                    && request.resource.data.entrevistaId != ''
+                    && request.resource.data.apellido is string
+                    && request.resource.data.apellido.size() > 0
+                    && request.resource.data.apellido.size() < 80
+                    && request.resource.data.nombre is string
+                    && request.resource.data.nombre.size() > 0
+                    && request.resource.data.nombre.size() < 80
+                    && request.resource.data.familiaEmail is string
+                    && request.resource.data.familiaEmail.size() > 0
+                    && request.resource.data.familiaEmail.size() < 120
+                    // Opcionales: si vienen, string y acotados.
+                    && (!('familiaTelefono' in request.resource.data)
+                        || (request.resource.data.familiaTelefono is string
+                            && request.resource.data.familiaTelefono.size() < 60))
+                    && (!('curso' in request.resource.data)
+                        || (request.resource.data.curso is string
+                            && request.resource.data.curso.size() < 80))
+                    && (!('contacto' in request.resource.data)
+                        || (request.resource.data.contacto is string
+                            && request.resource.data.contacto.size() < 120))
+                    && (!('creadoEn' in request.resource.data)
+                        || request.resource.data.creadoEn is number)
+                    // `turno` quedaba sin validar y era el único campo libre del
+                    // documento: con todo lo demás acotado, era el lugar por donde
+                    // meter datos a granel. Se valida con la misma forma que en
+                    // agendamiento-publico, que ya está publicada y funcionando, así
+                    // que si agendar.html escribe el mismo objeto en los dos lugares
+                    // —lo natural— esto no cambia nada para él.
+                    && (!('turno' in request.resource.data)
+                        || (request.resource.data.turno.keys()
+                              .hasOnly(['entrevistaId','fecha','hora','modalidad','lugar'])
+                            && (!('entrevistaId' in request.resource.data.turno)
+                                || (request.resource.data.turno.entrevistaId is string
+                                    && request.resource.data.turno.entrevistaId.size() <= 64))
+                            && (!('fecha' in request.resource.data.turno)
+                                || (request.resource.data.turno.fecha is string
+                                    && request.resource.data.turno.fecha.size() <= 10))
+                            && (!('hora' in request.resource.data.turno)
+                                || (request.resource.data.turno.hora is string
+                                    && request.resource.data.turno.hora.size() <= 5))
+                            && (!('modalidad' in request.resource.data.turno)
+                                || (request.resource.data.turno.modalidad is string
+                                    && request.resource.data.turno.modalidad.size() <= 20))
+                            && (!('lugar' in request.resource.data.turno)
+                                || (request.resource.data.turno.lugar is string
+                                    && request.resource.data.turno.lugar.size() <= 300))));
     }
 
 
