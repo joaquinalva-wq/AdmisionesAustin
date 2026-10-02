@@ -286,11 +286,21 @@ service cloud.firestore {
       // reescribe desde `entrevistas` en la corrida siguiente, así que aunque alguien con
       // el token escribiera cualquier cosa acá, no cambia qué turno tiene de verdad.
       //
-      // `turno` es un map de cuatro strings, o se vacía cuando la familia cancela.
+      // `turno` es un map de cinco strings, o se vacía cuando la familia cancela.
       // Los topes de tamaño están para que nadie con un token válido use este campo
       // como depósito de datos. `fecha` y `hora` van con `<=` y no `==` a propósito:
       // el tope frena igual, y una igualdad estricta rompería si un turno quedara
       // como '9:30' en vez de '09:30'.
+      //
+      // `lugar` es el dónde de la entrevista: el aula si es presencial, y el LINK de
+      // la videollamada si es virtual. El tope es más holgado que el resto porque un
+      // link de Meet o Zoom con parámetros pasa los 100 caracteres.
+      //
+      // Es opcional: va con el mismo `in` que los demás, así que un turno sin `lugar`
+      // es válido y se acepta. Lo que la familia ve en ese caso es "te mandamos el
+      // link antes" en vez del link — una entrevista peor comunicada, no un error.
+      // Faltaba en el `hasOnly` y por eso el agendamiento se denegaba: ese fue el fix
+      // que el EOE publicó el 02/10.
       //
       // Las dos primeras condiciones de cada campo NO son decorativas. En Rules,
       // `request.resource.data` es un Map, y leer una clave que no existe devuelve
@@ -303,7 +313,7 @@ service cloud.firestore {
                     && (!('turno' in request.resource.data)
                         || request.resource.data.turno == null || (
                          request.resource.data.turno.keys()
-                           .hasOnly(['entrevistaId','fecha','hora','modalidad'])
+                           .hasOnly(['entrevistaId','fecha','hora','modalidad','lugar'])
                          && request.resource.data.turno.entrevistaId is string
                          && request.resource.data.turno.entrevistaId.size() <= 64
                          && request.resource.data.turno.fecha is string
@@ -312,6 +322,9 @@ service cloud.firestore {
                          && request.resource.data.turno.hora.size() <= 5
                          && request.resource.data.turno.modalidad is string
                          && request.resource.data.turno.modalidad.size() <= 20
+                         && (!('lugar' in request.resource.data.turno)
+                             || (request.resource.data.turno.lugar is string
+                                 && request.resource.data.turno.lugar.size() <= 300))
                        ));
     }
 
