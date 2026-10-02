@@ -23,8 +23,8 @@ rules_version = '2';
 // Donde la ausencia de un campo tiene que PERMITIR algo, hay que preguntar con
 // `'campo' in request.resource.data` antes de tocarlo.
 //
-// ⚠️ Antes de publicar, el equipo del EOE tiene que estar cargado en
-//    `eoe-usuarios` con `activo: true`. Si no, nadie del EOE puede entrar.
+// Requisito permanente: todo el equipo del EOE tiene que estar cargado en
+// `eoe-usuarios` con `activo: true`. Quien no esté ahí no entra a nada del EOE.
 // ═════════════════════════════════════════════════════════════════════════════
 
 service cloud.firestore {
@@ -279,17 +279,21 @@ service cloud.firestore {
       //                         `false` y busca el caso del turno; con casoId vacío
       //                         fallaría en cada corrida. Todavía no hay nada que hacer.
       //
-      // El `exists` + `entrevistaId` del final es lo que sostiene todo el enlace
-      // abierto, y no estaba en lo que mandó el EOE. Sin él, `solicitudId` podía ser
-      // cualquier string inventado: se reservaban turnos sin crear ninguna solicitud,
-      // y entonces el equipo veía horarios bloqueados que NO aparecen en su agenda,
-      // sin nada que descartar con un clic — justo la mitigación que el enlace dice
-      // tener. Exigir que la solicitud exista Y apunte a este turno obliga a dejar
-      // una solicitud visible por cada horario que se ocupa.
+      // ⚠️ NO agregarle un exists() a `solicitudId`. Es el endurecimiento que uno
+      //    quiere hacer al leer esta regla —"verificar que la solicitud exista de
+      //    verdad"— y ROMPE la reserva, siempre.
       //
-      // ⚠️ Esto impone un orden: primero se crea la solicitud, después se reserva el
-      //    turno con su id. Es el orden natural (el turno necesita el id de la
-      //    solicitud), pero si agendar.html lo hiciera al revés, hay que invertirlo.
+      //    agendar.html escribe la solicitud y el turno en una sola transacción. Las
+      //    reglas de cada escritura se evalúan contra el estado anterior al commit, y
+      //    nunca ven las escrituras pendientes del mismo batch: cuando Firestore
+      //    evalúa este update, la solicitud todavía no está. El exists() daría false
+      //    y denegaría toda reserva pública.
+      //
+      //    Y no hace falta: un solicitudId inventado no habilita nada. No deja leer la
+      //    solicitud —la colección no es legible sin ser del EOE— y el turno reservado
+      //    sí aparece en la agenda del equipo, que lee `entrevistas` completa; se
+      //    descarta con un clic y el horario vuelve a quedar libre. El techo del daño
+      //    sigue siendo ocupar horarios, que es el límite inherente al enlace abierto.
       allow update: if resource.data.estado == 'libre'
                     && request.resource.data.estado == 'reservado'
                     && request.resource.data.reservadoPor == 'publico'
@@ -298,8 +302,6 @@ service cloud.firestore {
                     && request.resource.data.sincronizado == true
                     && request.resource.data.solicitudId is string
                     && request.resource.data.solicitudId != ''
-                    && exists(/databases/$(database)/documents/solicitudes-publicas/$(request.resource.data.solicitudId))
-                    && get(/databases/$(database)/documents/solicitudes-publicas/$(request.resource.data.solicitudId)).data.entrevistaId == id
                     && soloCambia(['estado','casoId','solicitudId','reservadoPor',
                                    'reservadoEn','sincronizado','tokenReserva']);
     }
@@ -373,6 +375,10 @@ service cloud.firestore {
     // se puede leer, listar, editar ni borrar, ni siquiera la solicitud propia. Y la
     // forma está cerrada con hasOnly: ni un campo de más, sobre todo `casoId` y
     // `estado`, que si fueran libres dejarían entrar una solicitud ya aprobada.
+    //
+    // Se escribe junto con la reserva del turno, en una transacción. El id lo genera
+    // el cliente con .doc() antes de escribir, así que el `solicitudId` que recibe el
+    // turno nunca llega vacío. Ver la advertencia sobre exists() en `entrevistas`.
     //
     // ⚠️ Los `in` de los campos opcionales son la corrección más importante respecto
     //    de lo que mandó el EOE, y son el MISMO bug que les rompió el agendamiento:
