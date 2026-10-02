@@ -3,3 +3,8 @@ CONTEXTO_AUSTIN_EBS.md
 Manual del Sistema de Admisiones*.html
 tasks/
 *.local.*
+
+# Datos de alumnos: nunca versionados. El padron vive en Firestore
+# (admisiones-db/v2). Un CSV en la raiz lo sirve GitHub Pages al publico.
+padron*.csv
+*.csv
