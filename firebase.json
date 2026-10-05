@@ -1,5 +1,6 @@
 {
   "hosting": {
+    "site": "admisiones-austin",
     "public": ".",
     "ignore": [
       "firebase.json",
