@@ -1,20 +1,22 @@
 {
   "hosting": {
     "site": "admisiones-austin",
-    "public": ".",
+
+    // `docs` es la carpeta de lo PUBLICO. Todo lo que esta ahi adentro se
+    // sirve en internet; todo lo que esta fuera, no.
+    //
+    // GitHub Pages publica desde esta misma carpeta (Settings > Pages >
+    // Source: main /docs). Por eso `firestore.rules`, `apps-script.gs` y
+    // `admiv1.html` viven en la raiz: ahi nadie los puede bajar.
+    //
+    // ⚠️ Al editar el sistema hay que tocar `docs/index.html`, no un
+    //    index.html en la raiz. En la raiz ya no hay ninguno.
+    "public": "docs",
     "ignore": [
       "firebase.json",
       "**/.*",
       "**/.*/**",
-      "**/node_modules/**",
-      "*.csv",
-      "*.md",
-      "*.gs",
-      "*.rules",
-      "CNAME",
-      "admiv1.html",
-      "Onboarding-Admisiones-Austin.html",
-      "Manual del Sistema*.html"
+      "**/node_modules/**"
     ],
     "headers": [
       {
