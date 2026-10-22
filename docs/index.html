@@ -4623,10 +4623,22 @@ function dispRemotaDesdeCache(){
 // vez. Mientras la hoja esté vacía mandan los horarios de arranque.
 function aplicarDispRemota(rd){
   if(!(rd && rd.ok && rd.disponibilidad && Object.keys(rd.disponibilidad).length)) return false;
-  calDispRemota = {disponibilidad: rd.disponibilidad, dispExtra: rd.dispExtra||{}};
+  calDispRemota = {disponibilidad: rd.disponibilidad, dispExtra: rd.dispExtra||{}, params: rd.params||{}};
   try{ localStorage.setItem('austin_disp', JSON.stringify(calDispRemota)); }catch(e){}
   return true;
 }
+
+// Los parámetros del calendario, con la misma prioridad que los horarios: lo que el
+// staff tiene configurado localmente, después la hoja publicada, y al final el
+// default. Antes el modal los guardaba y nadie los leía — la anticipación estaba
+// clavada en 24hs y las semanas visibles en 8, dijera lo que dijera el campo.
+function dispParam(nombre, def){
+  const local = DB.config['disp'+nombre.charAt(0).toUpperCase()+nombre.slice(1)];
+  const remoto = calDispRemota && calDispRemota.params && calDispRemota.params[nombre];
+  return parseInt(local, 10) || parseInt(remoto, 10) || def;
+}
+function horasAnticipacion(){ return dispParam('anticipacion', 24); }
+function semanasVisibles(){ return dispParam('semanas', 8); }
 
 // Disponibilidad base de Laura (editable desde el panel admin). El orden importa:
 // lo que el staff tiene configurado localmente manda sobre la hoja, para que una
@@ -4747,9 +4759,12 @@ function renderCalFormulario(){
   const sEl = document.getElementById('cal-semana-num');
   if(rEl) rEl.textContent = fmtRango(lunes, fin);
   if(sEl) sEl.textContent = 'Semana '+(calSemanaOffset>=0?'+':'')+calSemanaOffset;
-  // Previo/siguiente
+  // Previo/siguiente. El "Siguiente" se esconde en la última semana visible: antes
+  // quedaba a la vista y no hacía nada.
   const prevBtn = document.getElementById('cal-prev');
   if(prevBtn) prevBtn.style.display = calSemanaOffset<=0?'none':'';
+  const nextBtn = document.getElementById('cal-next');
+  if(nextBtn) nextBtn.style.display = calSemanaOffset>=semanasVisibles()-1?'none':'';
   // Solo los días que tienen horarios: los de la grilla semanal, más los que tengan
   // un turno puntual abierto para esa fecha concreta.
   const diasConSlots = [];
@@ -4773,12 +4788,12 @@ function renderCalFormulario(){
     const slotsHtml = slots.map(({hora})=>{
       const ocupado = calTurnosReservados.some(t=>slotFecha(t)===fechaStr&&slotHora(t)===hora);
       const bloq = calBloqueos.some(b=>slotFecha(b)===fechaStr&&slotHora(b)===hora);
-      // No mostrar si menos de 24hs
+      // Demasiado sobre la hora: la anticipación mínima la fija el panel.
       const dt = new Date(fecha); const [hh,mm] = hora.split(':'); dt.setHours(Number(hh),Number(mm));
-      const en24hs = dt - new Date() < 24*60*60*1000;
+      const muyPronto = dt - new Date() < horasAnticipacion()*60*60*1000;
       const isSelected = calSlotSeleccionado&&calSlotSeleccionado.fecha===fechaStr&&calSlotSeleccionado.hora===hora;
       if(bloqueoDia||bloq) return `<div class="cal-slot bloqueado">No disponible</div>`;
-      if(esPasada||en24hs) return `<div class="cal-slot pasado">${hora}</div>`;
+      if(esPasada||muyPronto) return `<div class="cal-slot pasado">${hora}</div>`;
       if(ocupado) return `<div class="cal-slot ocupado">${hora} — Ocupado</div>`;
       return `<div class="cal-slot${isSelected?' selected':''}" onclick="selSlot('${fechaStr}','${hora}','${nombre} ${dia} de ${mes}','${dow}')">${hora}</div>`;
     }).join('');
@@ -4805,7 +4820,7 @@ function confirmarEntrevista(){
 }
 
 function calPrev(){ if(calSemanaOffset>0){ calSemanaOffset--; renderCalFormulario(); } }
-function calNext(){ if(calSemanaOffset<7){ calSemanaOffset++; renderCalFormulario(); } }
+function calNext(){ if(calSemanaOffset<semanasVisibles()-1){ calSemanaOffset++; renderCalFormulario(); } }
 
 // ── Re-agenda: link de auto-reserva (misma lógica de calendario, pantalla propia) ──
 let reagCtx = null, reagOffset = 0, reagSlot = null;
@@ -4903,6 +4918,8 @@ function renderReagCal(){
   if(sEl) sEl.textContent = 'Semana '+(reagOffset>=0?'+':'')+reagOffset;
   const prevBtn = document.getElementById('reag-cal-prev');
   if(prevBtn) prevBtn.style.display = reagOffset<=0?'none':'';
+  const nextBtn = document.getElementById('reag-cal-next');
+  if(nextBtn) nextBtn.style.display = reagOffset>=semanasVisibles()-1?'none':'';
   const diasConSlots = [];
   for(let d=0;d<7;d++){
     const fecha = new Date(lunes); fecha.setDate(lunes.getDate()+d);
@@ -4922,10 +4939,10 @@ function renderReagCal(){
       const ocupado = calTurnosReservados.some(t=>slotFecha(t)===fechaStr&&slotHora(t)===hora);
       const bloq = calBloqueos.some(b=>slotFecha(b)===fechaStr&&slotHora(b)===hora);
       const dt = new Date(fecha); const [hh,mm]=hora.split(':'); dt.setHours(Number(hh),Number(mm));
-      const en24hs = dt - new Date() < 24*60*60*1000;
+      const muyPronto = dt - new Date() < horasAnticipacion()*60*60*1000;
       const isSel = reagSlot&&reagSlot.fecha===fechaStr&&reagSlot.hora===hora;
       if(bloqueoDia||bloq) return `<div class="cal-slot bloqueado">No disponible</div>`;
-      if(esPasada||en24hs) return `<div class="cal-slot pasado">${hora}</div>`;
+      if(esPasada||muyPronto) return `<div class="cal-slot pasado">${hora}</div>`;
       if(ocupado) return `<div class="cal-slot ocupado">${hora} — Ocupado</div>`;
       return `<div class="cal-slot${isSel?' selected':''}" onclick="selSlotReag('${fechaStr}','${hora}','${nombre} ${dia} de ${mes}')">${hora}</div>`;
     }).join('');
@@ -4947,7 +4964,7 @@ function selSlotReag(fecha, hora, textoFecha){
 }
 
 function reagPrev(){ if(reagOffset>0){ reagOffset--; renderReagCal(); } }
-function reagNext(){ if(reagOffset<7){ reagOffset++; renderReagCal(); } }
+function reagNext(){ if(reagOffset<semanasVisibles()-1){ reagOffset++; renderReagCal(); } }
 
 async function confirmarReagenda(){
   if(!reagCtx || !reagSlot){ toast('Seleccioná un horario','err'); return; }
@@ -6787,7 +6804,10 @@ async function pushDisponibilidad(msgOk){
   }
   const r = await apiCall('setDisponibilidad', {
     disponibilidad: DB.config.disponibilidad || {},
-    dispExtra: DB.config.dispExtra || {}
+    dispExtra: DB.config.dispExtra || {},
+    // Por los getters y no por DB.config directo: así agregar un turno puntual no
+    // borra de la hoja una anticipación que ya estaba publicada.
+    params: {anticipacion: horasAnticipacion(), semanas: semanasVisibles()}
   });
   if(r && r.ok){ toast(msgOk,'ok'); return true; }
   toast('Guardado acá, pero NO se publicó a las familias: '+((r&&r.error)||'sin respuesta'),'err');

@@ -22,7 +22,7 @@ const MAIL_LOGO = 'https://admisionesaustin.com.ar/logo-email.png';
 
 // Marca de versión: sirve para confirmar que la implementación se publicó.
 // Al abrir la URL del script con ?action=ping tiene que aparecer este valor.
-const API_VERSION = '2026-10-22-v9-disponibilidad';
+const API_VERSION = '2026-10-22-v10-disponibilidad-params';
 
 // ── Calendario ────────────────────────────────────────────────
 const CAL_ADMISIONES        = 'admisiones@austinebs-ah.edu.ar';
@@ -59,6 +59,9 @@ const SHEET_DISP     = 'Disponibilidad';
 const COLS_TURNOS   = ['ID','Fecha','Hora','AlumnoId','Alumno','Padre','Email','Tel','Curso','Estado','Creado'];
 const COLS_BLOQUEOS = ['Fecha','Hora','Motivo','Creado'];
 const COLS_DISP     = ['Clave','Horas','Actualizado'];
+// Parámetros del calendario que también tiene que ver una familia sin login. Van en
+// la hoja de Disponibilidad, una fila cada uno, con un número en la columna Horas.
+const PARAMS_DISP   = ['anticipacion','semanas'];
 
 /****************************************
  * MAPEO DE COLUMNAS (Sheet del Form)   *
@@ -585,6 +588,7 @@ function setBloqueo_(data) {
 // Una fila por clave, las horas separadas por coma en una sola celda:
 //   Clave "1".."7"      → grilla semanal (1 = lunes ... 7 = domingo)
 //   Clave "yyyy-MM-dd"  → turno puntual, abierto sólo esa fecha
+//   Clave "anticipacion" / "semanas" → un número suelto, no horarios
 //
 // Esta hoja existe porque el formulario de las familias no está logueado y no puede
 // leer la config de la nube. Los bloqueos ya viajaban por acá; la disponibilidad no,
@@ -593,19 +597,30 @@ function setBloqueo_(data) {
 function getDisponibilidad_() {
   const sh = getOrCreate_(SHEET_DISP, COLS_DISP);
   const rows = sh.getDataRange().getValues();
-  const disponibilidad = {}, dispExtra = {};
+  const disponibilidad = {}, dispExtra = {}, params = {};
 
   for (let i = 1; i < rows.length; i++) {
+    // La clave puede volver de Sheets como número (un "3") o como Date (una fecha),
+    // por más que se escriba con formato texto: una edición a mano la reconvierte.
+    const bruto = rows[i][0];
+    const clave = String(bruto == null ? '' : bruto).trim();
+
+    // Los parámetros van en la misma hoja porque la familia los necesita tanto como
+    // los horarios: son los que deciden con cuánta anticipación puede reservar y
+    // hasta qué semana puede mirar.
+    if (PARAMS_DISP.indexOf(clave) >= 0) {
+      const n = parseInt(rows[i][1], 10);
+      if (n > 0) params[clave] = n;
+      continue;
+    }
+
     const horas = String(rows[i][1] == null ? '' : rows[i][1])
       .split(',')
       .map(aHora_)
       .filter(function (h) { return /^\d{2}:\d{2}$/.test(h); });
     if (!horas.length) continue;
 
-    // La clave puede volver de Sheets como número (un "3") o como Date (una fecha),
-    // por más que se escriba con formato texto: una edición a mano la reconvierte.
-    const bruto = rows[i][0];
-    const dow = /^[1-7]$/.test(String(bruto).trim()) ? String(bruto).trim() : '';
+    const dow = /^[1-7]$/.test(clave) ? clave : '';
     if (dow) {
       disponibilidad[dow] = horas.map(function (h) { return { hora: h }; });
     } else {
@@ -613,7 +628,7 @@ function getDisponibilidad_() {
       if (/^\d{4}-\d{2}-\d{2}$/.test(fecha)) dispExtra[fecha] = horas;
     }
   }
-  return { ok: true, disponibilidad: disponibilidad, dispExtra: dispExtra };
+  return { ok: true, disponibilidad: disponibilidad, dispExtra: dispExtra, params: params };
 }
 
 function setDisponibilidad_(data) {
@@ -639,6 +654,12 @@ function setDisponibilidad_(data) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return;
     const horas = limpiar(extra[clave]);
     if (horas.length) filas.push([fecha, horas.join(', '), ahora]);
+  });
+
+  const params = (data && data.params) || {};
+  PARAMS_DISP.forEach(function (p) {
+    const n = parseInt(params[p], 10);
+    if (n > 0) filas.push([p, String(n), ahora]);
   });
 
   // Se reescribe la hoja entera: el panel manda siempre el estado completo, así no
