@@ -22,12 +22,31 @@ const MAIL_LOGO = 'https://admisionesaustin.com.ar/logo-email.png';
 
 // Marca de versión: sirve para confirmar que la implementación se publicó.
 // Al abrir la URL del script con ?action=ping tiene que aparecer este valor.
-const API_VERSION = '2026-10-22-v10-disponibilidad-params';
+const API_VERSION = '2026-10-22-v11-duracion';
 
 // ── Calendario ────────────────────────────────────────────────
 const CAL_ADMISIONES        = 'admisiones@austinebs-ah.edu.ar';
 const LUGAR_ENTREVISTA      = 'Planta alta de High School — Austin EBS';
 const DURACION_ENTREVISTA_MIN = 60;
+
+// La duración real la configura el panel: viaja por la hoja de Disponibilidad igual que
+// la anticipación. La constante de arriba es sólo el valor de arranque, para cuando la
+// hoja todavía no tiene la fila.
+// Se memoiza porque cada ejecución del script es un runtime nuevo: una sola lectura de
+// la hoja por pedido, aunque se cree más de un evento.
+let _duracionMin = 0;
+function duracionEntrevista_() {
+  if (!_duracionMin) {
+    try {
+      _duracionMin = parseInt((getDisponibilidad_().params || {}).duracion, 10) || DURACION_ENTREVISTA_MIN;
+    } catch (_) {
+      // Si la planilla no se puede leer, el evento se crea igual con la duración de
+      // arranque: mejor un evento de 60 minutos que ningún evento.
+      _duracionMin = DURACION_ENTREVISTA_MIN;
+    }
+  }
+  return _duracionMin;
+}
 
 // ── Mails automáticos por trigger ─────────────────────────────
 // El panel de admisiones ya manda su propio mail cuando se mueve la ficha a
@@ -61,7 +80,7 @@ const COLS_BLOQUEOS = ['Fecha','Hora','Motivo','Creado'];
 const COLS_DISP     = ['Clave','Horas','Actualizado'];
 // Parámetros del calendario que también tiene que ver una familia sin login. Van en
 // la hoja de Disponibilidad, una fila cada uno, con un número en la columna Horas.
-const PARAMS_DISP   = ['anticipacion','semanas'];
+const PARAMS_DISP   = ['anticipacion','semanas','duracion'];
 
 /****************************************
  * MAPEO DE COLUMNAS (Sheet del Form)   *
@@ -588,7 +607,8 @@ function setBloqueo_(data) {
 // Una fila por clave, las horas separadas por coma en una sola celda:
 //   Clave "1".."7"      → grilla semanal (1 = lunes ... 7 = domingo)
 //   Clave "yyyy-MM-dd"  → turno puntual, abierto sólo esa fecha
-//   Clave "anticipacion" / "semanas" → un número suelto, no horarios
+//   Clave "anticipacion" / "semanas" / "duracion" → un número suelto, no horarios
+//     (horas de anticipación mínima · semanas visibles · minutos que dura la entrevista)
 //
 // Esta hoja existe porque el formulario de las familias no está logueado y no puede
 // leer la config de la nube. Los bloqueos ya viajaban por acá; la disponibilidad no,
@@ -706,7 +726,7 @@ function crearEventoBloqueo_(fecha, hora, motivo) {
     } else {
       const hm = aHora_(hora).split(':');
       const inicio = new Date(Number(f[0]), Number(f[1]) - 1, Number(f[2]), Number(hm[0]), Number(hm[1]), 0);
-      const fin = new Date(inicio.getTime() + DURACION_ENTREVISTA_MIN * 60000);
+      const fin = new Date(inicio.getTime() + duracionEntrevista_() * 60000);
       cal.createEvent(titulo, inicio, fin, { description: detalle });
     }
   } catch (_) {}
@@ -794,7 +814,7 @@ function crearEventoEntrevista(d) {
     const hm = hora.split(':');
     const inicio = new Date(Number(f[0]), Number(f[1]) - 1, Number(f[2]), Number(hm[0]), Number(hm[1]), 0);
     if (isNaN(inicio.getTime())) return { ok: false, error: 'Fecha u hora inválida: ' + fecha + ' ' + hora };
-    const fin = new Date(inicio.getTime() + DURACION_ENTREVISTA_MIN * 60000);
+    const fin = new Date(inicio.getTime() + duracionEntrevista_() * 60000);
 
     const marca  = marcaAlumno_(d.alumno);
     const titulo = 'ENTREVISTA: ' + (d.alumno || 'Sin nombre') + (d.curso ? ' (' + d.curso + ')' : '');

@@ -793,7 +793,7 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
 
     <div class="fstep" id="fst2">
       <div class="fstep-h">Agendá tu entrevista</div>
-      <div class="fstep-s">Elegí el día y horario que mejor te quede para conocer el colegio en persona. La entrevista dura 1 hora.</div>
+      <div class="fstep-s">Elegí el día y horario que mejor te quede para conocer el colegio en persona. La entrevista dura <span class="js-dur">1 hora</span>.</div>
 
       <!-- CALENDLY INTERNO -->
       <div id="cal-container">
@@ -814,7 +814,7 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
         <div id="cal-seleccionado" style="display:none;background:linear-gradient(135deg,#EBF7D4,#D4F0A8);border:1.5px solid var(--gr);border-radius:12px;padding:14px 16px;margin-bottom:16px">
           <div style="font-size:13px;font-weight:600;color:#3A6A0A;margin-bottom:3px">✅ Horario seleccionado</div>
           <div style="font-size:14px;color:var(--td);font-weight:600" id="cal-sel-texto"></div>
-          <div style="font-size:12px;color:var(--tx2);margin-top:4px">📍 Planta alta de High School · 1 hora de duración</div>
+          <div style="font-size:12px;color:var(--tx2);margin-top:4px">📍 Planta alta de High School · <span class="js-dur">1 hora</span> de duración</div>
         </div>
 
         <div id="cal-loading" style="display:none;text-align:center;padding:30px;color:var(--tx3);font-size:13px">⏳ Cargando disponibilidad...</div>
@@ -886,7 +886,7 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
         <div class="agf-eyebrow">Austin EBS · Admisiones</div>
         <div class="agf-h">Agendá tu entrevista</div>
         <div class="agf-s">Completá estos datos y en el paso siguiente elegís el día y horario que mejor te queden.</div>
-        <div class="agf-chip">⏱ Dura aproximadamente 1 hora</div>
+        <div class="agf-chip">⏱ Dura aproximadamente <span class="js-dur">1 hora</span></div>
         <div class="agf-grid">
           <div class="agf-fg"><label class="agf-lbl">Estudiante</label><input class="agf-in" id="agen-alumno" placeholder="Nombre y apellido"></div>
           <div class="agf-fg"><label class="agf-lbl">Adulto responsable</label><input class="agf-in" id="agen-padre" placeholder="Nombre y apellido"></div>
@@ -900,7 +900,7 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
 
     <div class="fstep on" id="reag-step">
       <div class="fstep-h">Elegí un nuevo día para tu entrevista</div>
-      <div class="fstep-s" id="reag-sub">Seleccioná el día y horario que mejor te quede. La entrevista dura 1 hora.</div>
+      <div class="fstep-s"><span id="reag-sub">Seleccioná el día y horario que mejor te quede.</span> La entrevista dura <span class="js-dur">1 hora</span>.</div>
 
       <div id="reag-cal-container">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
@@ -915,7 +915,7 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
         <div id="reag-cal-seleccionado" style="display:none;background:linear-gradient(135deg,#EBF7D4,#D4F0A8);border:1.5px solid var(--gr);border-radius:12px;padding:14px 16px;margin-bottom:16px">
           <div style="font-size:13px;font-weight:600;color:#3A6A0A;margin-bottom:3px">✅ Horario seleccionado</div>
           <div style="font-size:14px;color:var(--td);font-weight:600" id="reag-cal-sel-texto"></div>
-          <div style="font-size:12px;color:var(--tx2);margin-top:4px">📍 Planta alta de High School · 1 hora de duración</div>
+          <div style="font-size:12px;color:var(--tx2);margin-top:4px">📍 Planta alta de High School · <span class="js-dur">1 hora</span> de duración</div>
         </div>
         <div id="reag-cal-loading" style="display:none;text-align:center;padding:30px;color:var(--tx3);font-size:13px">⏳ Cargando disponibilidad...</div>
       </div>
@@ -1545,9 +1545,9 @@ let DB = {
   tarifas:{k2_m:660285,k2_s:528228,k2_c:703291,k3_m:797491,k3_s:528228,k3_c:637993,k45_m:797491,k45_c:637993,el_m:989835,el_c:791868,hs13_m:1128077,hs13_c:902462,hs46_m:1167976,hs46_c:934381,rv_k2_js:669045,rv_k2_jc:890778,rv_k3_js:669045,rv_k3_jc:808072,rv_k45:808072,rv_prim:1002968,rv_sec13:1143044,rv_sec46:1183473},
   emails:{
     contactado:{subj:'Postulación Austin EBS — información y próximos pasos',body:'Hola {{padre}},\n\nSoy Laura Unamuno, parte del staff de Austin Eco Bilingual School y encargada del proceso de admisiones.\n\n¡Nos alegra muchísimo tu postulación para {{alumno}}! Para conocer el proyecto en detalle y las tarifas, podés ver el brochure y los aranceles aquí: https://drive.google.com/drive/folders/1c0vFf1MWUcSC8-lqBjBCGDQ-hbXxGQDA\n\nPara empezar con el proceso, ingresá al siguiente link: https://calendar.app.google/WrfYGGSiRH3smkxL8 y reservá un horario disponible de visita con entrevista para conocer el proyecto educativo en profundidad y las instalaciones del colegio.\n\nQuedo a disposición por cualquier consulta.\n\nSaludos cordiales,\nLaura Unamuno\nAdmisiones – Austin EBS'},
-    citado:{subj:'Tu entrevista en Austin EBS está confirmada — {{fecha_entrevista}}',body:'Hola {{padre}},\n\n¡Tu entrevista en Austin Eco Bilingual School está confirmada! Nos alegra mucho que vengan a conocernos.\n\n▸ LOS DATOS DE TU ENTREVISTA\nEstudiante: {{alumno}} — {{curso}}\nDía: {{fecha_entrevista}}\nHora: {{hora_entrevista}}\nLugar: {{lugar_entrevista}}\nDuración aproximada: 1 hora\n\nSi necesitás reprogramar, respondé este mail y lo coordinamos sin problema.\n\nMientras tanto, si querés ir conociendo el proyecto y los aranceles, están acá: {{link_drive}}\n\n¡Te esperamos!\n\nUn saludo,\nLaura Unamuno\nAdmisiones – Austin EBS'},
+    citado:{subj:'Tu entrevista en Austin EBS está confirmada — {{fecha_entrevista}}',body:'Hola {{padre}},\n\n¡Tu entrevista en Austin Eco Bilingual School está confirmada! Nos alegra mucho que vengan a conocernos.\n\n▸ LOS DATOS DE TU ENTREVISTA\nEstudiante: {{alumno}} — {{curso}}\nDía: {{fecha_entrevista}}\nHora: {{hora_entrevista}}\nLugar: {{lugar_entrevista}}\nDuración aproximada: {{duracion_entrevista}}\n\nSi necesitás reprogramar, respondé este mail y lo coordinamos sin problema.\n\nMientras tanto, si querés ir conociendo el proyecto y los aranceles, están acá: {{link_drive}}\n\n¡Te esperamos!\n\nUn saludo,\nLaura Unamuno\nAdmisiones – Austin EBS'},
     hermanos:{subj:'Postulación de {{alumno}} — circuito para familias Austin',body:'Hola {{padre}},\n\n¡Qué alegría recibir la postulación de {{alumno}}!\n\nComo ya son parte de la comunidad Austin, el proceso de admisión es más simple: no hace falta la entrevista de presentación del colegio, porque ya lo conocen.\n\nNos vamos a comunicar con ustedes en los próximos días para confirmar la vacante en {{curso}} y coordinar la documentación de ingreso.\n\nSi tenés cualquier consulta mientras tanto, escribinos a admisiones@austinebs-ah.edu.ar.\n\nUn abrazo,\nLaura Unamuno\nAdmisiones – Austin EBS'},
-    citado_sin_fecha:{subj:'Recibimos tu postulación — elegí el día de tu entrevista',body:'Hola {{padre}},\n\n¡Gracias por postular a {{alumno}} en Austin Eco Bilingual School!\n\nRegistramos tu solicitud y vimos que preferís definir la fecha de la entrevista más adelante. Tu lugar en el proceso ya está reservado; sólo nos queda encontrar el momento que mejor les venga.\n\n▸ ELEGÍ EL DÍA Y HORARIO DE TU ENTREVISTA\nPodés reservar tu turno vos mismo/a, en menos de un minuto, desde este link:\n{{link_agenda_online}}\n\nLa entrevista dura aproximadamente 1 hora. Si preferís, también podés escribirnos a admisiones@austinebs-ah.edu.ar o responder este mail y lo coordinamos juntos.\n\nMientras tanto, si querés ir conociendo el proyecto y los aranceles, están disponibles acá:\n{{link_drive}}\n\nQuedamos a disposición para lo que necesiten.\n\nUn saludo cordial,\nLaura Unamuno\nAdmisiones – Austin EBS'},
+    citado_sin_fecha:{subj:'Recibimos tu postulación — elegí el día de tu entrevista',body:'Hola {{padre}},\n\n¡Gracias por postular a {{alumno}} en Austin Eco Bilingual School!\n\nRegistramos tu solicitud y vimos que preferís definir la fecha de la entrevista más adelante. Tu lugar en el proceso ya está reservado; sólo nos queda encontrar el momento que mejor les venga.\n\n▸ ELEGÍ EL DÍA Y HORARIO DE TU ENTREVISTA\nPodés reservar tu turno vos mismo/a, en menos de un minuto, desde este link:\n{{link_agenda_online}}\n\nLa entrevista dura aproximadamente {{duracion_entrevista}}. Si preferís, también podés escribirnos a admisiones@austinebs-ah.edu.ar o responder este mail y lo coordinamos juntos.\n\nMientras tanto, si querés ir conociendo el proyecto y los aranceles, están disponibles acá:\n{{link_drive}}\n\nQuedamos a disposición para lo que necesiten.\n\nUn saludo cordial,\nLaura Unamuno\nAdmisiones – Austin EBS'},
     entrevistado:{subj:'¡Gracias por la entrevista!',body:'Hola {{padre}},\n\nFue un gusto recibirlos y conocerlos. Estamos orgullosos de que nos contemplen para la elección escolar de {{alumno}}.\n\nPara seguir acompañándolos en el proceso, les pedimos que completen este breve formulario post entrevista:\nhttps://forms.gle/rsQwi9ps1chN2q8x5\n\nEn caso de querer avanzar, esperamos su confirmación por este medio.\n\nUn afectuoso saludo,\nAdmisiones – Austin EBS'},
     postulado:{subj:'Siguiente paso en el proceso de admisión',body:'Hola {{padre}},\n\nGracias por la postulación de {{alumno}}.\n\nEstamos muy contentos de acompañarlos en los pasos a seguir para continuar con la reserva de vacante. Podrán encontrar las tarifas en el siguiente enlace:\n{{link_drive}}\n\nEl proceso quedará confirmado una vez que recibamos el comprobante de pago de la reserva de vacante por este medio.\n\nUn afectuoso saludo,\nAdmisiones – Austin EBS'},
     eoe_ingles:{subj:'Próximo paso: entrevista en inglés y con el EOE',body:'Hola {{padre}},\n\nGracias por seguir avanzando en el proceso de admisión de {{alumno}} en Austin Eco Bilingual School.\n\nComo parte del proceso de ingreso, necesitamos coordinar una breve entrevista en inglés y con nuestro Equipo de Orientación Escolar (EOE). Nos comunicaremos a la brevedad para acordar el horario.\n\nQuedamos a disposición.\n\nSaludos cordiales,\nLaura Unamuno\nAdmisiones – Austin EBS'},
@@ -1558,8 +1558,8 @@ let DB = {
     no_queremos:{subj:'Proceso de admisión — Austin EBS',body:'Hola {{padre}},\n\nQueremos agradecerles sinceramente el tiempo y la confianza depositada en Austin Eco Bilingual School durante este proceso.\n\nLuego de evaluar con mucho cuidado las posibilidades de incorporación para el ciclo lectivo, lamentablemente no contamos con las vacantes necesarias para incorporar a {{alumno}} en esta ocasión.\n\nLes deseamos lo mejor en este proceso de encontrar la escuela que mejor acompañe su búsqueda, y esperamos que encuentren pronto el lugar ideal.\n\nQuedamos a disposición por cualquier consulta.\n\nUn afectuoso saludo,\nLaura Unamuno\nAdmisiones – Austin EBS'},
     seguimiento_entrevista:{subj:'¿Cómo fue la entrevista? — Austin EBS',body:'Hola {{padre}},\n\nFue un placer recibirlos en la entrevista. Esperamos que {{alumno}} y ustedes hayan quedado tan contentos como nosotros.\n\nSi desean continuar con el proceso de admisión, por favor respondé este mail confirmando tu interés. Con eso podremos avanzar con los pasos de reserva de vacante.\n\nSi por algún motivo decidieron no continuar, también podés avisarnos por este medio — lo entendemos perfectamente y siempre será bienvenida la familia si desean retomar en el futuro.\n\nEsperamos tu respuesta.\n\nUn afectuoso saludo,\nAdmisiones – Austin EBS'},
     no_asistio:{subj:'¡Que lástima! Podemos reprogramar tu entrevista — Austin EBS',body:'Hola {{padre}},\n\nLamentamos que no hayas podido llegar a la entrevista que tenías agendada. ¡Nos hubiera encantado conocerlos!\n\nElegí vos mismo/a un nuevo día y horario, sin volver a completar todo el formulario, desde este link:\n{{link_agenda}}\n\nSi preferís, respondé este mail y coordinamos un nuevo horario con gusto. Estamos a disposición para acompañarlos.\n\nEsperamos poder conocerlos pronto.\n\nUn afectuoso saludo,\nAdmisiones – Austin EBS'},
-    recordatorio_entrevista:{subj:'¡Te esperamos! Tu entrevista en Austin EBS es el {{fecha_entrevista}}',body:'Hola {{padre}},\n\n¡Ya falta poquito! Queremos recordarte que los esperamos junto a {{alumno}} para la entrevista en Austin Eco Bilingual School. Nos hace muy felices que vengan a conocernos.\n\n▸ LOS DATOS DE TU ENTREVISTA\nEstudiante: {{alumno}} — {{curso}}\nDía: {{fecha_entrevista}}\nHora: {{hora_entrevista}}\nLugar: {{lugar_entrevista}}\nDuración aproximada: 1 hora\n\nVengan con todas sus preguntas y con muchas ganas: es un encuentro tranquilo, para charlar con calma y recorrer juntos el colegio.\n\nSi surgió algún imprevisto y necesitás cambiar el día, respondé este mail y lo reprogramamos sin ningún problema.\n\n¡Nos vemos muy pronto!\n\nUn afectuoso saludo,\nLaura Unamuno\nAdmisiones – Austin EBS'},
-    link_agenda:{subj:'Agendá tu entrevista en Austin EBS cuando quieras',body:'Hola {{padre}},\n\n¡Nos encantaría coordinar la entrevista de {{alumno}} para que conozcan el colegio en persona!\n\nElegí el día y horario que mejor te quede, sin volver a completar el formulario, desde este link:\n{{link_agenda}}\n\nLa entrevista dura una hora y es en la planta alta de High School. Si preferís, respondé este mail y lo coordinamos juntos.\n\n¡Te esperamos!\n\nUn saludo,\nLaura Unamuno\nAdmisiones – Austin EBS'},
+    recordatorio_entrevista:{subj:'¡Te esperamos! Tu entrevista en Austin EBS es el {{fecha_entrevista}}',body:'Hola {{padre}},\n\n¡Ya falta poquito! Queremos recordarte que los esperamos junto a {{alumno}} para la entrevista en Austin Eco Bilingual School. Nos hace muy felices que vengan a conocernos.\n\n▸ LOS DATOS DE TU ENTREVISTA\nEstudiante: {{alumno}} — {{curso}}\nDía: {{fecha_entrevista}}\nHora: {{hora_entrevista}}\nLugar: {{lugar_entrevista}}\nDuración aproximada: {{duracion_entrevista}}\n\nVengan con todas sus preguntas y con muchas ganas: es un encuentro tranquilo, para charlar con calma y recorrer juntos el colegio.\n\nSi surgió algún imprevisto y necesitás cambiar el día, respondé este mail y lo reprogramamos sin ningún problema.\n\n¡Nos vemos muy pronto!\n\nUn afectuoso saludo,\nLaura Unamuno\nAdmisiones – Austin EBS'},
+    link_agenda:{subj:'Agendá tu entrevista en Austin EBS cuando quieras',body:'Hola {{padre}},\n\n¡Nos encantaría coordinar la entrevista de {{alumno}} para que conozcan el colegio en persona!\n\nElegí el día y horario que mejor te quede, sin volver a completar el formulario, desde este link:\n{{link_agenda}}\n\nLa entrevista dura {{duracion_entrevista}} y es en la planta alta de High School. Si preferís, respondé este mail y lo coordinamos juntos.\n\n¡Te esperamos!\n\nUn saludo,\nLaura Unamuno\nAdmisiones – Austin EBS'},
     nuevo:{subj:'¡Bienvenidos a Austin EBS! Información de inicio',body:'Hola {{padre}},\n\n¡Estamos muy emocionados de darles la bienvenida oficial a Austin Eco Bilingual School! {{alumno}} ya forma parte de nuestra comunidad.\n\nA continuación les compartimos información importante para el inicio del ciclo:\n\n▸ UNIFORMES\nPara la compra del uniforme escribinos a admisiones@austinebs-ah.edu.ar y te pasamos los datos del proveedor. Te recomendamos gestionarlo con anticipación para tener todo a tiempo.\n\n▸ REDES SOCIALES\nSeguinos para estar al tanto de todas las novedades:\n• Instagram: @austinebs\n• Facebook: Austin Eco Bilingual School\n\n▸ SISTEMAS DEL COLEGIO — HANDING Y ACADEU\nEn los próximos días recibirán el alta en los sistemas Handing y Acadeu con sus accesos. Si pasados algunos días no recibieron la información, por favor contactarse a admisiones@austinebs-ah.edu.ar indicando el nombre de {{alumno}}.\n\n¡Los esperamos con mucho entusiasmo!\n\nAdmisiones – Austin EBS'},
     admin_matriculado:{subj:'NUEVO POSTULADO: {{alumno}} — {{curso}} {{anio}}',body:'Estimado equipo de Administración,\n\nEl siguiente estudiante fue aprobado en el proceso de admisión y pasó a POSTULADO. Por favor contactar a la familia para el cobro de la matrícula y la solicitud de documentación.\n\nUna vez confirmado el pago, Admisiones lo pasa a Matriculado.\n\n══ DATOS DEL ESTUDIANTE ══\nNombre: {{alumno}}\nNivel: {{nivel}}\nCurso: {{curso}}\nJornada: {{jornada}}\nCiclo lectivo: {{anio}}\nHermano/a Austin: {{hermano}}\nColegio anterior: {{colegio}}\n\n══ DATOS DE LA FAMILIA ══\nPadre / Madre / Tutor: {{padre}}\nEmail: {{email}}\nTeléfono: {{tel}}\n\n══ APROBACIONES ══\nAdmisiones: ✓\nEOE / Inglés: ✓\nDirección General: ✓\n\nSistema de Admisiones – Austin EBS'},
     dg_notif:{subj:'EOE aprobó a {{alumno}} — pendiente confirmación DG',body:'Estimada Dirección General,\n\nEOE e Inglés dieron el visto bueno para el ingreso de {{alumno}} ({{curso}}, ciclo {{anio}}).\nAdmisiones confirmó la vacante.\n\nPor favor confirmar el ingreso antes del plazo indicado.\nSi no hay respuesta en 48hs, el sistema procederá automáticamente con la matrícula.\n\nDatos:\n- Nombre: {{alumno}}\n- Nivel: {{nivel}} — {{curso}}\n- Ciclo: {{anio}}\n- Familia: {{padre}}\n- Email: {{email}}\n- Teléfono: {{tel}}\n\nSaludos,\nSistema de Admisiones – Austin EBS'},
@@ -2370,7 +2370,7 @@ function migCitadoConFecha(){
   if(DB.config.emailsProtegidos && DB.config.emailsProtegidos.citado) return;
   const viejo = 'Hola {{padre}},\n\nTu entrevista en Austin Eco Bilingual School está confirmada. Te esperamos con gusto.\n\nSi necesitás reprogramar, respondenos este mail a admisiones@austinebs-ah.edu.ar y lo coordinamos.\n\nUn saludo,\nLaura Unamuno\nAdmisiones – Austin EBS';
   if(DB.emails && DB.emails.citado && DB.emails.citado.body === viejo){
-    DB.emails.citado = {subj:'Tu entrevista en Austin EBS está confirmada — {{fecha_entrevista}}', body:'Hola {{padre}},\n\n¡Tu entrevista en Austin Eco Bilingual School está confirmada! Nos alegra mucho que vengan a conocernos.\n\n▸ LOS DATOS DE TU ENTREVISTA\nEstudiante: {{alumno}} — {{curso}}\nDía: {{fecha_entrevista}}\nHora: {{hora_entrevista}}\nLugar: {{lugar_entrevista}}\nDuración aproximada: 1 hora\n\nSi necesitás reprogramar, respondé este mail y lo coordinamos sin problema.\n\nMientras tanto, si querés ir conociendo el proyecto y los aranceles, están acá: {{link_drive}}\n\n¡Te esperamos!\n\nUn saludo,\nLaura Unamuno\nAdmisiones – Austin EBS'};
+    DB.emails.citado = {subj:'Tu entrevista en Austin EBS está confirmada — {{fecha_entrevista}}', body:'Hola {{padre}},\n\n¡Tu entrevista en Austin Eco Bilingual School está confirmada! Nos alegra mucho que vengan a conocernos.\n\n▸ LOS DATOS DE TU ENTREVISTA\nEstudiante: {{alumno}} — {{curso}}\nDía: {{fecha_entrevista}}\nHora: {{hora_entrevista}}\nLugar: {{lugar_entrevista}}\nDuración aproximada: {{duracion_entrevista}}\n\nSi necesitás reprogramar, respondé este mail y lo coordinamos sin problema.\n\nMientras tanto, si querés ir conociendo el proyecto y los aranceles, están acá: {{link_drive}}\n\n¡Te esperamos!\n\nUn saludo,\nLaura Unamuno\nAdmisiones – Austin EBS'};
     saveDB();
     toast('✓ La confirmacion de entrevista ahora incluye dia, hora y lugar','ok');
   }
@@ -2397,9 +2397,34 @@ function migCitadoSinFechaAgenda(){
   if(DB.config.emailsProtegidos && DB.config.emailsProtegidos.citado_sin_fecha) return;
   const viejo = 'Hola {{padre}},\n\n¡Gracias por postular a {{alumno}} en Austin Eco Bilingual School!\n\nRegistramos tu solicitud y vimos que preferís definir más adelante la fecha de la entrevista. Tu lugar en el proceso ya está reservado; sólo nos queda encontrar el momento que mejor les venga.\n\nEscribinos a admisiones@austinebs-ah.edu.ar o respondé este mail y coordinamos el día y horario. También podés elegir un turno directamente acá: {{link_calendario}}\n\nMientras tanto, si querés conocer el proyecto y los aranceles, están disponibles en: {{link_drive}}\n\nQuedamos a disposición.\n\nSaludos cordiales,\nLaura Unamuno\nAdmisiones – Austin EBS';
   if(DB.emails && DB.emails.citado_sin_fecha && DB.emails.citado_sin_fecha.body === viejo){
-    DB.emails.citado_sin_fecha = {subj:'Recibimos tu postulación — elegí el día de tu entrevista', body:'Hola {{padre}},\n\n¡Gracias por postular a {{alumno}} en Austin Eco Bilingual School!\n\nRegistramos tu solicitud y vimos que preferís definir la fecha de la entrevista más adelante. Tu lugar en el proceso ya está reservado; sólo nos queda encontrar el momento que mejor les venga.\n\n▸ ELEGÍ EL DÍA Y HORARIO DE TU ENTREVISTA\nPodés reservar tu turno vos mismo/a, en menos de un minuto, desde este link:\n{{link_agenda_online}}\n\nLa entrevista dura aproximadamente 1 hora. Si preferís, también podés escribirnos a admisiones@austinebs-ah.edu.ar o responder este mail y lo coordinamos juntos.\n\nMientras tanto, si querés ir conociendo el proyecto y los aranceles, están disponibles acá:\n{{link_drive}}\n\nQuedamos a disposición para lo que necesiten.\n\nUn saludo cordial,\nLaura Unamuno\nAdmisiones – Austin EBS'};
+    DB.emails.citado_sin_fecha = {subj:'Recibimos tu postulación — elegí el día de tu entrevista', body:'Hola {{padre}},\n\n¡Gracias por postular a {{alumno}} en Austin Eco Bilingual School!\n\nRegistramos tu solicitud y vimos que preferís definir la fecha de la entrevista más adelante. Tu lugar en el proceso ya está reservado; sólo nos queda encontrar el momento que mejor les venga.\n\n▸ ELEGÍ EL DÍA Y HORARIO DE TU ENTREVISTA\nPodés reservar tu turno vos mismo/a, en menos de un minuto, desde este link:\n{{link_agenda_online}}\n\nLa entrevista dura aproximadamente {{duracion_entrevista}}. Si preferís, también podés escribirnos a admisiones@austinebs-ah.edu.ar o responder este mail y lo coordinamos juntos.\n\nMientras tanto, si querés ir conociendo el proyecto y los aranceles, están disponibles acá:\n{{link_drive}}\n\nQuedamos a disposición para lo que necesiten.\n\nUn saludo cordial,\nLaura Unamuno\nAdmisiones – Austin EBS'};
     saveDB();
   }
+}
+
+// La duración de la entrevista la fija el panel, pero en las plantillas estaba escrita
+// a mano ("1 hora"), así que cambiar el campo no cambiaba el mail. Se reemplaza por la
+// variable {{duracion_entrevista}}.
+//
+// A diferencia de las migraciones de arriba, acá no se compara el cuerpo entero: se
+// cambia sólo la frase de la duración. Si el equipo editó el resto del mail, su texto
+// queda intacto; si reescribieron la frase a su manera, no hay match y no se toca nada.
+function migDuracionVariable(){
+  const frases = [
+    ['Duración aproximada: 1 hora',                'Duración aproximada: {{duracion_entrevista}}'],
+    ['La entrevista dura aproximadamente 1 hora',  'La entrevista dura aproximadamente {{duracion_entrevista}}'],
+    ['La entrevista dura una hora',                'La entrevista dura {{duracion_entrevista}}'],
+    ['La entrevista dura 1 hora',                  'La entrevista dura {{duracion_entrevista}}'],
+  ];
+  let n = 0;
+  Object.keys(DB.emails||{}).forEach(k=>{
+    const t = DB.emails[k];
+    if(!t || !t.body) return;
+    let body = t.body;
+    frases.forEach(([vieja,nueva])=>{ body = body.split(vieja).join(nueva); });
+    if(body !== t.body){ t.body = body; n++; }
+  });
+  if(n) saveDB();
 }
 
 // El aviso a Administración pasó a dispararse al pasar a POSTULADO (antes salía recién en
@@ -2498,6 +2523,7 @@ function runMigrations(){
   migCitadoConFecha();
   migNoAsistioLink();
   migCitadoSinFechaAgenda();
+  migDuracionVariable();
   migAdminPostulado();
   migDGSegundoMail();
   migLimpiarBloqueosHuerfanos();
@@ -3274,6 +3300,7 @@ function fillV(text,p){
     .replace(/{{fecha_entrevista}}/g,fEnt)
     .replace(/{{hora_entrevista}}/g,p.entHora||'a coordinar')
     .replace(/{{lugar_entrevista}}/g,LUGAR_ENTREVISTA)
+    .replace(/{{duracion_entrevista}}/g,textoDuracion())
     .replace(/{{link_calendario}}/g,DB.config.calendar||'').replace(/{{link_drive}}/g,DB.config.drive)
     .replace(/{{link_agenda_online}}/g,linkAgendaOnline())
     .replace(/{{link_agenda}}/g,linkReagenda(p))
@@ -3775,7 +3802,7 @@ function renderEmails(){
         <div class="fgm" style="margin-bottom:11px"><label class="flm">Asunto</label><input class="fim" id="esubj-${e}" value="${(DB.emails[e]?.subj||'').replace(/"/g,'&quot;')}" oninput="marcarSinGuardar('${e}')" onchange="saveEmail('${e}',true)"></div>
         <div class="fgm"><label class="flm">Cuerpo del mensaje</label><textarea class="ftm" id="ebody-${e}" style="min-height:130px" oninput="marcarSinGuardar('${e}')" onchange="saveEmail('${e}',true)">${DB.emails[e]?.body||''}</textarea></div>
         <div style="margin-top:7px;font-size:11px;color:var(--tx3);line-height:2">Variables:
-          <span class="etvar">{{alumno}}</span><span class="etvar">{{padre}}</span><span class="etvar">{{curso}}</span><span class="etvar">{{nivel}}</span><span class="etvar">{{anio}}</span><span class="etvar">{{jornada}}</span><span class="etvar">{{email}}</span><span class="etvar">{{tel}}</span><span class="etvar">{{colegio}}</span><span class="etvar">{{hermano}}</span><span class="etvar">{{fecha_entrevista}}</span><span class="etvar">{{hora_entrevista}}</span><span class="etvar">{{lugar_entrevista}}</span><span class="etvar">{{link_drive}}</span><span class="etvar">{{link_calendario}}</span><span class="etvar">{{link_agenda_online}}</span>
+          <span class="etvar">{{alumno}}</span><span class="etvar">{{padre}}</span><span class="etvar">{{curso}}</span><span class="etvar">{{nivel}}</span><span class="etvar">{{anio}}</span><span class="etvar">{{jornada}}</span><span class="etvar">{{email}}</span><span class="etvar">{{tel}}</span><span class="etvar">{{colegio}}</span><span class="etvar">{{hermano}}</span><span class="etvar">{{fecha_entrevista}}</span><span class="etvar">{{hora_entrevista}}</span><span class="etvar">{{lugar_entrevista}}</span><span class="etvar">{{duracion_entrevista}}</span><span class="etvar">{{link_drive}}</span><span class="etvar">{{link_calendario}}</span><span class="etvar">{{link_agenda_online}}</span>
         </div>
         ${e==='notif_nuevo_alumno'?`<div style="margin-top:12px;background:var(--cr);border:1px dashed var(--bd);border-radius:8px;padding:11px 13px">
           <div style="font-size:11px;font-weight:600;color:var(--tx3);margin-bottom:6px">Se agrega solo al final del mail · no editable</div>
@@ -4617,6 +4644,7 @@ function dispRemotaDesdeCache(){
     const dc = JSON.parse(localStorage.getItem('austin_disp')||'null');
     if(dc && dc.disponibilidad) calDispRemota = dc;
   }catch(e){}
+  aplicarTextosDuracion();
 }
 // Una hoja sin filas devuelve {} — y {} es truthy, así que pisaría el default y la
 // familia vería el calendario sin un solo día hasta que alguien guarde por primera
@@ -4625,6 +4653,7 @@ function aplicarDispRemota(rd){
   if(!(rd && rd.ok && rd.disponibilidad && Object.keys(rd.disponibilidad).length)) return false;
   calDispRemota = {disponibilidad: rd.disponibilidad, dispExtra: rd.dispExtra||{}, params: rd.params||{}};
   try{ localStorage.setItem('austin_disp', JSON.stringify(calDispRemota)); }catch(e){}
+  aplicarTextosDuracion();
   return true;
 }
 
@@ -4639,6 +4668,29 @@ function dispParam(nombre, def){
 }
 function horasAnticipacion(){ return dispParam('anticipacion', 24); }
 function semanasVisibles(){ return dispParam('semanas', 8); }
+function minutosEntrevista(){ return dispParam('duracion', 60); }
+
+// Los minutos configurados, dichos como los diría una persona: "1 hora",
+// "1 hora y media", "45 minutos". El campo del panel va de 30 a 120 de a 15.
+function textoDuracion(){
+  const m = minutosEntrevista();
+  if(m < 60) return m+' minutos';
+  const h = Math.floor(m/60), r = m%60;
+  const th = h===1 ? '1 hora' : h+' horas';
+  if(!r) return th;
+  if(r===30) return th+' y media';
+  return th+' y '+r+' minutos';
+}
+
+// La duración aparece en cinco textos del formulario público. Estaba escrita a mano
+// ("1 hora") en los cinco, así que cambiar el campo del panel no cambiaba nada de lo
+// que leía la familia. Ahora cada uno lleva un <span class="js-dur"> y se rellenan
+// todos de una: al cargar con lo que haya en caché, y de nuevo cuando contesta el
+// Apps Script con el valor publicado.
+function aplicarTextosDuracion(){
+  const t = textoDuracion();
+  document.querySelectorAll('.js-dur').forEach(function(el){ el.textContent = t; });
+}
 
 // Disponibilidad base de Laura (editable desde el panel admin). El orden importa:
 // lo que el staff tiene configurado localmente manda sobre la hoja, para que una
@@ -4835,7 +4887,7 @@ function detectarReagenda(){
   if(!ctx || ctx.id==null) return;
   reagCtx = ctx;
   const sub = document.getElementById('reag-sub');
-  if(sub) sub.textContent = `${ctx.alumno||''} · ${ctx.curso||''} — elegí el día y horario que mejor te quede. La entrevista dura 1 hora.`;
+  if(sub) sub.textContent = `${ctx.alumno||''} · ${ctx.curso||''} — elegí el día y horario que mejor te quede.`;
   reagOffset = 0; reagSlot = null;
   go('s-reagenda');
   cargarTurnosReag();
@@ -4874,7 +4926,7 @@ function agenContinuar(){
   if(anio < primerAnio){ toast('El año de ingreso debe ser '+primerAnio+' o posterior','err'); return; }
   reagCtx = { __nuevo:true, alumno, padre, email, curso, anio };
   const sub = document.getElementById('reag-sub');
-  if(sub) sub.textContent = `${alumno} · ${curso} — elegí el día y horario que mejor te quede. La entrevista dura 1 hora.`;
+  if(sub) sub.textContent = `${alumno} · ${curso} — elegí el día y horario que mejor te quede.`;
   const form = document.getElementById('agen-form'); if(form) form.classList.remove('on');
   const step = document.getElementById('reag-step'); if(step) step.classList.add('on');
   reagOffset = 0; reagSlot = null;
@@ -6807,7 +6859,7 @@ async function pushDisponibilidad(msgOk){
     dispExtra: DB.config.dispExtra || {},
     // Por los getters y no por DB.config directo: así agregar un turno puntual no
     // borra de la hoja una anticipación que ya estaba publicada.
-    params: {anticipacion: horasAnticipacion(), semanas: semanasVisibles()}
+    params: {anticipacion: horasAnticipacion(), semanas: semanasVisibles(), duracion: minutosEntrevista()}
   });
   if(r && r.ok){ toast(msgOk,'ok'); return true; }
   toast('Guardado acá, pero NO se publicó a las familias: '+((r&&r.error)||'sin respuesta'),'err');
@@ -6831,6 +6883,7 @@ function guardarDisponibilidad(){
   saveDB();
   closeM();
   if(typeof renderAdminCal==='function') renderAdminCal();
+  aplicarTextosDuracion();
   pushDisponibilidad('Disponibilidad actualizada — el formulario ya refleja los cambios');
 }
 
@@ -7152,6 +7205,11 @@ function closeMBg(e){ if(e.target===document.getElementById('ov')) closeM(); }
 loadDB();
 // Inicializar bloqueos en cache local
 calBloqueos = DB.bloqueos||[];
+// Levanta de cache la disponibilidad publicada y deja escritos los textos de duración.
+// Tiene que ser acá y no sólo al cargar el calendario: la pantalla de ?agendar=1 muestra
+// "Dura aproximadamente 1 hora" antes de pedirle nada al Apps Script, y sin esto el
+// texto quedaba clavado en el del HTML aunque el panel dijera otra cosa.
+dispRemotaDesdeCache();
 // Si la URL trae ?reagenda=TOKEN, una familia viene a elegir un nuevo día de entrevista.
 detectarReagenda();
 // Si la URL trae ?agendar=1, es el link genérico: familia sin ficha que viene a agendarse.
