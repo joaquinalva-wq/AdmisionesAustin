@@ -6792,6 +6792,73 @@ function renderDashEntHoy(){
 // ═══════════════════════════
 const DIAS_SEMANA_LABEL = {1:'Lunes',2:'Martes',3:'Miércoles',4:'Jueves',5:'Viernes',6:'Sábado',7:'Domingo'};
 
+// Lee la grilla tal como está tipeada en el modal, sin pasar por DB. Hace falta para
+// avisar de los solapamientos mientras el staff escribe, antes de guardar.
+function dispDesdeElModal(){
+  const disp = {};
+  [1,2,3,4,5,6,7].forEach(dow=>{
+    const val = (document.getElementById('disp-'+dow)?.value||'').trim();
+    if(!val) return;
+    // normHora descarta lo que no sea una hora: un "mañana" tipeado en el campo
+    // generaba un slot fantasma que no se podía reservar ni bloquear.
+    const horas = val.split(',').map(normHora).filter(Boolean);
+    if(horas.length) disp[dow] = [...new Set(horas)].sort().map(h=>({hora:h}));
+  });
+  return disp;
+}
+
+// Dos horarios se pisan cuando arrancan a menos de una duración de distancia: con 90
+// minutos, un 08:30 y un 09:30 son dos entrevistas superpuestas, y el sistema las
+// ofrece igual porque nada mira la duración al armar la grilla. Devuelve los choques
+// ya escritos, para mostrarlos tal cual.
+function solapamientosDisponibilidad(disp, extra, minutos){
+  const aMin = h=>{ const p=h.split(':'); return Number(p[0])*60+Number(p[1]); };
+  const choques = [];
+  // `cuenta` filtra qué pares interesan: para los turnos puntuales, sólo los que
+  // involucran al puntual — los choques internos de la grilla ya se reportaron solos.
+  const revisar = (etiqueta, horas, cuenta)=>{
+    const ord = [...new Set(horas.filter(Boolean))].sort();
+    for(let i=1;i<ord.length;i++){
+      const d = aMin(ord[i]) - aMin(ord[i-1]);
+      if(d >= minutos) continue;
+      if(cuenta && !cuenta(ord[i-1]) && !cuenta(ord[i])) continue;
+      choques.push(`${etiqueta}: <strong>${ord[i-1]}</strong> y <strong>${ord[i]}</strong> — ${d} min de diferencia`);
+    }
+  };
+
+  [1,2,3,4,5,6,7].forEach(dow=>{
+    revisar(DIAS_SEMANA_LABEL[dow], (disp[dow]||[]).map(s=>normHora(s.hora||s)));
+  });
+
+  const hoy = today();
+  Object.keys(extra||{}).sort().filter(f=>f>=hoy).forEach(f=>{
+    const puntuales = (extra[f]||[]).map(normHora).filter(Boolean);
+    if(!puntuales.length) return;
+    // Un turno puntual se SUMA a la grilla de ese día (slotsDeFecha une las dos), no la
+    // reemplaza: un 11:30 puntual contra un 11:00 de la grilla se pisa igual.
+    const dow = new Date(f+'T00:00:00').getDay()||7;
+    const base = (disp[dow]||[]).map(s=>normHora(s.hora||s));
+    revisar(formatFechaLinda(f), puntuales.concat(base), h=>puntuales.includes(h));
+  });
+  return choques;
+}
+
+// Avisa, no impide: puede haber un motivo para solapar dos entrevistas (dos personas
+// atendiendo, por ejemplo). Lo que no puede pasar es que se solapen sin que nadie lo
+// note hasta ver el calendario lleno de eventos encimados.
+function refrescarAvisoSolape(){
+  const caja = document.getElementById('disp-aviso');
+  if(!caja) return;
+  const minutos = parseInt(document.getElementById('disp-dur')?.value) || 60;
+  const choques = solapamientosDisponibilidad(dispDesdeElModal(), getTurnosExtra(), minutos);
+  if(!choques.length){ caja.style.display='none'; caja.innerHTML=''; return; }
+  caja.style.display='';
+  caja.innerHTML = `<strong>⚠ Horarios que se pisan</strong><br>
+    Con una duración de <strong>${minutos} minutos</strong>, estas entrevistas se superponen:
+    <ul style="margin:6px 0 0;padding-left:18px">${choques.map(c=>`<li>${c}</li>`).join('')}</ul>
+    <div style="margin-top:6px">Podés guardar igual — el sistema los va a ofrecer a las familias y los eventos del calendario van a quedar encimados.</div>`;
+}
+
 function abrirConfigDisponibilidad(){
   const disp = getDisponibilidadBase();
   document.getElementById('mt').textContent = '⚙ Configurar disponibilidad de Laura';
@@ -6805,9 +6872,11 @@ function abrirConfigDisponibilidad(){
       const slots = (disp[dow]||[]).map(s=>s.hora||s).join(', ');
       return `<div class="cfgrow" style="padding:8px 0">
         <div class="cfglbl">${DIAS_SEMANA_LABEL[dow]}</div>
-        <input class="cfgi" id="disp-${dow}" value="${slots}" placeholder="— sin horarios —">
+        <input class="cfgi" id="disp-${dow}" value="${slots}" placeholder="— sin horarios —" oninput="refrescarAvisoSolape()">
       </div>`;
     }).join('')}
+
+    <div class="warn-box" id="disp-aviso" style="display:none;margin:12px 0 0"></div>
 
     <div style="border-top:2px solid var(--bd);margin:16px 0 0;padding-top:14px">
       <div style="font-size:11px;font-weight:600;color:var(--tl);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">Turnos puntuales</div>
@@ -6828,7 +6897,7 @@ function abrirConfigDisponibilidad(){
     <div style="border-top:2px solid var(--bd);margin:16px 0 0;padding-top:4px">
     <div class="cfgrow">
       <div><div class="cfglbl">Duración de cada entrevista</div><div class="cfgsub">En minutos</div></div>
-      <input class="cfgi" id="disp-dur" type="number" value="${DB.config.dispDuracion||60}" min="30" max="120" step="15">
+      <input class="cfgi" id="disp-dur" type="number" value="${DB.config.dispDuracion||60}" min="30" max="120" step="15" oninput="refrescarAvisoSolape()">
     </div>
     <div class="cfgrow">
       <div><div class="cfglbl">Anticipación mínima para reservar</div><div class="cfgsub">Horas antes mínimas para que una familia pueda reservar</div></div>
@@ -6843,6 +6912,9 @@ function abrirConfigDisponibilidad(){
     <button class="btn btn-out" onclick="closeM()">Cancelar</button>
     <button class="btn btn-td" onclick="guardarDisponibilidad()">Guardar disponibilidad</button>`;
   openM();
+  // Al abrir también: los horarios pueden venir pisados de antes, o de haber subido la
+  // duración en otra sesión sin tocar la grilla.
+  refrescarAvisoSolape();
 }
 
 // Publica la disponibilidad a la hoja del Apps Script. Es imprescindible: el
@@ -6867,24 +6939,23 @@ async function pushDisponibilidad(msgOk){
 }
 
 function guardarDisponibilidad(){
-  const nueva = {};
-  [1,2,3,4,5,6,7].forEach(dow=>{
-    const val = (document.getElementById('disp-'+dow)?.value||'').trim();
-    if(!val) return;
-    // normHora descarta lo que no sea una hora: un "mañana" tipeado en el campo
-    // generaba un slot fantasma que no se podía reservar ni bloquear.
-    const horas = val.split(',').map(normHora).filter(Boolean);
-    if(horas.length) nueva[dow] = [...new Set(horas)].sort().map(h=>({hora:h}));
-  });
+  const nueva = dispDesdeElModal();
+  const duracion = parseInt(document.getElementById('disp-dur')?.value)||60;
+  // Se cuentan antes de cerrar el modal: una vez cerrado, el aviso de la caja ya no
+  // está a la vista y el solapamiento se perdería de nuevo.
+  const choques = solapamientosDisponibilidad(nueva, getTurnosExtra(), duracion).length;
   DB.config.disponibilidad = nueva;
-  DB.config.dispDuracion = parseInt(document.getElementById('disp-dur')?.value)||60;
+  DB.config.dispDuracion = duracion;
   DB.config.dispAnticipacion = parseInt(document.getElementById('disp-ant')?.value)||24;
   DB.config.dispSemanas = parseInt(document.getElementById('disp-sem')?.value)||8;
   saveDB();
   closeM();
   if(typeof renderAdminCal==='function') renderAdminCal();
   aplicarTextosDuracion();
-  pushDisponibilidad('Disponibilidad actualizada — el formulario ya refleja los cambios');
+  pushDisponibilidad('Disponibilidad actualizada — el formulario ya refleja los cambios')
+    .then(()=>{ if(choques) toast(choques===1
+      ? `⚠ Quedó 1 par de horarios que se pisan con los ${duracion} min de duración`
+      : `⚠ Quedaron ${choques} pares de horarios que se pisan con los ${duracion} min de duración`,'info'); });
 }
 
 // ── Turnos puntuales ──
@@ -6924,6 +6995,7 @@ function agregarTurnoPuntual(){
   const lista = document.getElementById('dispx-lista'); if(lista) lista.innerHTML = renderListaTurnosPuntuales();
   const hEl = document.getElementById('dispx-horas'); if(hEl) hEl.value='';
   if(typeof renderAdminCal==='function') renderAdminCal();
+  refrescarAvisoSolape();
   pushDisponibilidad('Turno abierto: '+formatFechaLinda(fecha)+' a las '+nuevas.join(', '));
 }
 
@@ -6936,6 +7008,7 @@ function quitarTurnoPuntual(fecha){
   saveDB();
   const lista = document.getElementById('dispx-lista'); if(lista) lista.innerHTML = renderListaTurnosPuntuales();
   if(typeof renderAdminCal==='function') renderAdminCal();
+  refrescarAvisoSolape();
   pushDisponibilidad(agendada ? 'Turno quitado de la oferta — la entrevista ya agendada sigue en pie'
                               : 'Turno puntual quitado');
 }
