@@ -22,7 +22,7 @@ const MAIL_LOGO = 'https://admisionesaustin.com.ar/logo-email.png';
 
 // Marca de versión: sirve para confirmar que la implementación se publicó.
 // Al abrir la URL del script con ?action=ping tiene que aparecer este valor.
-const API_VERSION = '2026-09-23-v8-recordatorio-panel';
+const API_VERSION = '2026-10-22-v9-disponibilidad';
 
 // ── Calendario ────────────────────────────────────────────────
 const CAL_ADMISIONES        = 'admisiones@austinebs-ah.edu.ar';
@@ -54,9 +54,11 @@ const DG_FS_COL     = 'dg-decisiones';
 // ── Hojas (el script las crea solo si no existen) ─────────────
 const SHEET_TURNOS   = 'Turnos';
 const SHEET_BLOQUEOS = 'Bloqueos';
+const SHEET_DISP     = 'Disponibilidad';
 
 const COLS_TURNOS   = ['ID','Fecha','Hora','AlumnoId','Alumno','Padre','Email','Tel','Curso','Estado','Creado'];
 const COLS_BLOQUEOS = ['Fecha','Hora','Motivo','Creado'];
+const COLS_DISP     = ['Clave','Horas','Actualizado'];
 
 /****************************************
  * MAPEO DE COLUMNAS (Sheet del Form)   *
@@ -384,6 +386,8 @@ function handleAPI_(e) {
       case 'cancelarTurno': result = cancelarTurno_(data); break;
       case 'getBloqueos':   result = getBloqueos_(); break;
       case 'setBloqueo':    result = setBloqueo_(data); break;
+      case 'getDisponibilidad': result = getDisponibilidad_(); break;
+      case 'setDisponibilidad': result = setDisponibilidad_(data); break;
       case 'sendMail':      result = sendMailDirect_(data); break;
       case 'sendDGNotif':   result = sendDGNotif_(data); break;
       case 'crearEventoEntrevista': result = crearEventoEntrevista(data); break;
@@ -575,6 +579,80 @@ function setBloqueo_(data) {
   // Evento en el Google Calendar de Admisiones (idempotente por su propia marca)
   if (data.evento) crearEventoBloqueo_(fecha, hora, data.motivo || '');
   return { ok: true };
+}
+
+// ── DISPONIBILIDAD ─────────────────────────────────────────────
+// Una fila por clave, las horas separadas por coma en una sola celda:
+//   Clave "1".."7"      → grilla semanal (1 = lunes ... 7 = domingo)
+//   Clave "yyyy-MM-dd"  → turno puntual, abierto sólo esa fecha
+//
+// Esta hoja existe porque el formulario de las familias no está logueado y no puede
+// leer la config de la nube. Los bloqueos ya viajaban por acá; la disponibilidad no,
+// así que la grilla que configuraba el panel no le llegaba a nadie: la familia veía
+// siempre los martes/miércoles/jueves que están escritos a mano en el HTML.
+function getDisponibilidad_() {
+  const sh = getOrCreate_(SHEET_DISP, COLS_DISP);
+  const rows = sh.getDataRange().getValues();
+  const disponibilidad = {}, dispExtra = {};
+
+  for (let i = 1; i < rows.length; i++) {
+    const horas = String(rows[i][1] == null ? '' : rows[i][1])
+      .split(',')
+      .map(aHora_)
+      .filter(function (h) { return /^\d{2}:\d{2}$/.test(h); });
+    if (!horas.length) continue;
+
+    // La clave puede volver de Sheets como número (un "3") o como Date (una fecha),
+    // por más que se escriba con formato texto: una edición a mano la reconvierte.
+    const bruto = rows[i][0];
+    const dow = /^[1-7]$/.test(String(bruto).trim()) ? String(bruto).trim() : '';
+    if (dow) {
+      disponibilidad[dow] = horas.map(function (h) { return { hora: h }; });
+    } else {
+      const fecha = aFecha_(bruto);
+      if (/^\d{4}-\d{2}-\d{2}$/.test(fecha)) dispExtra[fecha] = horas;
+    }
+  }
+  return { ok: true, disponibilidad: disponibilidad, dispExtra: dispExtra };
+}
+
+function setDisponibilidad_(data) {
+  const sh = getOrCreate_(SHEET_DISP, COLS_DISP);
+  const ahora = new Date().toISOString();
+  const filas = [];
+
+  const limpiar = function (lista) {
+    return (lista || [])
+      .map(function (s) { return aHora_(s && s.hora !== undefined ? s.hora : s); })
+      .filter(function (h) { return /^\d{2}:\d{2}$/.test(h); });
+  };
+
+  const semanal = (data && data.disponibilidad) || {};
+  [1, 2, 3, 4, 5, 6, 7].forEach(function (dow) {
+    const horas = limpiar(semanal[dow] || semanal[String(dow)]);
+    if (horas.length) filas.push([String(dow), horas.join(', '), ahora]);
+  });
+
+  const extra = (data && data.dispExtra) || {};
+  Object.keys(extra).sort().forEach(function (clave) {
+    const fecha = aFecha_(clave);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return;
+    const horas = limpiar(extra[clave]);
+    if (horas.length) filas.push([fecha, horas.join(', '), ahora]);
+  });
+
+  // Se reescribe la hoja entera: el panel manda siempre el estado completo, así no
+  // hay que reconciliar qué se borró. El último que guarda gana, igual que el merge
+  // de config en la nube.
+  if (sh.getLastRow() > 1) {
+    sh.getRange(2, 1, sh.getLastRow() - 1, COLS_DISP.length).clearContent();
+  }
+  if (filas.length) {
+    // Clave y Horas como texto, o Sheets convierte "3" en número y "08:30" en hora.
+    sh.getRange(2, 1, filas.length, 2).setNumberFormat('@');
+    sh.getRange(2, 1, filas.length, COLS_DISP.length).setValues(filas);
+  }
+  return { ok: true, filas: filas.length };
 }
 
 // Marca invisible que identifica un bloqueo dentro de su evento de calendario, para

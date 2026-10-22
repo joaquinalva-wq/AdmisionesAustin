@@ -118,6 +118,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--cr);color:var(--tx);min-h
 @media(max-width:500px){.fgrow{grid-template-columns:1fr}}
 .flabel{font-size:12px;font-weight:500;color:var(--tx2);letter-spacing:.02em}
 .flabel .req{color:var(--or)}
+/* Con todo el resto obligatorio, las pocas excepciones se marcan explicitamente
+   para que la familia no crea que le falta completar algo. */
+.flabel .fopt,.flm .fopt{color:var(--tx3,#9CA3AF);font-weight:400}
 .fi,.fsel,.fta{padding:10px 13px;border:1.5px solid var(--bd2);border-radius:9px;font-size:13.5px;color:var(--tx);background:var(--cr);outline:none;transition:border-color .2s,background .2s;font-family:'DM Sans',sans-serif;width:100%}
 .fi:focus,.fsel:focus,.fta:focus{border-color:var(--tl);background:#fff}
 .fi.err,.fsel.err{border-color:#DC2626;background:#FEF2F2}
@@ -288,6 +291,10 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
 .flm{font-size:11.5px;font-weight:500;color:var(--tx2)}
 .fim,.fsm,.ftm{padding:8px 11px;border:1.5px solid var(--bd2);border-radius:8px;font-size:13px;color:var(--tx);background:var(--cr);outline:none;transition:border-color .2s,background .2s;font-family:'DM Sans',sans-serif;width:100%}
 .fim:focus,.fsm:focus,.ftm:focus{border-color:var(--tl);background:#fff}
+/* Mismo marcado de error que el formulario de familias (.fi.err). Sin esto, el
+   alta manual avisaba "completá los campos obligatorios" sin señalar cuál. */
+.fim.err,.fsm.err,.ftm.err{border-color:#DC2626;background:#FEF2F2}
+.flm .req{color:var(--or)}
 .ftm{resize:vertical;min-height:70px;line-height:1.5}
 /* Auto-agenda ?agendar=1 — formulario de la familia, versión elevada */
 .agf-card{background:var(--wh);border:1px solid var(--bd);border-radius:18px;padding:34px 32px;box-shadow:0 14px 44px -14px rgba(44,74,94,.22),0 2px 8px rgba(44,74,94,.05);position:relative;overflow:hidden}
@@ -464,6 +471,9 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
 .admin-cal-ent.estado-post_entrevista_enviado{background:#D4E4EE;color:var(--cm)}
 .admin-cal-ent.estado-cancelado{background:#F0F0EE;color:var(--cd);text-decoration:line-through}
 .admin-cal-bloq{margin:5px;padding:5px 7px;border-radius:6px;font-size:10.5px;background:repeating-linear-gradient(45deg,#F3E4E4,#F3E4E4 5px,#EED9D9 5px,#EED9D9 10px);color:#9B2C2C;font-weight:600}
+/* Turno puntual abierto y todavia libre. Verde y punteado: es un hueco ofrecido,
+   no algo ya agendado — cuando una familia lo toma pasa a ser chip de entrevista. */
+.admin-cal-extra{margin:5px;padding:5px 7px;border-radius:6px;font-size:10.5px;background:#EBF7D4;color:#3A6A0A;font-weight:600;border:1px dashed #9CC65A}
 .admin-cal-record{margin:5px;padding:5px 7px;border-radius:6px;font-size:10.5px;background:#FDF3D8;color:#8A6D1B;cursor:pointer;font-weight:600;display:flex;align-items:center;gap:4px}
 .admin-cal-record.hecho{opacity:.5;text-decoration:line-through}
 .admin-cal-record:hover{filter:brightness(.96)}
@@ -683,8 +693,8 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
         <div class="fg"><label class="flabel">Apellido <span class="req">*</span></label><input class="fi" id="pf-ap" placeholder="Apellido"></div>
       </div>
       <div class="fgrow">
-        <div class="fg"><label class="flabel">Fecha de nacimiento</label><input class="fi" id="pf-nac" type="date"></div>
-        <div class="fg"><label class="flabel">DNI del estudiante</label><input class="fi" id="pf-dni" placeholder="Número de DNI"></div>
+        <div class="fg"><label class="flabel">Fecha de nacimiento <span class="req">*</span></label><input class="fi" id="pf-nac" type="date"></div>
+        <div class="fg"><label class="flabel">DNI del estudiante <span class="req">*</span></label><input class="fi" id="pf-dni" placeholder="Número de DNI"></div>
       </div>
       <div class="fgrow">
         <div class="fg"><label class="flabel">Curso al que aplica <span class="req">*</span></label>
@@ -719,13 +729,13 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
         </div>
       </div>
       <div class="fgrow">
-        <div class="fg" id="fg-jornada"><label class="flabel">Jornada deseada</label>
+        <div class="fg" id="fg-jornada"><label class="flabel">Jornada deseada <span class="req">*</span></label>
           <select class="fsel" id="pf-jornada"><option value="Jornada Completa">Jornada Completa</option><option value="Jornada Simple" id="opt-jornada-simple" style="display:none">Jornada Simple (solo K2)</option></select>
         </div>
-        <div class="fg"><label class="flabel">Colegio actual / anterior</label><input class="fi" id="pf-cole" placeholder="Nombre del colegio"></div>
+        <div class="fg"><label class="flabel">Colegio actual / anterior <span class="fopt">(opcional)</span></label><input class="fi" id="pf-cole" placeholder="Si no tuvo, dejalo vacío"></div>
       </div>
       <div class="fg">
-        <label class="flabel">¿Tienen otro hijo/a en Austin EBS actualmente?</label>
+        <label class="flabel">¿Tienen otro hijo/a en Austin EBS actualmente? <span class="req">*</span></label>
         <select class="fsel" id="pf-herm" onchange="toggleHermanoMsg()">
           <option value="no">No</option>
           <option value="si">Sí — es hermano/a de un estudiante actual</option>
@@ -733,14 +743,14 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
         <div class="fhermano" id="fherm-msg">⭐ Los hermanos de estudiantes actuales tienen prioridad de ingreso. El equipo de admisiones tendrá esto en cuenta al evaluar la vacante.</div>
       </div>
       <div class="fg">
-        <label class="flabel">¿Son familiares de alguien del personal de Austin EBS?</label>
+        <label class="flabel">¿Son familiares de alguien del personal de Austin EBS? <span class="req">*</span></label>
         <select class="fsel" id="pf-personal" onchange="toggleHermanoMsg()">
           <option value="no">No</option>
           <option value="si">Sí — familiar de un miembro del personal</option>
         </select>
         <div class="fhermano" id="fpers-msg">⭐ Las familias del personal tienen un circuito de admisión simplificado. Admisiones se contactará con ustedes directamente.</div>
       </div>
-      <div class="fg"><label class="flabel">¿Cómo conocieron Austin EBS?</label>
+      <div class="fg"><label class="flabel">¿Cómo conocieron Austin EBS? <span class="req">*</span></label>
         <select class="fsel" id="pf-como">
           <option value="">— Seleccioná —</option>
           <option>Recomendación de otra familia</option><option>Redes sociales</option>
@@ -759,7 +769,7 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
         <div class="fg"><label class="flabel">Apellido <span class="req">*</span></label><input class="fi" id="pf-pap" placeholder="Apellido"></div>
       </div>
       <div class="fgrow">
-        <div class="fg"><label class="flabel">Relación con el estudiante</label>
+        <div class="fg"><label class="flabel">Relación con el estudiante <span class="req">*</span></label>
           <select class="fsel" id="pf-rel"><option>Padre / Madre</option><option>Tutor/a legal</option><option>Abuelo/a</option><option>Otro familiar</option></select>
         </div>
         <div class="fg"><label class="flabel">Fecha de nacimiento <span class="req">*</span></label><input class="fi" id="pf-pnac" type="date"></div>
@@ -770,9 +780,9 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
         <div class="fg"><label class="flabel">Email <span class="req">*</span></label><input class="fi" id="pf-email" type="email" placeholder="email@ejemplo.com"></div>
         <div class="fg"><label class="flabel">Teléfono / WhatsApp <span class="req">*</span></label><input class="fi" id="pf-tel" placeholder="+54 11 0000-0000"></div>
       </div>
-      <div class="fg"><label class="flabel">Barrio / Localidad</label><input class="fi" id="pf-dir" placeholder="¿Dónde viven actualmente?"></div>
+      <div class="fg"><label class="flabel">Barrio / Localidad <span class="req">*</span></label><input class="fi" id="pf-dir" placeholder="¿Dónde viven actualmente?"></div>
       <div class="fdiv"></div>
-      <div class="fg"><label class="flabel">Consultas o información adicional</label>
+      <div class="fg"><label class="flabel">Consultas o información adicional <span class="fopt">(opcional)</span></label>
         <textarea class="fta" id="pf-obs" placeholder="¿Hay algo que quieran compartir o preguntar?"></textarea>
       </div>
       <div class="fbtns">
@@ -3422,6 +3432,16 @@ function recontactoMasivo(){
 // ═══════════════════════════
 // NUEVO POSTULANTE MANUAL
 // ═══════════════════════════
+// El alta manual tenia los ciclos escritos a mano (2025..2032) y arrancaba en 2025:
+// un ciclo ya vencido quedaba seleccionado por defecto. Se arma desde el año en curso
+// --no desde el siguiente, como el formulario publico-- porque el staff carga tambien
+// postulantes del ciclo que ya empezo.
+function aniosNuevoOpts(){
+  const desde=new Date().getFullYear();
+  let o='';
+  for(let y=desde; y<=Math.max(desde+6,2032); y++) o+=`<option value="${y}">${y}</option>`;
+  return o;
+}
 function openNuevo(){
   const opts=CURSOS.map(c=>`<option value="${c}">${c}</option>`).join('');
   document.getElementById('mt').textContent='Agregar postulante manualmente';
@@ -3430,28 +3450,28 @@ function openNuevo(){
       Para postulantes que lleguen por teléfono, WhatsApp u otros canales fuera del formulario web.
     </div>
     <div class="fgm2">
-      <div class="fgm"><label class="flm">Nombre del estudiante *</label><input class="fim" id="nm-al" placeholder="Nombre y apellido completo"></div>
-      <div class="fgm"><label class="flm">Curso *</label><select class="fsm" id="nm-cu">${opts}</select></div>
+      <div class="fgm"><label class="flm">Nombre del estudiante <span class="req">*</span></label><input class="fim" id="nm-al" placeholder="Nombre y apellido completo"></div>
+      <div class="fgm"><label class="flm">Curso <span class="req">*</span></label><select class="fsm" id="nm-cu"><option value="">— Seleccioná —</option>${opts}</select></div>
     </div>
     <div class="fgm2">
-      <div class="fgm"><label class="flm">Ciclo lectivo</label><select class="fsm" id="nm-an"><option value="2025">2025</option><option value="2026">2026</option><option value="2027">2027</option><option value="2028">2028</option><option value="2029">2029</option><option value="2030">2030</option><option value="2031">2031</option><option value="2032">2032</option></select></div>
-      <div class="fgm"><label class="flm">Jornada</label><select class="fsm" id="nm-jo"><option>Jornada Completa</option><option>Jornada Simple</option></select></div>
+      <div class="fgm"><label class="flm">Ciclo lectivo <span class="req">*</span></label><select class="fsm" id="nm-an"><option value="">— Seleccioná —</option>${aniosNuevoOpts()}</select></div>
+      <div class="fgm"><label class="flm">Jornada <span class="req">*</span></label><select class="fsm" id="nm-jo"><option>Jornada Completa</option><option>Jornada Simple</option></select></div>
     </div>
-    <div class="fgm"><label class="flm">Colegio anterior</label><input class="fim" id="nm-cole" placeholder="¿De qué colegio viene?"></div>
+    <div class="fgm"><label class="flm">Colegio anterior <span class="fopt">(opcional)</span></label><input class="fim" id="nm-cole" placeholder="Si no tuvo, dejalo vacío"></div>
     <div class="ssm" style="margin:12px 0 10px">Familia</div>
     <div class="fgm2">
-      <div class="fgm"><label class="flm">Padre/Madre/Tutor *</label><input class="fim" id="nm-pa" placeholder="Nombre y apellido"></div>
-      <div class="fgm"><label class="flm">Email *</label><input class="fim" id="nm-em" type="email" placeholder="email@ejemplo.com"></div>
+      <div class="fgm"><label class="flm">Padre/Madre/Tutor <span class="req">*</span></label><input class="fim" id="nm-pa" placeholder="Nombre y apellido"></div>
+      <div class="fgm"><label class="flm">Email <span class="req">*</span></label><input class="fim" id="nm-em" type="email" placeholder="email@ejemplo.com"></div>
     </div>
     <div class="fgm2">
-      <div class="fgm"><label class="flm">Teléfono</label><input class="fim" id="nm-tel" placeholder="+54 11 0000-0000"></div>
-      <div class="fgm"><label class="flm">¿Hermano en Austin?</label><select class="fsm" id="nm-he"><option value="no">No</option><option value="si">Sí ★ (tiene prioridad)</option></select></div>
+      <div class="fgm"><label class="flm">Teléfono <span class="req">*</span></label><input class="fim" id="nm-tel" placeholder="+54 11 0000-0000"></div>
+      <div class="fgm"><label class="flm">¿Hermano en Austin? <span class="req">*</span></label><select class="fsm" id="nm-he"><option value="no">No</option><option value="si">Sí ★ (tiene prioridad)</option></select></div>
     </div>
-    <div class="fgm"><label class="flm">Nota inicial</label><textarea class="ftm" id="nm-obs" style="min-height:55px" placeholder="Cómo llegaron, quién los recomendó, etc."></textarea></div>
+    <div class="fgm"><label class="flm">Nota inicial <span class="fopt">(opcional)</span></label><textarea class="ftm" id="nm-obs" style="min-height:55px" placeholder="Cómo llegaron, quién los recomendó, etc."></textarea></div>
     <div class="ssm" style="margin:12px 0 10px">Entrevista (opcional)</div>
     <div class="fgm2">
-      <div class="fgm"><label class="flm">Fecha de entrevista</label><input class="fim" id="nm-entf" type="date" onchange="prevNuevoMail()"></div>
-      <div class="fgm"><label class="flm">Hora</label><input class="fim" id="nm-enth" type="time" value="09:30"></div>
+      <div class="fgm"><label class="flm">Fecha de entrevista <span class="fopt">(opcional)</span></label><input class="fim" id="nm-entf" type="date" onchange="prevNuevoMail()"></div>
+      <div class="fgm"><label class="flm">Hora <span class="fopt">(opcional)</span></label><input class="fim" id="nm-enth" type="time" value="09:30"></div>
     </div>
     <div style="font-size:11.5px;color:var(--tx3);margin:-6px 0 12px;line-height:1.6">
       Horarios habituales: ${(function(){
@@ -3462,7 +3482,7 @@ function openNuevo(){
       Al guardar con fecha, el turno queda bloqueado para que ninguna familia lo tome.
     </div>
     <div class="ssm" style="margin:12px 0 10px">Dónde entra y qué se le avisa</div>
-    <div class="fgm"><label class="flm">Estado en el pipeline</label>
+    <div class="fgm"><label class="flm">Estado en el pipeline <span class="req">*</span></label>
       <select class="fsm" id="nm-est" onchange="prevNuevoMail()">
         ${ESTADOS.map(e=>`<option value="${e}" ${e==='citado'?'selected':''}>${EL[e]||e}</option>`).join('')}
       </select>
@@ -3516,12 +3536,19 @@ function saveNuevo(){
   const padre=(document.getElementById('nm-pa').value||'').trim();
   const email=(document.getElementById('nm-em').value||'').trim();
   const curso=document.getElementById('nm-cu').value;
+  // Todo obligatorio menos colegio anterior, nota inicial y fecha/hora de entrevista.
+  // Se marca cada campo que falta: antes el toast avisaba sin decir cuál era.
+  let okNm=true;
+  ['nm-al','nm-cu','nm-an','nm-jo','nm-pa','nm-em','nm-tel','nm-he','nm-est'].forEach(id=>{
+    const el=document.getElementById(id); if(!el) return;
+    if(!String(el.value||'').trim()){ el.classList.add('err'); okNm=false; } else el.classList.remove('err');
+  });
+  if(!okNm){ toast('Completá los campos obligatorios','err'); return; }
   // Validar email duplicado. El ||'' importa: esto recorre TODOS los postulantes, así que
   // uno solo sin email bloqueaba el alta manual por completo.
   if(DB.postulantes.find(p=>String(p.email||'').toLowerCase()===email.toLowerCase()&&p.estado!=='desiste')){
     toast('⚠ Este email ya tiene una postulación activa','err'); return;
   }
-  if(!alumno||!padre||!email){ toast('Completá los campos obligatorios','err'); return; }
   const estadoSel=document.getElementById('nm-est')?.value||'citado';
   const noMail=document.getElementById('nm-nomail')?.checked||false;
   const entF=(document.getElementById('nm-entf')?.value||'').trim();
@@ -4187,7 +4214,9 @@ function clearStudentForm(){
   const c=document.getElementById('pf-curso'); if(c) c.value='';
   const j=document.getElementById('pf-jornada'); if(j) j.selectedIndex=0;
   const a=document.getElementById('pf-anio'); if(a) a.value=String(anioLectivoDefault());
-  const h=document.getElementById('pf-herm'); if(h){ h.value='no'; toggleHermanoMsg(); }
+  const h=document.getElementById('pf-herm'); if(h) h.value='no';
+  const pe=document.getElementById('pf-personal'); if(pe) pe.value='no';
+  toggleHermanoMsg();
   const m=document.getElementById('pf-como'); if(m) m.value='';
   // Clear field errors
   document.querySelectorAll('#fst0 .err').forEach(el=>el.classList.remove('err'));
@@ -4258,8 +4287,14 @@ function fNext(from){
   if(from===0){
     const n=document.getElementById('pf-n'), ap=document.getElementById('pf-ap'), cu=document.getElementById('pf-curso');
     let ok=true;
-    [n,ap].forEach(el=>{ if(!el.value.trim()){ el.classList.add('err'); ok=false; } else el.classList.remove('err'); });
-    if(!cu.value){ cu.classList.add('err'); ok=false; } else cu.classList.remove('err');
+    // Todo obligatorio menos "Colegio actual / anterior": un ingresante a K2 no
+    // tuvo colegio previo. El resto de los selects (curso, ciclo, jornada,
+    // hermano, personal, como) tambien se valida: los que arrancan vacios
+    // frenan al que no eligio, y los que tienen default pasan sin molestar.
+    ['pf-n','pf-ap','pf-nac','pf-dni','pf-curso','pf-anio','pf-jornada','pf-herm','pf-personal','pf-como'].forEach(id=>{
+      const el=document.getElementById(id); if(!el) return;
+      if(!String(el.value||'').trim()){ el.classList.add('err'); ok=false; } else el.classList.remove('err');
+    });
     if(!ok){ toast('Completá los campos obligatorios','err'); return; }
     // Save current student data
     estudiantesData[estudianteIdx]={
@@ -4285,11 +4320,12 @@ function fNext(from){
     // All students done — proceed to family data
   }
   if(from===1){
-    const pn=document.getElementById('pf-pn'), pap=document.getElementById('pf-pap');
-    const em=document.getElementById('pf-email'), tel=document.getElementById('pf-tel');
-    const pnac=document.getElementById('pf-pnac');
     let ok=true;
-    [pn,pap,em,tel,pnac].forEach(el=>{ if(el && !el.value.trim()){ el.classList.add('err'); ok=false; } else if(el) el.classList.remove('err'); });
+    // Todo obligatorio menos "Consultas o informacion adicional", que es texto libre.
+    ['pf-pn','pf-pap','pf-rel','pf-pnac','pf-email','pf-tel','pf-dir'].forEach(id=>{
+      const el=document.getElementById(id); if(!el) return;
+      if(!String(el.value||'').trim()){ el.classList.add('err'); ok=false; } else el.classList.remove('err');
+    });
     if(!ok){ toast('Completá los campos obligatorios','err'); return; }
 
     // Sin calendario para familias Austin: si reservaran un turno, el Apps Script
@@ -4509,7 +4545,7 @@ async function apiCall(action, data){
   const url = DB.config.appsScriptUrl;
   if(!url) return {ok:false, error:'Sin URL'};
 
-  const READ_ACTIONS = ['ping','getTurnos','getBloqueos'];
+  const READ_ACTIONS = ['ping','getTurnos','getBloqueos','getDisponibilidad'];
   const isRead = READ_ACTIONS.includes(action);
 
   try{
@@ -4569,13 +4605,66 @@ function slotHora(x){
   return s;
 }
 
-// Disponibilidad base de Laura (editable desde el panel admin)
+// Disponibilidad leída del Apps Script (hoja "Disponibilidad"). Es el único camino
+// por el que la configuración del panel llega a una familia: el formulario público no
+// está logueado, así que nunca corre syncFromCloud() y no ve la config de la nube.
+let calDispRemota = null;   // {disponibilidad, dispExtra} o null si no llegó
+
+// Se cachea igual que turnos y bloqueos: el calendario se dibuja al instante con lo
+// último conocido en vez de esperar los segundos que tarda el Apps Script.
+function dispRemotaDesdeCache(){
+  try{
+    const dc = JSON.parse(localStorage.getItem('austin_disp')||'null');
+    if(dc && dc.disponibilidad) calDispRemota = dc;
+  }catch(e){}
+}
+function aplicarDispRemota(rd){
+  if(!(rd && rd.ok && rd.disponibilidad)) return false;
+  calDispRemota = {disponibilidad: rd.disponibilidad, dispExtra: rd.dispExtra||{}};
+  try{ localStorage.setItem('austin_disp', JSON.stringify(calDispRemota)); }catch(e){}
+  return true;
+}
+
+// Disponibilidad base de Laura (editable desde el panel admin). El orden importa:
+// lo que el staff tiene configurado localmente manda sobre la hoja, para que una
+// edición recién hecha no se vea pisada por la copia remota; recién después entra
+// lo que haya en la hoja, y al final el default de arranque.
 function getDisponibilidadBase(){
-  return DB.config.disponibilidad || {
+  return DB.config.disponibilidad
+    || (calDispRemota && calDispRemota.disponibilidad)
+    || {
     2: [{hora:'08:30'},{hora:'09:30'}],           // Martes
     3: [{hora:'13:30'},{hora:'14:30'}],           // Miércoles
     4: [{hora:'08:30'},{hora:'09:30'}],            // Jueves
   };
+}
+
+// Turnos puntuales: horarios abiertos para UNA fecha concreta, que no se convierten
+// en regla semanal. Hacen falta para los casos que llegan por teléfono y acuerdan un
+// día que no está en la grilla (ej: un lunes). Viven en
+// DB.config.dispExtra = { 'YYYY-MM-DD': ['11:00'] } y se publican en la hoja.
+function getTurnosExtra(){
+  return DB.config.dispExtra || (calDispRemota && calDispRemota.dispExtra) || {};
+}
+
+// Normaliza a HH:MM. Sin esto, un "9:00" tipeado a mano no empareja nunca con los
+// bloqueos ni con los turnos reservados, que se comparan como string.
+function normHora(h){
+  const m = /^(\d{1,2})[:.]?(\d{2})$/.exec(String(h||'').trim());
+  if(!m) return '';
+  const hh = Math.min(23, parseInt(m[1],10)), mm = Math.min(59, parseInt(m[2],10));
+  return ('0'+hh).slice(-2)+':'+('0'+mm).slice(-2);
+}
+
+// Horarios que se ofrecen en una fecha: la grilla semanal más los turnos puntuales
+// de ese día. `extra:true` marca los que no vienen de la grilla, para distinguirlos
+// en el calendario del staff (en el formulario de las familias se ven igual que
+// cualquier otro horario: la primera que entra lo toma).
+function slotsDeFecha(fechaStr, dow){
+  const base  = (getDisponibilidadBase()[dow]||[]).map(s=>normHora(s.hora||s)).filter(Boolean);
+  const extra = (getTurnosExtra()[fechaStr]||[]).map(normHora).filter(Boolean);
+  return [...new Set(base.concat(extra))].sort()
+    .map(h=>({hora:h, extra: extra.includes(h) && !base.includes(h)}));
 }
 
 function initCalFormulario(){
@@ -4598,6 +4687,7 @@ async function cargarTurnosYRenderizar(){
   try{
     calBloqueos = JSON.parse(localStorage.getItem('austin_bloqueos')||'[]');
   } catch(e){ calBloqueos = calBloqueos||[]; }
+  dispRemotaDesdeCache();
 
   const hayCache = calTurnosReservados.length > 0;
   if(hayCache){
@@ -4617,12 +4707,13 @@ async function cargarTurnosYRenderizar(){
   const conTimeout = (pr, ms) => Promise.race([
     pr, new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')), ms))
   ]);
-  const [rt, rb] = await Promise.all([
+  const [rt, rb, rd] = await Promise.all([
     conTimeout(apiCall('getTurnos',{}), 8000).catch(()=>null),
-    conTimeout(apiCall('getBloqueos',{}), 8000).catch(()=>null)
+    conTimeout(apiCall('getBloqueos',{}), 8000).catch(()=>null),
+    conTimeout(apiCall('getDisponibilidad',{}), 8000).catch(()=>null)
   ]);
 
-  let cambio = false;
+  let cambio = aplicarDispRemota(rd);
   if(rt && rt.ok && rt.turnos){
     calTurnosReservados = rt.turnos.filter(function(t){
       return t.Estado==='reservado'||t.Estado==='recordatorio_enviado';
@@ -4644,7 +4735,6 @@ async function cargarTurnosYRenderizar(){
 function renderCalFormulario(){
   const dias = document.getElementById('cal-dias'); if(!dias) return;
   const hoy = new Date();
-  const disponibilidad = getDisponibilidadBase();
   // Calcular inicio de semana actual + offset
   const lunes = new Date(hoy);
   lunes.setDate(hoy.getDate() - ((hoy.getDay()||7)-1) + calSemanaOffset*7);
@@ -4657,13 +4747,15 @@ function renderCalFormulario(){
   // Previo/siguiente
   const prevBtn = document.getElementById('cal-prev');
   if(prevBtn) prevBtn.style.display = calSemanaOffset<=0?'none':'';
-  // Mostrar solo días con disponibilidad (Mar, Mié, Jue)
+  // Solo los días que tienen horarios: los de la grilla semanal, más los que tengan
+  // un turno puntual abierto para esa fecha concreta.
   const diasConSlots = [];
   for(let d=0;d<7;d++){
     const fecha = new Date(lunes); fecha.setDate(lunes.getDate()+d);
     const dow = fecha.getDay()==0?7:fecha.getDay(); // 1=lun...7=dom
-    if(!disponibilidad[dow]) continue;
-    diasConSlots.push({fecha, dow, slots:disponibilidad[dow]});
+    const slots = slotsDeFecha(toDateStr(fecha), dow);
+    if(!slots.length) continue;
+    diasConSlots.push({fecha, dow, slots});
   }
   dias.innerHTML = diasConSlots.map(({fecha,dow,slots})=>{
     const fechaStr = toDateStr(fecha);
@@ -4775,15 +4867,18 @@ async function cargarTurnosReag(){
   const loading = document.getElementById('reag-cal-loading');
   try{ calTurnosReservados = JSON.parse(localStorage.getItem('austin_turnos')||'[]'); }catch(e){ calTurnosReservados = []; }
   try{ calBloqueos = JSON.parse(localStorage.getItem('austin_bloqueos')||'[]'); }catch(e){ calBloqueos = calBloqueos||[]; }
+  dispRemotaDesdeCache();
   const hayCache = calTurnosReservados.length>0;
   if(hayCache){ if(loading) loading.style.display='none'; renderReagCal(); }
   else if(loading) loading.style.display='block';
   if(!DB.config.appsScriptUrl){ if(loading) loading.style.display='none'; renderReagCal(); return; }
   const conTimeout = (pr,ms)=>Promise.race([pr,new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),ms))]);
-  const [rt,rb] = await Promise.all([
+  const [rt,rb,rd] = await Promise.all([
     conTimeout(apiCall('getTurnos',{}),8000).catch(()=>null),
-    conTimeout(apiCall('getBloqueos',{}),8000).catch(()=>null)
+    conTimeout(apiCall('getBloqueos',{}),8000).catch(()=>null),
+    conTimeout(apiCall('getDisponibilidad',{}),8000).catch(()=>null)
   ]);
+  aplicarDispRemota(rd);
   if(rt&&rt.ok&&rt.turnos){
     calTurnosReservados = rt.turnos.filter(t=>t.Estado==='reservado'||t.Estado==='recordatorio_enviado');
     try{ localStorage.setItem('austin_turnos', JSON.stringify(calTurnosReservados)); }catch(e){}
@@ -4796,7 +4891,6 @@ async function cargarTurnosReag(){
 function renderReagCal(){
   const dias = document.getElementById('reag-cal-dias'); if(!dias) return;
   const hoy = new Date();
-  const disponibilidad = getDisponibilidadBase();
   const lunes = new Date(hoy);
   lunes.setDate(hoy.getDate() - ((hoy.getDay()||7)-1) + reagOffset*7);
   const fin = new Date(lunes); fin.setDate(lunes.getDate()+6);
@@ -4810,8 +4904,9 @@ function renderReagCal(){
   for(let d=0;d<7;d++){
     const fecha = new Date(lunes); fecha.setDate(lunes.getDate()+d);
     const dow = fecha.getDay()==0?7:fecha.getDay();
-    if(!disponibilidad[dow]) continue;
-    diasConSlots.push({fecha, dow, slots:disponibilidad[dow]});
+    const slots = slotsDeFecha(toDateStr(fecha), dow);
+    if(!slots.length) continue;
+    diasConSlots.push({fecha, dow, slots});
   }
   dias.innerHTML = diasConSlots.map(({fecha,dow,slots})=>{
     const fechaStr = toDateStr(fecha);
@@ -4949,7 +5044,12 @@ function renderAdminCal(){
       <div class="admin-cal-record${r.hecho?' hecho':''}" onclick="event.stopPropagation();toggleRecordatorioHecho('${r.id}')" title="${esc(r.titulo||'')}${r.nota?' — '+esc(r.nota):''}">
         🔔 ${r.hora?esc(r.hora)+' · ':''}${esc(r.titulo||'')}
       </div>`).join('');
-    const contenido = bloqsHtml + recsHtml + entsHtml;
+    // Turnos puntuales todavía libres. Si ya hay una entrevista o un bloqueo en esa
+    // hora, el chip correspondiente ya lo representa y mostrar los dos confundiría.
+    const extraHtml = (getTurnosExtra()[fechaStr]||[]).filter(h=>
+      !entsDia.some(p=>p.entHora===h) && !(DB.bloqueos||[]).some(b=>slotFecha(b)===fechaStr && slotHora(b)===h)
+    ).map(h=>`<div class="admin-cal-extra" title="Turno puntual abierto — visible en el formulario de las familias">➕ ${esc(h)} libre</div>`).join('');
+    const contenido = bloqsHtml + extraHtml + recsHtml + entsHtml;
     html += `<div class="admin-cal-dia${esHoy?' hoy':''}">
       <div class="admin-cal-head">
         <div class="admin-cal-dn">${diaN}</div>
@@ -6618,21 +6718,42 @@ function renderDashEntHoy(){
 // ═══════════════════════════
 // MODAL CONFIG DISPONIBILIDAD
 // ═══════════════════════════
+const DIAS_SEMANA_LABEL = {1:'Lunes',2:'Martes',3:'Miércoles',4:'Jueves',5:'Viernes',6:'Sábado',7:'Domingo'};
+
 function abrirConfigDisponibilidad(){
   const disp = getDisponibilidadBase();
-  const DIAS_LABEL = {2:'Martes',3:'Miércoles',4:'Jueves'};
   document.getElementById('mt').textContent = '⚙ Configurar disponibilidad de Laura';
+  // Los 7 días, no solo mar/mié/jue: antes el modal los tenía cableados y no había
+  // forma de abrir un lunes. Un día sin horarios simplemente no se ofrece.
   document.getElementById('mb').innerHTML = `
     <div class="info-box" style="margin-bottom:14px">
-      📅 Editá los días y horarios base de las entrevistas. Los cambios se aplican inmediatamente al formulario de las familias.
+      📅 Horarios habituales de las entrevistas, separados por coma (ej: <strong>08:30, 09:30</strong>). Dejá vacío el día que no atiendas. Los cambios se aplican enseguida al formulario de las familias.
     </div>
-    ${[2,3,4].map(dow=>{
+    ${[1,2,3,4,5,6,7].map(dow=>{
       const slots = (disp[dow]||[]).map(s=>s.hora||s).join(', ');
-      return `<div class="cfgrow">
-        <div><div class="cfglbl">${DIAS_LABEL[dow]}</div><div class="cfgsub">Horarios separados por coma, ej: 08:30, 09:30</div></div>
-        <input class="cfgi" id="disp-${dow}" value="${slots}" placeholder="08:30, 09:30">
+      return `<div class="cfgrow" style="padding:8px 0">
+        <div class="cfglbl">${DIAS_SEMANA_LABEL[dow]}</div>
+        <input class="cfgi" id="disp-${dow}" value="${slots}" placeholder="— sin horarios —">
       </div>`;
     }).join('')}
+
+    <div style="border-top:2px solid var(--bd);margin:16px 0 0;padding-top:14px">
+      <div style="font-size:11px;font-weight:600;color:var(--tl);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">Turnos puntuales</div>
+      <div class="info-box" style="margin-bottom:12px">
+        ➕ Para abrir un horario en <strong>una sola fecha</strong>, sin que se repita todas las semanas. Útil cuando acordás una entrevista por teléfono en un día que no está en la grilla. El turno se publica en el formulario, así que si ya lo prometiste a una familia, agendásela enseguida desde su ficha para que nadie más lo tome.
+      </div>
+      <div class="cfgrow" style="border-bottom:none;padding-bottom:4px">
+        <div><div class="cfglbl">Nueva fecha y horarios</div><div class="cfgsub">Ej: 11:00 o 11:00, 12:00</div></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+          <input class="cfgi" id="dispx-fecha" type="date" style="width:145px" min="${today()}">
+          <input class="cfgi" id="dispx-horas" style="width:112px" placeholder="11:00">
+          <button class="btn btn-td btn-sm" type="button" onclick="agregarTurnoPuntual()">Agregar</button>
+        </div>
+      </div>
+      <div id="dispx-lista" style="margin-top:4px">${renderListaTurnosPuntuales()}</div>
+    </div>
+
+    <div style="border-top:2px solid var(--bd);margin:16px 0 0;padding-top:4px">
     <div class="cfgrow">
       <div><div class="cfglbl">Duración de cada entrevista</div><div class="cfgsub">En minutos</div></div>
       <input class="cfgi" id="disp-dur" type="number" value="${DB.config.dispDuracion||60}" min="30" max="120" step="15">
@@ -6644,6 +6765,7 @@ function abrirConfigDisponibilidad(){
     <div class="cfgrow">
       <div><div class="cfglbl">Semanas hacia adelante visibles</div><div class="cfgsub">Cuántas semanas pueden ver las familias al reservar</div></div>
       <input class="cfgi" id="disp-sem" type="number" value="${DB.config.dispSemanas||8}" min="2" max="16">
+    </div>
     </div>`;
   document.getElementById('mf').innerHTML=`
     <button class="btn btn-out" onclick="closeM()">Cancelar</button>
@@ -6651,13 +6773,33 @@ function abrirConfigDisponibilidad(){
   openM();
 }
 
+// Publica la disponibilidad a la hoja del Apps Script. Es imprescindible: el
+// formulario de las familias no está logueado y no lee la config de la nube, así que
+// esta hoja es su única fuente. Si el push falla hay que decirlo — un cambio guardado
+// sólo acá no lo ve nadie más.
+async function pushDisponibilidad(msgOk){
+  if(!DB.config.appsScriptUrl){
+    toast('Guardado acá, pero sin URL del Apps Script no llega al formulario','info');
+    return false;
+  }
+  const r = await apiCall('setDisponibilidad', {
+    disponibilidad: DB.config.disponibilidad || {},
+    dispExtra: DB.config.dispExtra || {}
+  });
+  if(r && r.ok){ toast(msgOk,'ok'); return true; }
+  toast('Guardado acá, pero NO se publicó a las familias: '+((r&&r.error)||'sin respuesta'),'err');
+  return false;
+}
+
 function guardarDisponibilidad(){
   const nueva = {};
-  [2,3,4].forEach(dow=>{
+  [1,2,3,4,5,6,7].forEach(dow=>{
     const val = (document.getElementById('disp-'+dow)?.value||'').trim();
-    if(val){
-      nueva[dow] = val.split(',').map(h=>({hora:h.trim()})).filter(h=>h.hora);
-    }
+    if(!val) return;
+    // normHora descarta lo que no sea una hora: un "mañana" tipeado en el campo
+    // generaba un slot fantasma que no se podía reservar ni bloquear.
+    const horas = val.split(',').map(normHora).filter(Boolean);
+    if(horas.length) nueva[dow] = [...new Set(horas)].sort().map(h=>({hora:h}));
   });
   DB.config.disponibilidad = nueva;
   DB.config.dispDuracion = parseInt(document.getElementById('disp-dur')?.value)||60;
@@ -6665,7 +6807,61 @@ function guardarDisponibilidad(){
   DB.config.dispSemanas = parseInt(document.getElementById('disp-sem')?.value)||8;
   saveDB();
   closeM();
-  toast('Disponibilidad actualizada — el formulario ya refleja los cambios','ok');
+  if(typeof renderAdminCal==='function') renderAdminCal();
+  pushDisponibilidad('Disponibilidad actualizada — el formulario ya refleja los cambios');
+}
+
+// ── Turnos puntuales ──
+// Se guardan al instante, igual que los bloqueos: cada uno es una acción con efecto
+// propio y no depende del botón "Guardar disponibilidad" (así tampoco se pierde lo
+// que el staff esté tipeando en la grilla semanal).
+function renderListaTurnosPuntuales(){
+  const extra = getTurnosExtra();
+  const fechas = Object.keys(extra).filter(f=>(extra[f]||[]).length).sort();
+  if(!fechas.length) return `<div style="font-size:12px;color:var(--tx3);padding:4px 0">Sin turnos puntuales abiertos.</div>`;
+  const hoy = today();
+  return fechas.map(f=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;font-size:12px;padding:5px 0;border-bottom:1px solid var(--bd)">
+      <span${f<hoy?' style="color:var(--tx3)"':''}>${formatFechaLinda(f)} · ${extra[f].join(', ')}${f<hoy?' (pasado)':''}</span>
+      <button class="btn btn-ghost btn-sm" onclick="quitarTurnoPuntual('${f}')" style="color:#DC2626">✕ Quitar</button>
+    </div>`).join('');
+}
+
+function agregarTurnoPuntual(){
+  const fecha = document.getElementById('dispx-fecha')?.value||'';
+  const raw = document.getElementById('dispx-horas')?.value||'';
+  if(!fecha){ toast('Elegí la fecha del turno puntual','err'); return; }
+  const horas = raw.split(',').map(normHora).filter(Boolean);
+  if(!horas.length){ toast('Escribí al menos un horario, ej: 11:00','err'); return; }
+  const dow = new Date(fecha+'T00:00:00').getDay()||7;
+  // Si la hora ya está en la grilla semanal de ese día, el turno puntual no agrega
+  // nada: ese horario ya se ofrece todas las semanas.
+  const base = (getDisponibilidadBase()[dow]||[]).map(s=>normHora(s.hora||s));
+  const nuevas = horas.filter(h=>!base.includes(h));
+  if(!nuevas.length){
+    toast('Ese horario ya está en la grilla de los '+DIAS_SEMANA_LABEL[dow].toLowerCase()+'s','info'); return;
+  }
+  DB.config.dispExtra = DB.config.dispExtra || {};
+  const previas = DB.config.dispExtra[fecha] || [];
+  DB.config.dispExtra[fecha] = [...new Set(previas.concat(nuevas))].sort();
+  saveDB();
+  const lista = document.getElementById('dispx-lista'); if(lista) lista.innerHTML = renderListaTurnosPuntuales();
+  const hEl = document.getElementById('dispx-horas'); if(hEl) hEl.value='';
+  if(typeof renderAdminCal==='function') renderAdminCal();
+  pushDisponibilidad('Turno abierto: '+formatFechaLinda(fecha)+' a las '+nuevas.join(', '));
+}
+
+function quitarTurnoPuntual(fecha){
+  if(!DB.config.dispExtra || !DB.config.dispExtra[fecha]) return;
+  // Una entrevista ya agendada en ese turno no se toca: quitar el horario de la
+  // oferta no la desagenda, pero conviene avisar para que no parezca que sí.
+  const agendada = DB.postulantes.some(p=>p.entFecha===fecha && DB.config.dispExtra[fecha].includes(p.entHora));
+  delete DB.config.dispExtra[fecha];
+  saveDB();
+  const lista = document.getElementById('dispx-lista'); if(lista) lista.innerHTML = renderListaTurnosPuntuales();
+  if(typeof renderAdminCal==='function') renderAdminCal();
+  pushDisponibilidad(agendada ? 'Turno quitado de la oferta — la entrevista ya agendada sigue en pie'
+                              : 'Turno puntual quitado');
 }
 
 function abrirBloqueo(){
@@ -6699,7 +6895,11 @@ function abrirBloqueo(){
 
 function buildHorariosOptions_(){
   const disp = getDisponibilidadBase();
-  const todos = [...new Set(Object.values(disp).flat().map(function(s){ return s.hora||s; }))].sort();
+  const deGrilla = Object.values(disp).flat().map(function(s){ return normHora(s.hora||s); });
+  // También los horarios de turnos puntuales: si no, un turno abierto fuera de la
+  // grilla no se podía bloquear desde acá.
+  const dePuntuales = Object.values(getTurnosExtra()).flat().map(normHora);
+  const todos = [...new Set(deGrilla.concat(dePuntuales).filter(Boolean))].sort();
   return todos.map(function(h){ return '<option value="'+h+'">'+h+'</option>'; }).join('');
 }
 
