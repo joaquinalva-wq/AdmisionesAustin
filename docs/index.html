@@ -4618,8 +4618,11 @@ function dispRemotaDesdeCache(){
     if(dc && dc.disponibilidad) calDispRemota = dc;
   }catch(e){}
 }
+// Una hoja sin filas devuelve {} — y {} es truthy, así que pisaría el default y la
+// familia vería el calendario sin un solo día hasta que alguien guarde por primera
+// vez. Mientras la hoja esté vacía mandan los horarios de arranque.
 function aplicarDispRemota(rd){
-  if(!(rd && rd.ok && rd.disponibilidad)) return false;
+  if(!(rd && rd.ok && rd.disponibilidad && Object.keys(rd.disponibilidad).length)) return false;
   calDispRemota = {disponibilidad: rd.disponibilidad, dispExtra: rd.dispExtra||{}};
   try{ localStorage.setItem('austin_disp', JSON.stringify(calDispRemota)); }catch(e){}
   return true;
