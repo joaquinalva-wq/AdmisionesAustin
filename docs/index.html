@@ -274,6 +274,19 @@ body{font-family:'DM Sans',sans-serif;background:var(--cr);color:var(--tx);min-h
 .msel-f{display:flex;gap:6px;padding:5px 4px 2px;margin-top:4px;border-top:1px solid var(--bd)}
 .msel-f button{flex:1;border:none;background:transparent;cursor:pointer;font-size:11.5px;color:var(--tl);padding:5px;border-radius:6px;font-family:'DM Sans',sans-serif}
 .msel-f button:hover{background:var(--cr)}
+
+/* ── Envíos ──
+   Los tres pasos van numerados porque la pantalla se usa de arriba hacia abajo y quien la
+   abre por primera vez no tiene por qué saber que el orden importa. */
+.env-paso{display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;border-radius:50%;background:var(--tl);color:#fff;font-size:11px;font-weight:700;margin-right:7px;vertical-align:1px}
+.env-hint{padding:10px 15px 13px;font-size:11.5px;color:var(--tx3);line-height:1.65}
+.env-hint strong{color:var(--tx2);font-weight:600}
+/* La vista previa es el mail real, armado con los datos de la primera familia de la lista.
+   Se muestra con tipografía de carta, no de interfaz, para que se lea como lo que es. */
+.env-prev{flex:1.15 1 380px;min-width:320px;border:1px solid var(--bd);border-radius:9px;overflow:hidden;background:#fff}
+.env-prev-h{background:var(--cr);border-bottom:1px solid var(--bd);padding:8px 13px;font-size:11px;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.05em}
+.env-prev-s{padding:11px 15px 0;font-size:13.5px;font-weight:600;color:var(--tx)}
+.env-prev-b{margin:0;padding:8px 15px 15px;font-family:'DM Sans',sans-serif;font-size:12.5px;line-height:1.7;color:var(--tx2);white-space:pre-wrap;max-height:330px;overflow-y:auto}
 table{width:100%;border-collapse:collapse}
 thead th{padding:9px 14px;text-align:left;font-size:10.5px;color:var(--tx3);letter-spacing:.07em;text-transform:uppercase;background:var(--cr);border-bottom:1px solid var(--bd);font-weight:500}
 tbody tr{border-bottom:1px solid var(--bd);transition:background .1s;cursor:pointer}
@@ -1013,6 +1026,7 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
       <button class="sbi" id="nav-ocupacion" onclick="showV('ocupacion')"><span class="sbi-ic">📊</span> Ocupación</button>
       <button class="sbi" id="nav-vac" onclick="showV('vac')"><span class="sbi-ic">▣</span> Capacidad</button>
       <div class="sbsec">Comunicaciones</div>
+      <button class="sbi" id="nav-envios" onclick="showV('envios')"><span class="sbi-ic">➤</span> Envíos</button>
       <button class="sbi" id="nav-emails" onclick="showV('emails')"><span class="sbi-ic">✉</span> Plantillas de mail</button>
       <button class="sbi" id="nav-tar" onclick="showV('tar')"><span class="sbi-ic">$</span> Tarifas 2026</button>
       <div class="sbsec">Sistema</div>
@@ -1259,6 +1273,59 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
           <table>
             <thead><tr><th style="width:36px"></th><th>Estudiante</th><th>Curso</th><th>Familia / Tel</th><th>Email</th><th>Ciclo</th><th>Citación</th><th></th></tr></thead>
             <tbody id="matr-tb"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ENVÍOS -->
+      <div id="view-envios" class="view">
+        <div class="ph"><h1>Envíos</h1><p>Mandar un mismo mail a un grupo de familias. Elegís a quiénes con los filtros y qué mail con la plantilla.</p></div>
+
+        <div class="cbox" style="margin-bottom:14px">
+          <div class="cbox-h" style="flex-wrap:wrap;gap:10px">
+            <div class="cbox-t"><span class="env-paso">1</span> ¿A quiénes les mando?</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+              <span id="env-filtros"></span>
+              <input class="fsrch" id="env-q" placeholder="🔍 Buscar..." oninput="renderEnviosLista()">
+              <button class="btn btn-out btn-sm" onclick="limpiarFiltrosEnvios()">Limpiar</button>
+            </div>
+          </div>
+          <div class="env-hint">Los filtros se combinan: <strong>K3 + K4 + Matriculado</strong> son los matriculados de esas dos salas. Mientras no elijas ningún filtro la lista queda vacía, para que nadie le mande un mail a la base entera sin querer.</div>
+        </div>
+
+        <div class="cbox" style="margin-bottom:14px">
+          <div class="cbox-h"><div class="cbox-t"><span class="env-paso">2</span> ¿Qué mail les mando?</div></div>
+          <div style="padding:13px 15px 15px;display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start">
+           <div style="flex:1 1 340px;min-width:300px">
+            <select class="fsel2" id="env-tpl" style="width:100%;padding:8px 10px" onchange="envioTplCambio()"></select>
+            <div id="env-tpl-desc" class="env-hint" style="padding:9px 0 0"></div>
+
+            <div id="env-enc" style="display:none;margin-top:13px;background:var(--cr);border:1px solid var(--bd);border-radius:9px;padding:12px 14px">
+              <div style="font-size:12px;font-weight:600;color:var(--tx2);margin-bottom:10px">Datos del encuentro — se completan solos dentro del mail</div>
+              <div style="display:flex;gap:11px;flex-wrap:wrap;align-items:flex-end">
+                <div class="fgm" style="margin:0"><label class="flm">Día</label><input class="fim" type="date" id="env-enc-f" style="width:170px" onchange="renderEnvioPreview()"></div>
+                <div class="fgm" style="margin:0"><label class="flm">Hora</label><input class="fim" type="time" id="env-enc-h" style="width:115px" onchange="renderEnvioPreview()"></div>
+                <div class="fgm" style="margin:0;flex:1;min-width:210px"><label class="flm">Lugar</label><input class="fim" id="env-enc-l" placeholder="Planta alta de High School" oninput="renderEnvioPreview()"></div>
+              </div>
+              <div class="env-hint" style="padding:10px 0 0">Cada grupo puede tener su propio día: mandás K3 con una fecha y después K4 y K5 con otra. Lo que cargues queda guardado en cada ficha, así el recordatorio sale con la misma fecha sin volver a escribirla.</div>
+            </div>
+           </div>
+           <div id="env-prev" class="env-prev" style="display:none"></div>
+          </div>
+        </div>
+
+        <div class="cbox" style="margin-bottom:14px">
+          <div class="cbox-h" style="flex-wrap:wrap;gap:10px">
+            <div class="cbox-t"><span class="env-paso">3</span> <span id="env-cnt">Elegí un filtro arriba</span></div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+              <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:12px;color:var(--tx2)"><input type="checkbox" id="env-sel-all" onchange="toggleSelectAllEnvios(this)"> Seleccionar todos</label>
+              <button class="btn btn-csv btn-sm" onclick="exportEnviosExcel()">⬇ Exportar Excel</button>
+              <button class="btn btn-or btn-sm" onclick="enviarMasivo()">✉ Enviar a los seleccionados</button>
+            </div>
+          </div>
+          <table>
+            <thead><tr><th style="width:36px"></th><th>Estudiante</th><th>Curso</th><th>Estado</th><th>Familia</th><th>Email</th><th>Último envío</th></tr></thead>
+            <tbody id="env-tb"></tbody>
           </table>
         </div>
       </div>
@@ -1552,6 +1619,8 @@ let DB = {
     dg_notif:{subj:'EOE aprobó a {{alumno}} — pendiente confirmación DG',body:'Estimada Dirección General,\n\nEOE e Inglés dieron el visto bueno para el ingreso de {{alumno}} ({{curso}}, ciclo {{anio}}).\nAdmisiones confirmó la vacante.\n\nPor favor confirmar el ingreso antes del plazo indicado.\nSi no hay respuesta en 48hs, el sistema procederá automáticamente con la matrícula.\n\nDatos:\n- Nombre: {{alumno}}\n- Nivel: {{nivel}} — {{curso}}\n- Ciclo: {{anio}}\n- Familia: {{padre}}\n- Email: {{email}}\n- Teléfono: {{tel}}\n\nSaludos,\nSistema de Admisiones – Austin EBS'},
     notif_nuevo_alumno:{subj:'ALTA — Nuevo alumno: {{alumno}} ({{curso}} · {{anio}})',body:'Hola,\n\nLes avisamos que {{alumno}} completó todo el proceso de admisión y ya está registrado como NUEVO ALUMNO para el ciclo {{anio}}.\n\nQueda a disposición de cada área para lo que necesiten preparar (comedor, materiales, listados, accesos).\n\nCualquier duda, escribinos a admisiones@austinebs-ah.edu.ar.\n\nSaludos,\nAdmisiones – Austin EBS'},
     citacion_matriculados:{subj:'Austin EBS — Información para el inicio de clases de {{alumno}}',body:'Hola {{padre}},\n\nNos comunicamos desde Austin Eco Bilingual School para acercarles la información del inicio de clases de {{alumno}} en {{curso}}, ciclo {{anio}}.\n\n▸ FECHA Y HORARIO\n(completar)\n\n▸ QUÉ TRAER\n(completar)\n\n▸ UNIFORME Y MATERIALES\n(completar)\n\nCualquier consulta, escribinos a admisiones@austinebs-ah.edu.ar y con gusto los ayudamos.\n\n¡Los esperamos!\n\nUn saludo cordial,\nLaura Unamuno\nAdmisiones – Austin EBS'},
+    encuentro_matriculados:{subj:'Los esperamos en el encuentro de {{curso}} — {{fecha_encuentro}}',body:'Hola {{padre}},\n\n¡Qué alegría tenerlos en la familia de Austin Eco Bilingual School! Antes de que arranquen las clases queremos que {{alumno}} conozca a sus futuros compañeros y a las seños, en un encuentro de puro juego.\n\n▸ EL ENCUENTRO\nGrupo: {{curso}} — ciclo {{anio}}\nDía: {{fecha_encuentro}}\nHora: {{hora_encuentro}}\nLugar: {{lugar_encuentro}}\n\n▸ QUÉ LLEVAR\nRopa cómoda y muchas ganas de jugar. Nada más.\n\nSi ese día no pueden venir, avisanos respondiendo este mail y lo resolvemos juntos.\n\n¡Los esperamos!\n\nUn saludo cordial,\nLaura Unamuno\nAdmisiones – Austin EBS'},
+    encuentro_recordatorio:{subj:'¡Ya es la semana del encuentro de {{curso}}! — {{fecha_encuentro}}',body:'Hola {{padre}},\n\n¡Ya falta poquito! Les recordamos que esperamos a {{alumno}} en el encuentro de {{curso}}.\n\n▸ LOS DATOS\nDía: {{fecha_encuentro}}\nHora: {{hora_encuentro}}\nLugar: {{lugar_encuentro}}\n\nRopa cómoda y ganas de jugar. Si surgió algo y no pueden venir, respondenos este mail.\n\n¡Nos vemos!\n\nUn saludo cordial,\nLaura Unamuno\nAdmisiones – Austin EBS'},
   },
   config:{nombre:'Admisiones Austin EBS',email:'admisiones@austinebs-ah.edu.ar',calendar:'https://calendar.app.google/WrfYGGSiRH3smkxL8',drive:'https://drive.google.com/drive/folders/1c0vFf1MWUcSC8-lqBjBCGDQ-hbXxGQDA',appsScriptUrl:'https://script.google.com/macros/s/AKfycbzGXKe6Azyy3q9NVSKsV_ERgDKvJmQRdjHlLG9-Q-0w-70Y2QkP3ikIwx9dHRwDFYp_9Q/exec',emailAdmin:'adm@austinebs-ah.edu.ar',emailDG:'alejandra.luna@austinebs-ah.edu.ar, sofia.sanmartin@austinebs-ah.edu.ar',eoeApiUrl:'https://eoe-austin.netlify.app/',},
   pendingNotif:[],
@@ -2329,7 +2398,7 @@ function showV(v){
   document.querySelectorAll('.sbi').forEach(el=>el.classList.remove('active'));
   const ve=document.getElementById('view-'+v); if(ve) ve.classList.add('on');
   const nb=document.getElementById('nav-'+v); if(nb) nb.classList.add('active');
-  const titles={dashboard:'Dashboard',pipeline:'Pipeline de admisiones',entrevistas:'Entrevistas',post:'Postulantes',matriculados:'Matriculados',bajas:'Desistieron',bajasesc:'Bajas de alumnos',ocupacion:'Ocupación del colegio',vac:'Capacidad por curso',emails:'Plantillas de mail',tar:'Tarifas 2026',cfg:'Configuración'};
+  const titles={dashboard:'Dashboard',pipeline:'Pipeline de admisiones',entrevistas:'Entrevistas',post:'Postulantes',matriculados:'Matriculados',bajas:'Desistieron',bajasesc:'Bajas de alumnos',ocupacion:'Ocupación del colegio',vac:'Capacidad por curso',envios:'Envíos',emails:'Plantillas de mail',tar:'Tarifas 2026',cfg:'Configuración'};
   document.getElementById('tb-t').textContent=titles[v]||v;
   if(v==='dashboard') renderDashboard();
   if(v==='pipeline'){ poblarCursosPipeline(); renderPipeline(); }
@@ -2340,6 +2409,7 @@ function showV(v){
   if(v==='bajasesc') renderBajasEsc();
   if(v==='ocupacion') renderOcupacion();
   if(v==='vac') renderVac();
+  if(v==='envios') renderEnvios();
   if(v==='emails') renderEmails();
   if(v==='tar') renderTar();
   if(v==='cfg') renderCfg();
@@ -3455,8 +3525,14 @@ function buildHtmlMail(texto, asunto){
 
 const LUGAR_ENTREVISTA = 'Planta alta de High School — Austin EBS';
 
-function fillV(text,p){
+function fillV(text,p,extra){
   const hermanoTxt = p.hermano==='si'?'SÍ — verificar beneficio':'No';
+  // Datos del encuentro de matriculados. No salen de la ficha sino de la solapa Envíos,
+  // porque la fecha la decide quien manda y es la misma para todo el grupo. Al enviar
+  // quedan guardados en cada ficha, así el recordatorio los repite sin volver a cargarlos.
+  const enc = extra || p.encuentro || {};
+  let fEnc='a confirmar';
+  try{ if(enc.fecha) fEnc=formatFechaLinda(enc.fecha); }catch(e){}
   // Sin estas tres, el mail de "entrevista confirmada" no decía cuándo era la
   // entrevista: la familia elegía día y horario y recibía una confirmación sin
   // ningún dato, mientras la pantalla de éxito le prometía "todos los detalles".
@@ -3471,6 +3547,9 @@ function fillV(text,p){
     .replace(/{{hora_entrevista}}/g,p.entHora||'a coordinar')
     .replace(/{{lugar_entrevista}}/g,LUGAR_ENTREVISTA)
     .replace(/{{duracion_entrevista}}/g,textoDuracion())
+    .replace(/{{fecha_encuentro}}/g,fEnc)
+    .replace(/{{hora_encuentro}}/g,enc.hora||'a confirmar')
+    .replace(/{{lugar_encuentro}}/g,enc.lugar||LUGAR_ENTREVISTA)
     .replace(/{{link_calendario}}/g,DB.config.calendar||'').replace(/{{link_drive}}/g,DB.config.drive)
     .replace(/{{link_agenda_online}}/g,linkAgendaOnline())
     .replace(/{{link_agenda}}/g,linkReagenda(p))
@@ -3809,11 +3888,13 @@ function enviarMail(p,estado,cb){
   }
 }
 
-function enviarMailAdmin(p,estado,cb){
+// `extra` sólo lo usa el envío masivo de la solapa Envíos, para pasarle a fillV datos que
+// no están en la ficha (la fecha del encuentro). El resto de las llamadas lo omite.
+function enviarMailAdmin(p,estado,cb,extra){
   // Desde panel admin — Apps Script o fallback mailto
   const tmpl=DB.emails[estado]; if(!tmpl){ if(cb) cb(false); return; }
-  const body=fillV(tmpl.body,p);
-  const subj=fillV(tmpl.subj,p);
+  const body=fillV(tmpl.body,p,extra);
+  const subj=fillV(tmpl.subj,p,extra);
   if(DB.config.appsScriptUrl){
     apiCall('sendMail',{to:p.email,subject:subj,body:body,html:buildHtmlMail(body,subj)})
       .then(res=>{
@@ -3924,7 +4005,9 @@ const EMAIL_DISPARADOR={
   admin_matriculado:'Automático al pasar a Postulado. Avisa a Administración para que gestione el cobro.',
   dg_notif:'Automático cuando el EOE aprueba un caso. Incluye los botones Aprobar / Rechazar para DG.',
   notif_nuevo_alumno:'Automático al pasar a Nuevo alumno, en paralelo al mail a la familia. La ficha de datos del alumno se agrega sola al final y no se edita.',
-  citacion_matriculados:'Manual, desde la solapa Matriculados. Se puede mandar a uno o a todos de una vez.'
+  citacion_matriculados:'Manual, desde la solapa Matriculados. Se puede mandar a uno o a todos de una vez.',
+  encuentro_matriculados:'Manual, desde la solapa Envíos. Invita al encuentro de los chicos que ya matricularon. El día, la hora y el lugar se cargan ahí y se completan solos en el mail, así cada grupo puede tener su propia fecha.',
+  encuentro_recordatorio:'Manual, desde la solapa Envíos. Es el recordatorio del mismo encuentro: sale con la fecha que ya quedó guardada en cada ficha, no hay que volver a escribirla.'
 };
 
 const EMAIL_DESTINATARIO={
@@ -3933,7 +4016,8 @@ const EMAIL_DESTINATARIO={
   desiste:'Familia',desiste_recontacto:'Familia',no_queremos:'Familia',
   seguimiento_entrevista:'Familia',recordatorio_entrevista:'Familia',no_asistio:'Familia',link_agenda:'Familia',nuevo:'Familia (onboarding)',
   admin_matriculado:'Administración',dg_notif:'Dirección General',
-  notif_nuevo_alumno:'Catering · Deportes · Secretaría',citacion_matriculados:'Familia'
+  notif_nuevo_alumno:'Catering · Deportes · Secretaría',citacion_matriculados:'Familia',
+  encuentro_matriculados:'Familia',encuentro_recordatorio:'Familia'
 };
 
 // Áreas que se enteran del alta definitiva de un alumno. Van en el mismo mail (un solo
@@ -3942,14 +4026,19 @@ const MAIL_NUEVO_ALUMNO_TO='catering@austin-ebs.com.ar, geronimo.dominguez@austi
 
 // Nombre legible de cada plantilla que no es un estado del pipeline. Vive acá afuera para
 // que la vista de Plantillas y el aviso de guardado digan lo mismo y nadie vea la clave cruda.
-const TPL_LABELS={hermanos:'Hermanos / familiares del personal',citado_sin_fecha:'Citado — entrevista a confirmar',recordatorio_entrevista:'Recordatorio de entrevista',no_asistio:'No asistió a la entrevista',link_agenda:'Link para auto-agendar entrevista',desiste_recontacto:'Re-contacto a desistidos',admin_matriculado:'Notif. Administración (pasa a postulado)',dg_notif:'Notif. Dirección General (EOE aprueba)',notif_nuevo_alumno:'Aviso de alta — Nuevo alumno (áreas internas)',citacion_matriculados:'Citación de Matriculados'};
+const TPL_LABELS={hermanos:'Hermanos / familiares del personal',citado_sin_fecha:'Citado — entrevista a confirmar',recordatorio_entrevista:'Recordatorio de entrevista',no_asistio:'No asistió a la entrevista',link_agenda:'Link para auto-agendar entrevista',desiste_recontacto:'Re-contacto a desistidos',admin_matriculado:'Notif. Administración (pasa a postulado)',dg_notif:'Notif. Dirección General (EOE aprueba)',notif_nuevo_alumno:'Aviso de alta — Nuevo alumno (áreas internas)',citacion_matriculados:'Citación de Matriculados',encuentro_matriculados:'Encuentro de matriculados — invitación',encuentro_recordatorio:'Encuentro de matriculados — recordatorio'};
+
+// Plantillas que tiene sentido mandar a un grupo desde Envíos: las que van a la familia.
+// Quedan afuera las internas (Administración, DG, áreas internas), que no se le escriben
+// a una familia, y las de entrevista, que dependen de la fecha propia de cada ficha.
+const TPLS_ENVIO=['encuentro_matriculados','encuentro_recordatorio','citacion_matriculados','contactado','citado_sin_fecha','link_agenda','postulado','matriculado','nuevo','lista de espera','desiste_recontacto'];
 
 function renderEmails(){
   // Se listan todas las plantillas que el sistema puede enviar. Antes quedaban ocultas
   // no_queremos (envío manual) y no_asistio (al marcar que no llegaron): se podían
   // mandar pero no editar. Se siguen excluyendo rechazado_eoe y pendiente_dg, que son
   // estados internos sin mail a la familia, y seguimiento_entrevista, que no está conectada.
-  const allTpls=[...ESTADOS,'citado_sin_fecha','recordatorio_entrevista','no_asistio','link_agenda','desiste_recontacto','admin_matriculado','dg_notif','notif_nuevo_alumno','citacion_matriculados'].filter(e=>!['seguimiento_entrevista','rechazado_eoe','pendiente_dg'].includes(e));
+  const allTpls=[...ESTADOS,'citado_sin_fecha','recordatorio_entrevista','no_asistio','link_agenda','desiste_recontacto','admin_matriculado','dg_notif','notif_nuevo_alumno','citacion_matriculados','encuentro_matriculados','encuentro_recordatorio'].filter(e=>!['seguimiento_entrevista','rechazado_eoe','pendiente_dg'].includes(e));
   const labels={...EL,...TPL_LABELS};
   document.getElementById('email-tpls').innerHTML=allTpls.map(e=>{
     const dest=EMAIL_DESTINATARIO[e]||'Familia';
@@ -3972,8 +4061,9 @@ function renderEmails(){
         <div class="fgm" style="margin-bottom:11px"><label class="flm">Asunto</label><input class="fim" id="esubj-${e}" value="${(DB.emails[e]?.subj||'').replace(/"/g,'&quot;')}" oninput="marcarSinGuardar('${e}')" onchange="saveEmail('${e}',true)"></div>
         <div class="fgm"><label class="flm">Cuerpo del mensaje</label><textarea class="ftm" id="ebody-${e}" style="min-height:130px" oninput="marcarSinGuardar('${e}')" onchange="saveEmail('${e}',true)">${DB.emails[e]?.body||''}</textarea></div>
         <div style="margin-top:7px;font-size:11px;color:var(--tx3);line-height:2">Variables:
-          <span class="etvar">{{alumno}}</span><span class="etvar">{{padre}}</span><span class="etvar">{{curso}}</span><span class="etvar">{{nivel}}</span><span class="etvar">{{anio}}</span><span class="etvar">{{jornada}}</span><span class="etvar">{{email}}</span><span class="etvar">{{tel}}</span><span class="etvar">{{colegio}}</span><span class="etvar">{{hermano}}</span><span class="etvar">{{fecha_entrevista}}</span><span class="etvar">{{hora_entrevista}}</span><span class="etvar">{{lugar_entrevista}}</span><span class="etvar">{{duracion_entrevista}}</span><span class="etvar">{{link_drive}}</span><span class="etvar">{{link_calendario}}</span><span class="etvar">{{link_agenda_online}}</span>
+          <span class="etvar">{{alumno}}</span><span class="etvar">{{padre}}</span><span class="etvar">{{curso}}</span><span class="etvar">{{nivel}}</span><span class="etvar">{{anio}}</span><span class="etvar">{{jornada}}</span><span class="etvar">{{email}}</span><span class="etvar">{{tel}}</span><span class="etvar">{{colegio}}</span><span class="etvar">{{hermano}}</span><span class="etvar">{{fecha_entrevista}}</span><span class="etvar">{{hora_entrevista}}</span><span class="etvar">{{lugar_entrevista}}</span><span class="etvar">{{duracion_entrevista}}</span><span class="etvar">{{link_drive}}</span><span class="etvar">{{link_calendario}}</span><span class="etvar">{{link_agenda_online}}</span>${e.startsWith('encuentro_')?`<span class="etvar">{{fecha_encuentro}}</span><span class="etvar">{{hora_encuentro}}</span><span class="etvar">{{lugar_encuentro}}</span>`:''}
         </div>
+        ${e.startsWith('encuentro_')?`<div style="margin-top:10px;background:var(--cr);border:1px dashed var(--bd);border-radius:8px;padding:10px 13px;font-size:11.5px;color:var(--tx2);line-height:1.6">El día, la hora y el lugar del encuentro no se escriben acá: se cargan al momento de mandarlo, en la solapa <strong>Envíos</strong>. Así cada grupo puede tener su propia fecha usando esta misma plantilla.</div>`:''}
         ${e==='notif_nuevo_alumno'?`<div style="margin-top:12px;background:var(--cr);border:1px dashed var(--bd);border-radius:8px;padding:11px 13px">
           <div style="font-size:11px;font-weight:600;color:var(--tx3);margin-bottom:6px">Se agrega solo al final del mail · no editable</div>
           <pre style="margin:0;font-family:inherit;font-size:12px;color:var(--tx2);white-space:pre-wrap">${esc(fichaNuevoAlumno(null))}</pre>
@@ -6430,11 +6520,9 @@ function enviarCitacionMatriculados(){
 
 function mandarCitacion(p,cb){
   enviarMailAdmin(p,'citacion_matriculados',(ok)=>{
-    if(ok){
-      p.citacionEnviada=today();
-      p.citacionEnvios=(p.citacionEnvios||0)+1;
-      saveDB();
-    }
+    // registrarEnvio escribe citacionEnviada y además deja la marca en p.envios, que es
+    // lo que mira la solapa Envíos: así las dos vistas muestran el mismo "ya enviado".
+    if(ok){ registrarEnvio(p,'citacion_matriculados'); saveDB(); }
     if(cb) cb(ok);
   });
 }
@@ -6446,6 +6534,205 @@ function exportMatriculadosCSV(){
   const csv=cols.join(',')+'\n'+rows.map(r=>r.map(v=>'"'+String(v||'').replace(/"/g,'""')+'"').join(',')).join('\n');
   const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,'+encodeURIComponent('﻿'+csv);
   a.download='matriculados_'+today()+'.csv'; a.click();
+}
+
+// ═══════════════════════════
+// ENVÍOS — un mismo mail a un grupo
+// ═══════════════════════════
+// Matriculados y Desistieron ya mandaban un mail masivo, pero cada vista con un mail fijo
+// y a un solo estado. Acá el grupo se arma con los mismos filtros combinados del resto del
+// sistema y la plantilla se elige aparte, así "K3 y K4 matriculados" y "1ero a 6to
+// postulados" son dos envíos distintos desde la misma pantalla.
+
+function renderEnvios(){
+  const cont=document.getElementById('env-filtros');
+  if(cont && !cont.dataset.listo){
+    cont.innerHTML=
+      mselHTML('env-est','Todos los estados', mselOpcionesEstado(), 'renderEnviosLista()')+
+      mselHTML('env-niv','Todos los niveles', mselOpcionesNivel(),  'renderEnviosLista()')+
+      mselHTML('env-anio','Todos los ciclos', mselOpcionesCiclo(),  'renderEnviosLista()')+
+      mselHTML('env-curso','Todos los cursos',mselOpcionesCurso(),  'renderEnviosLista()');
+    cont.dataset.listo='1';
+    ['env-est','env-niv','env-anio','env-curso'].forEach(mselPintar);
+  }
+  const sel=document.getElementById('env-tpl');
+  if(sel && !sel.dataset.listo){
+    const labels={...EL,...TPL_LABELS};
+    sel.innerHTML=TPLS_ENVIO.map(k=>`<option value="${esc(k)}">${esc(labels[k]||k)}</option>`).join('');
+    sel.dataset.listo='1';
+  }
+  envioTplCambio();
+}
+
+// Sin ningún filtro la lista queda vacía a propósito: un envío masivo arranca eligiendo el
+// grupo, no con la base entera ya tildada esperando un click en Enviar.
+function enviosFiltrados(){
+  const q=(document.getElementById('env-q')?.value||'').trim().toLowerCase();
+  const est=mselVals('env-est'), niv=mselVals('env-niv'), anio=mselVals('env-anio'), curso=mselVals('env-curso');
+  if(!est.length&&!niv.length&&!anio.length&&!curso.length&&!q) return [];
+  return DB.postulantes.filter(p=>
+    enFiltro(p.estado,est)&&enFiltro(p.nivel,niv)&&enFiltro(p.anio,anio)&&enFiltro(p.curso,curso)&&
+    (!q||[p.alumno,p.padre,p.email,p.curso].some(v=>String(v||'').toLowerCase().includes(q)))
+  ).sort((a,b)=>String(a.curso||'').localeCompare(String(b.curso||''))||String(a.alumno||'').localeCompare(String(b.alumno||'')));
+}
+
+function limpiarFiltrosEnvios(){
+  const q=document.getElementById('env-q'); if(q) q.value='';
+  mselClear(['env-est','env-niv','env-anio','env-curso']);
+  renderEnviosLista();
+}
+
+function toggleSelectAllEnvios(cb){ document.querySelectorAll('.env-chk').forEach(c=>{ c.checked=cb.checked; }); }
+
+function envioTplCambio(){
+  const k=document.getElementById('env-tpl')?.value||'';
+  const d=document.getElementById('env-tpl-desc');
+  if(d) d.innerHTML=esc(EMAIL_DISPARADOR[k]||'')+
+    ` <span onclick="showV('emails')" style="cursor:pointer;color:var(--tl);font-weight:600">Editar el texto →</span>`;
+  const esEnc=k.indexOf('encuentro_')===0;
+  const caja=document.getElementById('env-enc');
+  if(caja) caja.style.display=esEnc?'block':'none';
+  if(esEnc) prefillEncuentro();
+  renderEnviosLista();
+}
+
+// El recordatorio tiene que salir con la misma fecha que la invitación. Si todo el grupo
+// que está a la vista ya tiene el mismo encuentro guardado, los campos se completan solos.
+// Nunca pisa algo ya escrito: si quien manda cargó una fecha, esa manda.
+function prefillEncuentro(){
+  const f=document.getElementById('env-enc-f'), h=document.getElementById('env-enc-h'), l=document.getElementById('env-enc-l');
+  if(!f||!h||!l) return;
+  if(f.value||h.value||l.value) return;
+  const encs=enviosFiltrados().map(p=>p.encuentro).filter(e=>e&&e.fecha);
+  if(!encs.length) return;
+  const uno=encs[0];
+  if(!encs.every(e=>e.fecha===uno.fecha&&e.hora===uno.hora&&e.lugar===uno.lugar)) return;
+  f.value=uno.fecha||''; h.value=uno.hora||''; l.value=uno.lugar||'';
+}
+
+// Devuelve null — y entonces fillV usa el encuentro guardado en cada ficha — cuando la
+// plantilla no es la del encuentro, y también cuando los campos están vacíos. Eso último
+// es el caso del recordatorio a un grupo que no comparte fecha: K3 el 18 y K4 el 20 se
+// mandan de una vez y cada familia recibe la suya.
+function datosEncuentro(){
+  const k=document.getElementById('env-tpl')?.value||'';
+  if(k.indexOf('encuentro_')!==0) return null;
+  const d={fecha:document.getElementById('env-enc-f').value,
+           hora:document.getElementById('env-enc-h').value,
+           lugar:document.getElementById('env-enc-l').value.trim()};
+  return d.fecha ? d : null;
+}
+
+function renderEnviosLista(){
+  const k=document.getElementById('env-tpl')?.value||'';
+  const ps=enviosFiltrados();
+  const conMail=ps.filter(p=>String(p.email||'').trim());
+  const cnt=document.getElementById('env-cnt');
+  if(cnt) cnt.textContent = ps.length===0
+    ? 'Elegí un filtro arriba para ver a quiénes les llega'
+    : `${conMail.length} familia${conMail.length!==1?'s':''} reciben el mail`+
+      (ps.length>conMail.length?` · ${ps.length-conMail.length} sin email cargado`:'');
+  const sa=document.getElementById('env-sel-all'); if(sa) sa.checked=conMail.length>0;
+  const tb=document.getElementById('env-tb');
+  if(tb) tb.innerHTML = ps.length===0
+    ? `<tr><td colspan="7" style="text-align:center;color:var(--tx3);padding:28px;font-size:12.5px;line-height:1.7">Todavía no elegiste a nadie.<br>Combiná los filtros de arriba — por ejemplo <strong style="color:var(--tx2)">K3</strong> + <strong style="color:var(--tx2)">Matriculado</strong>.</td></tr>`
+    : ps.map(p=>{
+        const mail=String(p.email||'').trim();
+        const ult=(p.envios&&p.envios[k])||null;
+        const col=ECOL[p.estado]||'var(--or)';
+        return `<tr>
+          <td>${mail?`<input type="checkbox" class="env-chk" data-id="${p.id}" checked>`:''}</td>
+          <td><strong>${esc(p.alumno||'')}</strong></td>
+          <td>${esc(p.curso||'')}</td>
+          <td><span class="badge" style="background:${col}1A;color:${col}">${esc(EL[p.estado]||p.estado||'')}</span></td>
+          <td>${esc(p.padre||'')}</td>
+          <td>${mail?esc(mail):`<span style="font-size:11px;color:#DC2626">sin email — no le llega</span>`}</td>
+          <td><span style="font-size:11px;color:var(--tx3)">${ult?esc(fDate(ult.fecha))+(ult.n>1?` · ${ult.n} veces`:''):'—'}</span></td>
+        </tr>`;
+      }).join('');
+  renderEnvioPreview();
+}
+
+// La vista previa usa los datos de la primera familia de la lista: es el mail real, no un
+// ejemplo. Si acá dice "Hola ," es que a esa ficha le falta el nombre del responsable.
+function renderEnvioPreview(){
+  const box=document.getElementById('env-prev'); if(!box) return;
+  const k=document.getElementById('env-tpl')?.value||'';
+  const tmpl=DB.emails[k];
+  const ps=enviosFiltrados().filter(p=>String(p.email||'').trim());
+  if(!tmpl||!ps.length){ box.style.display='none'; return; }
+  const p=ps[0], ex=datosEncuentro();
+  box.style.display='block';
+  box.innerHTML=`<div class="env-prev-h">Así le llega a ${esc(p.alumno||'')} · ${esc(p.email)}</div>
+    <div class="env-prev-s">${esc(fillV(tmpl.subj,p,ex))}</div>
+    <pre class="env-prev-b">${esc(fillV(tmpl.body,p,ex))}</pre>`;
+}
+
+function enviarMasivo(){
+  const k=document.getElementById('env-tpl').value;
+  const tmpl=DB.emails[k];
+  if(!tmpl||!String(tmpl.body||'').trim()){ toast('Esa plantilla no tiene texto. Escribila en Plantillas de mail.','err'); return; }
+  const ids=[...document.querySelectorAll('.env-chk:checked')].map(c=>parseInt(c.dataset.id));
+  const ps=ids.map(id=>DB.postulantes.find(x=>x.id===id)).filter(p=>p&&String(p.email||'').trim());
+  if(!ps.length){ toast('No hay nadie seleccionado con email cargado','err'); return; }
+  const ex=datosEncuentro();
+  // Sin fecha — ni en el formulario ni en la ficha — el mail saldría diciendo
+  // "Día: a confirmar", que es justo lo que el encuentro viene a avisar.
+  if(k.indexOf('encuentro_')===0 && !ex){
+    const sinFecha=ps.filter(p=>!(p.encuentro&&p.encuentro.fecha));
+    if(sinFecha.length){
+      toast(`Cargá el día del encuentro: ${sinFecha.length} de las familias seleccionadas no tienen uno guardado`,'err');
+      return;
+    }
+  }
+  const labels={...EL,...TPL_LABELS};
+  const rep=ps.filter(p=>p.envios&&p.envios[k]).length;
+  if(!confirm(`Se envía "${labels[k]||k}" a ${ps.length} familia${ps.length!==1?'s':''}.\n\n`
+    +(k.indexOf('encuentro_')===0
+        ? (ex?`Encuentro: ${fDate(ex.fecha)}${ex.hora?' a las '+ex.hora:''}\n\n`
+             :`Encuentro: cada familia con la fecha que ya tiene guardada.\n\n`)
+        : '')
+    +`Cada mail sale con el nombre de su propia familia. Nadie cambia de estado.`
+    +(rep?`\n\n⚠ ${rep} ya habían recibido este mismo mail.`:'')
+    +`\n\n¿Enviar?`)) return;
+  let n=0, ok=0;
+  ps.forEach(p=>{
+    if(ex) p.encuentro={fecha:ex.fecha,hora:ex.hora,lugar:ex.lugar};
+    enviarMailAdmin(p,k,res=>{
+      if(res){ ok++; registrarEnvio(p,k); }
+      n++;
+      if(n===ps.length){
+        saveDB(); renderEnviosLista();
+        toast(ok===ps.length ? `✉ Mail enviado a ${ok} familia${ok!==1?'s':''}`
+          : `✉ ${ok} de ${ps.length} salieron · revisá la configuración de Apps Script`, ok===ps.length?'ok':'info');
+      }
+    },ex);
+  });
+}
+
+// Queda en la ficha quién recibió qué y cuándo, para que la lista avise "ya se lo mandaste"
+// antes de repetirlo. citacionEnviada se sigue escribiendo aparte porque es el campo que
+// mira la solapa Matriculados, que no conoce p.envios.
+function registrarEnvio(p,k){
+  p.envios=p.envios||{};
+  const prev=p.envios[k];
+  p.envios[k]={fecha:today(), n:((prev&&prev.n)||0)+1};
+  if(k==='citacion_matriculados'){ p.citacionEnviada=today(); p.citacionEnvios=(p.citacionEnvios||0)+1; }
+  // A propósito no toca ultAccion: un mail grupal no es seguimiento de ese caso, y si lo
+  // moviera, un envío a 40 familias apagaría de golpe los avisos de "sin contacto hace N días".
+}
+
+function exportEnviosExcel(){
+  const k=document.getElementById('env-tpl')?.value||'';
+  const ps=enviosFiltrados();
+  if(!ps.length){ toast('No hay nadie en la lista para exportar','err'); return; }
+  const cols=['Estudiante','Curso','Nivel','Ciclo','Estado','Familia','Email','Teléfono','Último envío de este mail'];
+  const filas=ps.map(p=>{
+    const u=p.envios&&p.envios[k];
+    return [p.alumno||'',p.curso||'',p.nivel||'',String(p.anio||''),EL[p.estado]||p.estado||'',
+            p.padre||'',p.email||'',p.tel||'',u?fDate(u.fecha):''];
+  });
+  descargarExcel('envios_'+today(),'Envíos',cols,filas);
 }
 
 function toggleSelectAllBajas(cb){ document.querySelectorAll('.baja-chk').forEach(c=>{ c.checked=cb.checked; }); }
