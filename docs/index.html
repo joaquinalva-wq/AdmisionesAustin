@@ -287,6 +287,52 @@ body{font-family:'DM Sans',sans-serif;background:var(--cr);color:var(--tx);min-h
 .env-prev-h{background:var(--cr);border-bottom:1px solid var(--bd);padding:8px 13px;font-size:11px;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.05em}
 .env-prev-s{padding:11px 15px 0;font-size:13.5px;font-weight:600;color:var(--tx)}
 .env-prev-b{margin:0;padding:8px 15px 15px;font-family:'DM Sans',sans-serif;font-size:12.5px;line-height:1.7;color:var(--tx2);white-space:pre-wrap;max-height:330px;overflow-y:auto}
+
+/* ── Estadísticas ── */
+.st-seg{display:inline-flex;background:var(--cr);border:1px solid var(--bd2);border-radius:8px;padding:2px}
+.st-seg button{border:none;background:transparent;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--tx2);padding:5px 11px;border-radius:6px}
+.st-seg button.on{background:#fff;color:var(--tx);font-weight:600;box-shadow:0 1px 3px rgba(44,74,94,.12)}
+/* 3 y 3, no auto-fit: con auto-fit entraban cinco arriba y el sexto quedaba solo abajo,
+   más angosto que el resto y leyéndose como un error. */
+.st-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px}
+.st-kpi{background:#fff;border:1px solid var(--bd);border-radius:var(--r2);padding:16px 18px;box-shadow:var(--sh)}
+.st-kpi-v{font-size:30px;font-weight:700;line-height:1.1;letter-spacing:-.02em}
+.st-kpi-l{font-size:12.5px;font-weight:600;color:var(--tx2);margin-top:5px}
+.st-kpi-s{font-size:11px;color:var(--tx3);margin-top:3px;line-height:1.5}
+/* Mismo motivo: cuatro donas en 2x2 antes que tres arriba y una suelta. */
+.st-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:14px}
+.st-card{margin:0}
+@media(max-width:1060px){.st-kpis{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:900px){.st-grid{grid-template-columns:1fr}}
+@media(max-width:640px){.st-kpis{grid-template-columns:1fr}}
+.st-sub{font-size:11px;color:var(--tx3);margin-top:2px;font-weight:400;line-height:1.5}
+.st-card-b{display:flex;gap:17px;align-items:center;padding:15px;flex-wrap:wrap}
+.st-legs{flex:1;min-width:155px;display:flex;flex-direction:column;gap:7px}
+.st-leg{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--tx2)}
+.st-dot{width:9px;height:9px;border-radius:2.5px;flex-shrink:0}
+.st-leg-l{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.st-leg-v{font-weight:600;color:var(--tx);flex-shrink:0}
+.st-leg-v em{font-style:normal;font-weight:400;color:var(--tx3);font-size:11px;margin-left:5px}
+.st-fun{margin-bottom:14px}
+.st-fun-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:5px}
+.st-fun-l{font-size:13px;font-weight:600;color:var(--tx)}
+.st-fun-n{font-size:15px;font-weight:700;color:var(--tx);white-space:nowrap}
+.st-fun-n em{font-style:normal;font-size:11px;font-weight:400;color:var(--tx3);margin-left:6px}
+.st-fun-bar{height:9px;background:var(--cr2);border-radius:5px;overflow:hidden}
+.st-fun-bar div{height:100%;border-radius:5px;transition:width .35s ease}
+.st-fun-d{font-size:11px;color:var(--tx3);margin-top:4px;line-height:1.55}
+.st-mes{display:flex;gap:9px;align-items:flex-end;overflow-x:auto;padding-bottom:3px}
+.st-mes-c{flex:1;min-width:48px;display:flex;flex-direction:column;align-items:center;gap:7px}
+.st-mes-b{display:flex;gap:3px;align-items:flex-end;height:118px}
+.st-mes-b span{width:10px;border-radius:3px 3px 0 0;min-height:2px;transition:height .35s ease}
+.st-mes-l{font-size:10.5px;color:var(--tx3);white-space:nowrap}
+.st-t{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:12px 0;border-bottom:1px solid var(--bd);flex-wrap:wrap}
+.st-t:last-child{border-bottom:none}
+.st-t-l{font-size:13px;font-weight:600;color:var(--tx)}
+.st-t-d{font-size:11.5px;color:var(--tx3);margin-top:3px;line-height:1.55;max-width:480px}
+.st-t-v{font-size:19px;font-weight:700;color:var(--tl);white-space:nowrap;text-align:right}
+.st-t-v em{display:block;font-style:normal;font-size:10.5px;font-weight:400;color:var(--tx3);margin-top:2px}
+.st-t-v.vacio{color:var(--tx3);font-size:13px;font-weight:500}
 table{width:100%;border-collapse:collapse}
 thead th{padding:9px 14px;text-align:left;font-size:10.5px;color:var(--tx3);letter-spacing:.07em;text-transform:uppercase;background:var(--cr);border-bottom:1px solid var(--bd);font-weight:500}
 tbody tr{border-bottom:1px solid var(--bd);transition:background .1s;cursor:pointer}
@@ -1023,6 +1069,7 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
       <button class="sbi" id="nav-bajas" onclick="showV('bajas')"><span class="sbi-ic">↓</span> Desistieron <span class="sbi-badge" id="badge-bajas" style="display:none">0</span></button>
       <button class="sbi" id="nav-bajasesc" onclick="showV('bajasesc')"><span class="sbi-ic">⊠</span> Bajas <span class="sbi-badge" id="badge-bajasesc" style="display:none">0</span></button>
       <div class="sbsec">Gestión</div>
+      <button class="sbi" id="nav-stats" onclick="showV('stats')"><span class="sbi-ic">📈</span> Estadísticas</button>
       <button class="sbi" id="nav-ocupacion" onclick="showV('ocupacion')"><span class="sbi-ic">📊</span> Ocupación</button>
       <button class="sbi" id="nav-vac" onclick="showV('vac')"><span class="sbi-ic">▣</span> Capacidad</button>
       <div class="sbsec">Comunicaciones</div>
@@ -1274,6 +1321,50 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
             <thead><tr><th style="width:36px"></th><th>Estudiante</th><th>Curso</th><th>Familia / Tel</th><th>Email</th><th>Ciclo</th><th>Citación</th><th></th></tr></thead>
             <tbody id="matr-tb"></tbody>
           </table>
+        </div>
+      </div>
+
+      <!-- ESTADÍSTICAS -->
+      <div id="view-stats" class="view">
+        <div class="ph"><h1>Estadísticas</h1><p>Cómo viene el proceso: cuánta gente entra, cuánta llega a la entrevista y cuánta termina matriculándose.</p></div>
+
+        <div class="cbox" style="margin-bottom:14px">
+          <div class="cbox-h" style="flex-wrap:wrap;gap:10px">
+            <div class="cbox-t">Período</div>
+            <div style="display:flex;gap:9px;flex-wrap:wrap;align-items:center">
+              <div class="st-seg" id="st-seg">
+                <button data-r="todo" class="on" onclick="statsRango('todo')">Todo</button>
+                <button data-r="30" onclick="statsRango('30')">30 días</button>
+                <button data-r="90" onclick="statsRango('90')">90 días</button>
+                <button data-r="365" onclick="statsRango('365')">12 meses</button>
+              </div>
+              <input class="fsel2" type="date" id="st-desde" title="Desde" onchange="statsRangoManual()">
+              <span style="color:var(--tx3);font-size:12px">a</span>
+              <input class="fsel2" type="date" id="st-hasta" title="Hasta" onchange="statsRangoManual()">
+              <span id="st-filtros" style="display:inline-flex;gap:9px;flex-wrap:wrap"></span>
+              <button class="btn btn-csv btn-sm" onclick="exportStatsExcel()">⬇ Exportar Excel</button>
+            </div>
+          </div>
+          <div class="env-hint" id="st-alcance"></div>
+        </div>
+
+        <div class="st-kpis" id="st-kpis"></div>
+
+        <div class="cbox" style="margin-bottom:14px">
+          <div class="cbox-h"><div><div class="cbox-t">El embudo</div><div class="st-sub">Cuánta gente sobrevive a cada escalón del proceso</div></div></div>
+          <div id="st-embudo" style="padding:16px 16px 6px"></div>
+        </div>
+
+        <div class="st-grid" id="st-donas"></div>
+
+        <div class="cbox" style="margin-bottom:14px">
+          <div class="cbox-h"><div><div class="cbox-t">Mes a mes</div><div class="st-sub">Cada mes se suma al anterior: la serie no se reinicia al cambiar de ciclo. Pasá el mouse por una barra para ver el número.</div></div><div id="st-meses-leg" style="display:flex;gap:13px;flex-wrap:wrap"></div></div>
+          <div id="st-meses" style="padding:16px"></div>
+        </div>
+
+        <div class="cbox" style="margin-bottom:14px">
+          <div class="cbox-h"><div><div class="cbox-t">Cuánto tarda cada paso</div><div class="st-sub">Sólo entran al promedio los casos que tienen las dos fechas</div></div></div>
+          <div id="st-tiempos" style="padding:2px 16px 10px"></div>
         </div>
       </div>
 
@@ -2292,6 +2383,11 @@ function refrescarVistasPostulantes(){
   const tv=document.getElementById('view-post');     if(tv&&tv.classList.contains('on')) filterT();
   const bv=document.getElementById('view-bajas');    if(bv&&bv.classList.contains('on')) renderBajas();
   const vv=document.getElementById('view-vac');      if(vv&&vv.classList.contains('on')) renderVac();
+  // Estadísticas, Envíos y Matriculados también leen DB.postulantes: sin esto, mover un caso
+  // dejaba la pantalla abierta mostrando los números de antes hasta volver a entrar.
+  const sv=document.getElementById('view-stats');       if(sv&&sv.classList.contains('on')) renderStats();
+  const ev=document.getElementById('view-envios');      if(ev&&ev.classList.contains('on')) renderEnviosLista();
+  const mv=document.getElementById('view-matriculados');if(mv&&mv.classList.contains('on')) renderMatriculados();
   renderOcupacionCards();
 }
 
@@ -2398,7 +2494,7 @@ function showV(v){
   document.querySelectorAll('.sbi').forEach(el=>el.classList.remove('active'));
   const ve=document.getElementById('view-'+v); if(ve) ve.classList.add('on');
   const nb=document.getElementById('nav-'+v); if(nb) nb.classList.add('active');
-  const titles={dashboard:'Dashboard',pipeline:'Pipeline de admisiones',entrevistas:'Entrevistas',post:'Postulantes',matriculados:'Matriculados',bajas:'Desistieron',bajasesc:'Bajas de alumnos',ocupacion:'Ocupación del colegio',vac:'Capacidad por curso',envios:'Envíos',emails:'Plantillas de mail',tar:'Tarifas 2026',cfg:'Configuración'};
+  const titles={dashboard:'Dashboard',pipeline:'Pipeline de admisiones',entrevistas:'Entrevistas',post:'Postulantes',matriculados:'Matriculados',bajas:'Desistieron',bajasesc:'Bajas de alumnos',ocupacion:'Ocupación del colegio',vac:'Capacidad por curso',stats:'Estadísticas',envios:'Envíos',emails:'Plantillas de mail',tar:'Tarifas 2026',cfg:'Configuración'};
   document.getElementById('tb-t').textContent=titles[v]||v;
   if(v==='dashboard') renderDashboard();
   if(v==='pipeline'){ poblarCursosPipeline(); renderPipeline(); }
@@ -2409,6 +2505,7 @@ function showV(v){
   if(v==='bajasesc') renderBajasEsc();
   if(v==='ocupacion') renderOcupacion();
   if(v==='vac') renderVac();
+  if(v==='stats') renderStats();
   if(v==='envios') renderEnvios();
   if(v==='emails') renderEmails();
   if(v==='tar') renderTar();
@@ -6537,6 +6634,369 @@ function exportMatriculadosCSV(){
 }
 
 // ═══════════════════════════
+// ESTADÍSTICAS
+// ═══════════════════════════
+// Todo sale de `hist`, el historial de estados que ya venía guardando cada ficha: no hay
+// contadores aparte que haya que mantener al día. Eso tiene dos consecuencias: los números
+// nunca se desincronizan de la realidad, y cualquier cosa que no esté en hist no se puede
+// medir. hist guarda fecha sin hora, así que todos los tiempos van en días.
+//
+// La ventana de tiempo filtra por fecha de consulta (p.fecha), o sea arma una cohorte: "de
+// las N familias que entraron en este período, cuántas llegaron a cada paso". Es distinto de
+// contar movimientos ocurridos en el período, y es lo que hace comparables dos períodos.
+// La única excepción está marcada aparte: las entrevistas del período se cuentan por la fecha
+// de la entrevista, porque la pregunta ahí es cuántas hubo, no de qué cohorte venían.
+
+const ST={r:'todo',desde:'',hasta:''};
+
+// Paleta fija por categoría. Sin esto, dos renders seguidos podían pintar "Redes sociales"
+// de distinto color y la lectura se volvía inestable.
+const ST_PALETA=['var(--or)','var(--tl)','var(--gr)','var(--tl2)','#B45309','#7C3AED','#1A7A8E','#C2410C','#0F766E','#9D174D'];
+
+// Estados que cuentan como "pasó de la entrevista a la fase siguiente". Un caso que hoy está
+// en matriculado también pasó por acá, aunque el estado intermedio no haya quedado en hist:
+// por eso se mira si alcanzó cualquiera de estos, no sólo el primero.
+const ST_POSTENT=['postulado','eoe_ingles','pendiente_dg','matriculado','nuevo'];
+const ST_MATRIC=['matriculado','nuevo'];
+
+function stDias(a,b){
+  if(!a||!b) return null;
+  const d=(new Date(b+'T00:00:00')-new Date(a+'T00:00:00'))/86400000;
+  return isNaN(d)?null:d;
+}
+
+// Primera vez que la ficha tocó ese estado. Primera y no última: si alguien fue citado,
+// no asistió y lo volvieron a citar, el tiempo hasta la entrevista se mide desde la primera.
+function stPaso(p,estados){
+  const es=Array.isArray(estados)?estados:[estados];
+  const h=p.hist||[];
+  for(let i=0;i<h.length;i++) if(es.includes(h[i].e)) return h[i].f||null;
+  return null;
+}
+function stLlego(p,estados){ return !!stPaso(p,estados); }
+
+// La puerta de entrada. El formulario público siembra hist con 'nueva' y después el estado
+// inicial que corresponde: 'contactado' si la familia no eligió fecha, 'citado' si agendó en
+// el acto, 'hermanos' si ya son familia Austin. Una ficha cargada a mano por Admisiones no
+// tiene ese 'nueva' adelante, y es lo que la distingue.
+function stPuerta(p){
+  const h=p.hist||[];
+  if(!h.length || h[0].e!=='nueva') return 'manual';
+  const e=(h[1]||{}).e;
+  return (e==='contactado'||e==='citado'||e==='hermanos') ? e : 'manual';
+}
+
+// Etiquetas cortas a propósito: en la leyenda de la dona hay ~150px y lo que no entra se
+// corta. El detalle largo va en el subtítulo de la tarjeta, que tiene todo el ancho.
+const ST_PUERTA_L={contactado:'Entró sin fecha',citado:'Agendó en el acto',hermanos:'Hermanos / Personal',manual:'Carga manual'};
+
+function statsRango(r){
+  ST.r=r; ST.desde=''; ST.hasta='';
+  const d=document.getElementById('st-desde'), h=document.getElementById('st-hasta');
+  if(d) d.value=''; if(h) h.value='';
+  renderStats();
+}
+
+// Escribir una fecha a mano apaga los botones de atajo: si quedaran los dos activos no se
+// sabría cuál manda.
+function statsRangoManual(){
+  ST.desde=document.getElementById('st-desde').value;
+  ST.hasta=document.getElementById('st-hasta').value;
+  if(ST.desde||ST.hasta) ST.r='manual';
+  renderStats();
+}
+
+function stVentana(){
+  if(ST.r==='manual') return {d:ST.desde||null, h:ST.hasta||null};
+  if(ST.r==='todo') return {d:null,h:null};
+  const n=parseInt(ST.r,10);
+  const dt=new Date(); dt.setDate(dt.getDate()-n);
+  return {d:dt.toISOString().split('T')[0], h:today()};
+}
+function stEnVentana(f,v){
+  if(!f) return false;
+  if(v.d&&f<v.d) return false;
+  if(v.h&&f>v.h) return false;
+  return true;
+}
+
+// La cohorte: quiénes entran en todos los números de la pantalla.
+function statsFiltrados(){
+  const v=stVentana();
+  const niv=mselVals('st-niv'), anio=mselVals('st-anio'), curso=mselVals('st-curso');
+  return (DB.postulantes||[]).filter(p=>
+    enFiltro(p.nivel,niv)&&enFiltro(p.anio,anio)&&enFiltro(p.curso,curso)&&
+    (ST.r==='todo' ? true : stEnVentana(p.fecha,v))
+  );
+}
+
+function stProm(arr){ return arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : null; }
+function stMediana(arr){
+  if(!arr.length) return null;
+  const s=[...arr].sort((a,b)=>a-b), m=Math.floor(s.length/2);
+  return s.length%2 ? s[m] : (s[m-1]+s[m])/2;
+}
+function stDiasTxt(n){
+  if(n==null) return '—';
+  if(n<1) return 'mismo día';
+  const r=Math.round(n*10)/10;
+  return r+(r===1?' día':' días');
+}
+function stPct(n,d){ return d>0 ? Math.round(n/d*1000)/10 : 0; }
+
+// ── Dona ──
+// SVG a mano: no hay librería de gráficos en el sistema y no se va a agregar una por esto.
+// Un solo círculo con stroke-dasharray por tramo; el agujero del medio lleva el total, que es
+// el número que la gente busca primero.
+function stDona(datos,total,titulo){
+  const R=54, C=2*Math.PI*R;
+  let acum=0;
+  const tramos=datos.map((d,i)=>{
+    const frac=total>0?d.n/total:0;
+    const g=`<circle r="${R}" cx="70" cy="70" fill="transparent" stroke="${d.c||ST_PALETA[i%ST_PALETA.length]}" stroke-width="22"
+      stroke-dasharray="${(C*frac).toFixed(2)} ${(C*(1-frac)).toFixed(2)}" stroke-dashoffset="${(-C*acum).toFixed(2)}"
+      transform="rotate(-90 70 70)"><title>${esc(d.l)}: ${d.n}</title></circle>`;
+    acum+=frac;
+    return g;
+  }).join('');
+  return `<svg viewBox="0 0 140 140" style="width:140px;height:140px;flex-shrink:0" role="img" aria-label="${esc(titulo||'')}">
+    <circle r="${R}" cx="70" cy="70" fill="transparent" stroke="var(--cr2)" stroke-width="22"></circle>
+    ${tramos}
+    <text x="70" y="68" text-anchor="middle" style="font:700 25px 'DM Sans',sans-serif;fill:var(--tx)">${total}</text>
+    <text x="70" y="84" text-anchor="middle" style="font:400 10px 'DM Sans',sans-serif;fill:var(--tx3)">casos</text>
+  </svg>`;
+}
+
+function stCardDona(titulo,sub,datos){
+  const vis=datos.filter(d=>d.n>0);
+  const total=vis.reduce((a,d)=>a+d.n,0);
+  const cuerpo = total===0
+    ? `<div style="padding:26px 15px;text-align:center;color:var(--tx3);font-size:12.5px">Sin datos en este período</div>`
+    : `<div class="st-card-b">
+        ${stDona(vis,total,titulo)}
+        <div class="st-legs">${vis.map((d,i)=>`<div class="st-leg">
+          <span class="st-dot" style="background:${d.c||ST_PALETA[i%ST_PALETA.length]}"></span>
+          <span class="st-leg-l" title="${esc(d.l)}">${esc(d.l)}</span>
+          <span class="st-leg-v">${d.n}<em>${stPct(d.n,total)}%</em></span>
+        </div>`).join('')}</div>
+      </div>`;
+  return `<div class="cbox st-card"><div class="cbox-h"><div><div class="cbox-t">${esc(titulo)}</div><div class="st-sub">${esc(sub)}</div></div></div>${cuerpo}</div>`;
+}
+
+function stKpi(valor,label,sub,color){
+  return `<div class="st-kpi"><div class="st-kpi-v" style="color:${color||'var(--tx)'}">${valor}</div>
+    <div class="st-kpi-l">${esc(label)}</div><div class="st-kpi-s">${sub||''}</div></div>`;
+}
+
+// ── Embudo ──
+// La barra es sobre el total, pero el número que importa es el % respecto del escalón de
+// arriba: ahí se ve dónde se cae la gente.
+function stEmbudo(pasos){
+  const tot=pasos[0].n||0;
+  return pasos.map((s,i)=>{
+    const prev=i?pasos[i-1].n:0;
+    const w=tot>0?Math.max(s.n/tot*100,s.n>0?1.2:0):0;
+    return `<div class="st-fun">
+      <div class="st-fun-h"><div class="st-fun-l">${esc(s.l)}</div>
+        <div class="st-fun-n">${s.n}${i?`<em>${stPct(s.n,tot)}% del total</em>`:''}</div></div>
+      <div class="st-fun-bar"><div style="width:${w}%;background:${s.c}"></div></div>
+      <div class="st-fun-d">${i
+        ? (prev>0 ? `<strong style="color:var(--tx2)">${stPct(s.n,prev)}%</strong> de los ${prev} del paso anterior${prev-s.n>0?` · se cayeron ${prev-s.n}`:''}`
+                  : 'Nadie llegó al paso anterior')
+        : esc(s.d||'')}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Mes a mes ──
+// Acumula: cada mes se agrega al final de la serie y los anteriores no se tocan ni se
+// reinician al cambiar de ciclo escolar. Se muestran los últimos 14 meses con actividad.
+function stMeses(ps){
+  const map={};
+  const sum=(f,k)=>{ if(!f) return; const m=f.slice(0,7); (map[m]=map[m]||{c:0,e:0,m:0})[k]++; };
+  ps.forEach(p=>{
+    sum(p.fecha,'c');
+    sum(p.entFecha||stPaso(p,'citado'),'e');
+    sum(stPaso(p,ST_MATRIC),'m');
+  });
+  const meses=Object.keys(map).sort().slice(-14);
+  if(!meses.length) return {html:`<div style="padding:22px;text-align:center;color:var(--tx3);font-size:12.5px">Sin datos en este período</div>`, leg:''};
+  const max=Math.max(...meses.map(m=>Math.max(map[m].c,map[m].e,map[m].m)),1);
+  const MES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const series=[{k:'c',l:'Consultas recibidas',c:'var(--or)'},{k:'e',l:'Entrevistas agendadas',c:'var(--tl)'},{k:'m',l:'Matrículas',c:'var(--gr)'}];
+  const html=`<div class="st-mes">${meses.map(m=>{
+    const d=map[m], p=m.split('-');
+    return `<div class="st-mes-c">
+      <div class="st-mes-b">${series.map(s=>`<span style="height:${(d[s.k]/max*100).toFixed(1)}%;background:${s.c}" title="${s.l}: ${d[s.k]}"></span>`).join('')}</div>
+      <div class="st-mes-l">${MES[parseInt(p[1],10)-1]} ${p[0].slice(2)}</div>
+    </div>`;
+  }).join('')}</div>`;
+  const leg=series.map(s=>`<span class="st-leg" style="font-size:11.5px"><span class="st-dot" style="background:${s.c}"></span>${s.l}</span>`).join('');
+  return {html, leg};
+}
+
+function stFilaTiempo(label,desc,arr){
+  const pr=stProm(arr), md=stMediana(arr);
+  return `<div class="st-t"><div><div class="st-t-l">${esc(label)}</div><div class="st-t-d">${desc}</div></div>
+    ${arr.length
+      ? `<div class="st-t-v">${stDiasTxt(pr)}<em>mediana ${stDiasTxt(md)} · sobre ${arr.length} caso${arr.length!==1?'s':''}</em></div>`
+      : `<div class="st-t-v vacio">Todavía sin casos<em>con las dos fechas cargadas</em></div>`}</div>`;
+}
+
+// Los tiempos que se muestran. Cada uno dice sobre cuántos casos se calculó, porque un
+// promedio de 2 casos y uno de 80 no se leen igual y la pantalla no debería esconderlo.
+function stTiempos(ps){
+  const dd=(a,b)=>{ const d=stDias(a,b); return (d!=null&&d>=0)?d:null; };
+  const col=(fn)=>ps.map(fn).filter(d=>d!=null);
+  const contactados=ps.filter(p=>stPuerta(p)==='contactado');
+
+  // Promedio de todos los saltos de estado consecutivos: "cuánto tardan en moverse de caso
+  // en caso". Se saltea el par nueva→estado inicial, que pasa el mismo segundo y metería
+  // miles de ceros que tiran el promedio al piso.
+  const saltos=[];
+  ps.forEach(p=>{
+    const h=(p.hist||[]).filter(x=>x&&x.f);
+    for(let i=1;i<h.length;i++){
+      if(i===1&&h[0].e==='nueva') continue;
+      const d=stDias(h[i-1].f,h[i].f);
+      if(d!=null&&d>=0) saltos.push(d);
+    }
+  });
+
+  return [
+    stFilaTiempo('Del formulario a la fecha de entrevista',
+      'Con cuánta anticipación eligen el turno las familias que agendan. Se mide desde que mandan el formulario hasta el día de la entrevista.',
+      col(p=>dd(p.fecha,p.entFecha))),
+    stFilaTiempo('De Contactado a entrevista agendada',
+      'Las familias que entraron sin elegir fecha: cuánto pasa hasta que consiguen turno. Es el tiempo que cuesta recuperarlas.',
+      contactados.map(p=>dd(stPaso(p,'contactado'),stPaso(p,'citado'))).filter(d=>d!=null)),
+    stFilaTiempo('De la entrevista a la decisión',
+      'Desde que quedan como Entrevistado hasta que pasan a la fase siguiente (Postulado, EOE o Dirección General).',
+      col(p=>dd(stPaso(p,'entrevistado'),stPaso(p,ST_POSTENT)))),
+    stFilaTiempo('De Postulado a Matriculado',
+      'Lo que tarda la familia en cerrar la matrícula una vez aprobada.',
+      col(p=>dd(stPaso(p,'postulado'),stPaso(p,ST_MATRIC)))),
+    stFilaTiempo('De la primera consulta a la matrícula',
+      'El proceso completo, punta a punta. Es el número para contestar "cuánto tarda una familia en entrar".',
+      col(p=>dd(p.fecha,stPaso(p,ST_MATRIC)))),
+    stFilaTiempo('Entre un estado y el siguiente',
+      'Promedio de todos los movimientos del pipeline. Sirve de referencia: si un caso lleva mucho más que esto quieto, está trabado.',
+      saltos)
+  ].join('');
+}
+
+function renderStats(){
+  pintarFiltrosSimples('st','renderStats()');
+  const seg=document.getElementById('st-seg');
+  if(seg) seg.querySelectorAll('button').forEach(b=>b.classList.toggle('on', b.dataset.r===ST.r));
+
+  const ps=statsFiltrados();
+  const v=stVentana();
+  const tot=ps.length;
+
+  // Alcance
+  const al=document.getElementById('st-alcance');
+  if(al){
+    const rangoTxt = ST.r==='todo' ? 'desde que arrancó el sistema'
+      : (v.d&&v.h ? `entre el ${fDate(v.d)} y el ${fDate(v.h)}`
+        : v.d ? `desde el ${fDate(v.d)}` : `hasta el ${fDate(v.h)}`);
+    const fl=[['ciclo',mselVals('st-anio')],['nivel',mselVals('st-niv')],['curso',mselVals('st-curso')]]
+      .filter(x=>x[1].length).map(x=>`${x[0]} ${x[1].join(' / ')}`).join(' · ');
+    al.innerHTML=`Mirando <strong>${tot} consulta${tot!==1?'s':''}</strong> recibida${tot!==1?'s':''} ${rangoTxt}`
+      +(fl?` · filtrado por ${esc(fl)}`:'')
+      +`.<br>Todos los números de abajo son de ese mismo grupo de familias y se recalculan solos cada vez que alguien mueve un caso.`;
+  }
+
+  // KPIs
+  const puertas={contactado:0,citado:0,hermanos:0,manual:0};
+  ps.forEach(p=>puertas[stPuerta(p)]++);
+  const conEnt=ps.filter(p=>p.entFecha||stLlego(p,'citado')).length;
+  const entrevistados=ps.filter(p=>stLlego(p,'entrevistado')).length;
+  const matric=ps.filter(p=>stLlego(p,ST_MATRIC)).length;
+  // Las entrevistas del período son las únicas que se cuentan por fecha de entrevista y no
+  // por fecha de consulta: la pregunta es cuántas hubo en la agenda, no de qué cohorte venían.
+  const nivF=mselVals('st-niv'), anioF=mselVals('st-anio'), cursoF=mselVals('st-curso');
+  const entPeriodo=(DB.postulantes||[]).filter(p=>p.entFecha&&
+    enFiltro(p.nivel,nivF)&&enFiltro(p.anio,anioF)&&enFiltro(p.curso,cursoF)&&
+    (ST.r==='todo'||stEnVentana(p.entFecha,v))).length;
+  const antic=ps.map(p=>stDias(p.fecha,p.entFecha)).filter(d=>d!=null&&d>=0);
+
+  const k=document.getElementById('st-kpis');
+  if(k) k.innerHTML=
+    stKpi(tot,'Consultas recibidas','Familias que entraron al sistema en el período','var(--or)')+
+    stKpi(puertas.contactado,'Entraron sin elegir fecha',`${stPct(puertas.contactado,tot)}% del total · hay que llamarlas para agendar`,'#1A7A8E')+
+    stKpi(puertas.citado,'Agendaron en el acto',`${stPct(puertas.citado,tot)}% del total · eligieron turno en el formulario`,'var(--cc)')+
+    stKpi(entPeriodo,'Entrevistas en el período','Contadas por el día de la entrevista, no por cuándo entró la familia','var(--tl)')+
+    stKpi(stPct(matric,tot)+'%','Terminaron matriculándose',`${matric} de ${tot} familias de este grupo`,'var(--gr)')+
+    stKpi(stDiasTxt(stProm(antic)),'Anticipación del turno',antic.length?`Promedio entre el formulario y la entrevista · sobre ${antic.length} casos`:'Todavía sin entrevistas agendadas','var(--td)');
+
+  // Embudo
+  const em=document.getElementById('st-embudo');
+  if(em) em.innerHTML=stEmbudo([
+    {l:'Consultas recibidas',n:tot,c:'var(--or)',d:'Todas las familias del grupo que estás mirando'},
+    {l:'Entrevista agendada',n:conEnt,c:'#1A7A8E'},
+    {l:'Entrevistadas',n:entrevistados,c:'var(--ce)'},
+    {l:'Pasaron a la fase siguiente',n:ps.filter(p=>stLlego(p,ST_POSTENT)).length,c:'var(--cp)'},
+    {l:'Matriculadas',n:matric,c:'var(--cm)'},
+    {l:'Alumnos nuevos confirmados',n:ps.filter(p=>stLlego(p,'nuevo')).length,c:'#166534'}
+  ]);
+
+  // Donas
+  const porClave=(fn,orden)=>{
+    const m={};
+    ps.forEach(p=>{ const kk=fn(p); if(kk) m[kk]=(m[kk]||0)+1; });
+    const ks=orden?orden.filter(x=>m[x]):Object.keys(m).sort((a,b)=>m[b]-m[a]);
+    return ks.map(kk=>({l:kk,n:m[kk]}));
+  };
+  const dn=document.getElementById('st-donas');
+  if(dn) dn.innerHTML=
+    stCardDona('Puerta de entrada','Cómo llegó cada familia al sistema',
+      ['contactado','citado','hermanos','manual'].map((kk,i)=>({l:ST_PUERTA_L[kk],n:puertas[kk],c:['#1A7A8E','var(--cc)','#7C3AED','var(--tx3)'][i]})))+
+    stCardDona('En qué estado están hoy','La foto actual del grupo, no por dónde pasaron',
+      ESTADOS.map(e=>({l:EL[e]||e,n:ps.filter(p=>p.estado===e).length,c:ECOL[e]})))+
+    stCardDona('Cómo nos conocieron','Lo que eligieron en el formulario. Sirve para saber dónde invertir',
+      porClave(p=>p.como))+
+    stCardDona('Por nivel','Dónde se concentra la demanda',
+      ['Kindergarten','Elementary','High School'].map((n,i)=>({l:n,n:ps.filter(p=>p.nivel===n).length,c:['var(--or)','var(--tl)','var(--gr)'][i]})));
+
+  // Mes a mes
+  const mm=stMeses(ps);
+  const mc=document.getElementById('st-meses'); if(mc) mc.innerHTML=mm.html;
+  const ml=document.getElementById('st-meses-leg'); if(ml) ml.innerHTML=mm.leg;
+
+  // Tiempos
+  const tm=document.getElementById('st-tiempos'); if(tm) tm.innerHTML=stTiempos(ps);
+}
+
+// El Excel sale con una fila por familia y los tiempos ya calculados, no con los totales de
+// la pantalla: así quien lo recibe puede hacer su propia tabla dinámica y cruzarlo como
+// quiera, en vez de quedarse con los cortes que elegimos acá.
+function exportStatsExcel(){
+  const ps=statsFiltrados();
+  if(!ps.length){ toast('No hay consultas en este período para exportar','err'); return; }
+  const cols=[
+    {titulo:'Estudiante',ancho:30},{titulo:'Curso',ancho:24},{titulo:'Nivel',ancho:14},{titulo:'Ciclo',ancho:8},
+    {titulo:'Puerta de entrada',ancho:28},{titulo:'Cómo nos conoció',ancho:28},
+    {titulo:'Fecha de consulta',ancho:16},{titulo:'Fecha de entrevista',ancho:16},
+    {titulo:'Días hasta la entrevista',ancho:14,tipo:'numero'},
+    {titulo:'¿Se entrevistó?',ancho:13},{titulo:'¿Pasó a la fase siguiente?',ancho:16},
+    {titulo:'Fecha de matrícula',ancho:16},{titulo:'Días consulta → matrícula',ancho:16,tipo:'numero'},
+    {titulo:'Estado actual',ancho:18}
+  ];
+  const num=(a,b)=>{ const d=stDias(a,b); return (d!=null&&d>=0)?d:''; };
+  const filas=ps.map(p=>{
+    const fm=stPaso(p,ST_MATRIC);
+    return [p.alumno||'',p.curso||'',p.nivel||'',String(p.anio||''),
+      ST_PUERTA_L[stPuerta(p)],p.como||'',
+      p.fecha?fDate(p.fecha):'', p.entFecha?fDate(p.entFecha):'', num(p.fecha,p.entFecha),
+      stLlego(p,'entrevistado')?'Sí':'No', stLlego(p,ST_POSTENT)?'Sí':'No',
+      fm?fDate(fm):'', num(p.fecha,fm), EL[p.estado]||p.estado||''];
+  });
+  descargarExcel('estadisticas_'+today()+'.xlsx','Estadísticas',cols,filas);
+  toast(`Excel generado — ${filas.length} consultas`,'ok');
+}
+
+// ═══════════════════════════
 // ENVÍOS — un mismo mail a un grupo
 // ═══════════════════════════
 // Matriculados y Desistieron ya mandaban un mail masivo, pero cada vista con un mail fijo
@@ -6726,13 +7186,17 @@ function exportEnviosExcel(){
   const k=document.getElementById('env-tpl')?.value||'';
   const ps=enviosFiltrados();
   if(!ps.length){ toast('No hay nadie en la lista para exportar','err'); return; }
-  const cols=['Estudiante','Curso','Nivel','Ciclo','Estado','Familia','Email','Teléfono','Último envío de este mail'];
+  const cols=[
+    {titulo:'Estudiante', ancho:30},{titulo:'Curso', ancho:24},{titulo:'Nivel', ancho:14},
+    {titulo:'Ciclo', ancho:8},{titulo:'Estado', ancho:17},{titulo:'Familia', ancho:28},
+    {titulo:'Email', ancho:30},{titulo:'Teléfono', ancho:16},{titulo:'Último envío de este mail', ancho:22}
+  ];
   const filas=ps.map(p=>{
     const u=p.envios&&p.envios[k];
     return [p.alumno||'',p.curso||'',p.nivel||'',String(p.anio||''),EL[p.estado]||p.estado||'',
             p.padre||'',p.email||'',p.tel||'',u?fDate(u.fecha):''];
   });
-  descargarExcel('envios_'+today(),'Envíos',cols,filas);
+  descargarExcel('envios_'+today()+'.xlsx','Envíos',cols,filas);
 }
 
 function toggleSelectAllBajas(cb){ document.querySelectorAll('.baja-chk').forEach(c=>{ c.checked=cb.checked; }); }
