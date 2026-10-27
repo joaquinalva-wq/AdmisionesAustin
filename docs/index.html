@@ -252,6 +252,28 @@ body{font-family:'DM Sans',sans-serif;background:var(--cr);color:var(--tx);min-h
 .fsel2{padding:6px 9px;border:1px solid var(--bd2);border-radius:7px;font-size:12px;color:var(--tx);background:var(--cr);outline:none;cursor:pointer;font-family:'DM Sans',sans-serif}
 .fsrch{padding:6px 11px;border:1px solid var(--bd2);border-radius:7px;font-size:12px;color:var(--tx);background:var(--cr);outline:none;width:180px;font-family:'DM Sans',sans-serif}
 .fsel2:focus,.fsrch:focus{border-color:var(--tl);background:#fff}
+
+/* ── Filtro de selección múltiple ──
+   Se ve igual que un .fsel2 para que la fila de filtros no se vuelva un rejunte de
+   estilos, pero abre un panel de checkboxes en vez de un desplegable nativo: el
+   <select multiple> del navegador obliga a saber que hay que mantener Ctrl apretado. */
+.msel{position:relative;display:inline-block}
+.msel-b{padding:6px 9px;border:1px solid var(--bd2);border-radius:7px;font-size:12px;color:var(--tx);background:var(--cr);outline:none;cursor:pointer;font-family:'DM Sans',sans-serif;display:flex;align-items:center;gap:6px;max-width:230px}
+.msel-b:hover{border-color:var(--bd3,var(--tl))}
+.msel.on .msel-b{border-color:var(--tl);background:#fff}
+.msel-b.sel{border-color:var(--tl);background:#fff;font-weight:500}
+.msel-t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.msel-b::after{content:'▾';font-size:9px;color:var(--tx3);margin-left:auto;flex-shrink:0}
+.msel-n{background:var(--tl);color:#fff;border-radius:9px;font-size:10px;font-weight:600;padding:1px 6px;flex-shrink:0}
+.msel-p{display:none;position:absolute;z-index:70;top:calc(100% + 4px);left:0;min-width:200px;max-width:280px;max-height:320px;overflow-y:auto;background:#fff;border:1px solid var(--bd2);border-radius:9px;box-shadow:0 8px 24px rgba(0,0,0,.13);padding:5px}
+.msel.on .msel-p{display:block}
+.msel-o{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;font-size:12.5px;color:var(--tx);cursor:pointer;line-height:1.3}
+.msel-o:hover{background:var(--cr)}
+.msel-o input{margin:0;cursor:pointer;flex-shrink:0}
+.msel-g{font-size:10px;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;padding:7px 8px 3px}
+.msel-f{display:flex;gap:6px;padding:5px 4px 2px;margin-top:4px;border-top:1px solid var(--bd)}
+.msel-f button{flex:1;border:none;background:transparent;cursor:pointer;font-size:11.5px;color:var(--tl);padding:5px;border-radius:6px;font-family:'DM Sans',sans-serif}
+.msel-f button:hover{background:var(--cr)}
 table{width:100%;border-collapse:collapse}
 thead th{padding:9px 14px;text-align:left;font-size:10.5px;color:var(--tx3);letter-spacing:.07em;text-transform:uppercase;background:var(--cr);border-bottom:1px solid var(--bd);font-weight:500}
 tbody tr{border-bottom:1px solid var(--bd);transition:background .1s;cursor:pointer}
@@ -1048,25 +1070,7 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
       <div id="view-pipeline" class="view">
         <div class="ph"><h1>Pipeline de admisiones</h1><p>Hacé clic en cualquier postulante para gestionar · <span style="color:#DC2626;font-weight:500">⚠ borde rojo = inactivo +7 días</span></p></div>
         <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
-          <select class="fsel2" id="pipeline-anio" onchange="renderPipeline()">
-            <option value="">Todos los ciclos</option>
-            <option value="2025">2025</option>
-            <option value="2026">2026</option>
-            <option value="2027">2027</option>
-            <option value="2028">2028</option>
-            <option value="2029">2029</option>
-            <option value="2030">2030</option>
-            <option value="2031">2031</option>
-            <option value="2032">2032</option>
-          </select>
-          <select class="fsel2" id="pipeline-niv" onchange="poblarCursosPipeline();renderPipeline()">
-            <option value="">Todos los niveles</option>
-            <option value="Kindergarten">Kindergarten</option>
-            <option value="Elementary">Elementary</option>
-            <option value="High School">High School</option>
-          </select>
-          <select class="fsel2" id="pipeline-curso" onchange="renderPipeline()"><option value="">Todos los cursos</option></select>
-          <select class="fsel2" id="pipeline-sec" onchange="renderPipeline()"><option value="">Todas las salas</option></select>
+          <span id="pipeline-filtros"></span>
           <select class="fsel2" id="pipeline-mod" onchange="renderPipeline()">
             <option value="">Cualquier fecha</option>
             <option value="7">Modificados últimos 7 días</option>
@@ -1138,31 +1142,9 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
             <div class="cbox-t" id="post-cnt"></div>
             <div class="filts">
               <input class="fsrch" id="fq" placeholder="🔍 Buscar..." oninput="filterT()">
-              <select class="fsel2" id="fest" onchange="filterT()">
-                <option value="">Todos los estados</option>
-                <option value="contactado">Contactado</option>
-                <option value="citado">Citado entrevista</option>
-                <option value="entrevistado">Entrevistado</option>
-                <option value="postulado">Postulado</option>
-                <option value="eoe_ingles">EOE / Inglés</option>
-                <option value="pendiente_dg">Pend. Dir. General</option>
-                <option value="rechazado_eoe">Rechazado EOE</option>
-                <option value="matriculado">Matriculado</option>
-                <option value="nuevo">Nuevo alumno</option>
-                <option value="lista de espera">Lista de espera</option>
-                <option value="desiste">Desiste</option>
-                <option value="no_queremos">No queremos</option>
-              </select>
-              <select class="fsel2" id="fniv" onchange="poblarCursosPost();filterT()">
-                <option value="">Todos los niveles</option>
-                <option value="Kindergarten">Kindergarten</option><option value="Elementary">Elementary</option><option value="High School">High School</option>
-              </select>
-              <select class="fsel2" id="fanio" onchange="filterT()">
-                <option value="">Todos los ciclos</option>
-                <option value="2025">2025</option><option value="2026">2026</option><option value="2027">2027</option><option value="2028">2028</option><option value="2029">2029</option><option value="2030">2030</option><option value="2031">2031</option><option value="2032">2032</option>
-              </select>
-              <select class="fsel2" id="fcurso" onchange="filterT()"><option value="">Todos los cursos</option></select>
-              <select class="fsel2" id="fsec" onchange="filterT()"><option value="">Todas las salas</option></select>
+              <!-- Los filtros de selección múltiple se arman en JS (mselHTML) porque las
+                   opciones de curso y estado salen de CURSOS y ESTADOS, no de HTML fijo. -->
+              <span id="post-filtros"></span>
               <select class="fsel2" id="fmod" onchange="filterT()">
                 <option value="">Cualquier fecha</option>
                 <option value="7">Modificados últimos 7 días</option>
@@ -1264,8 +1246,7 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
           <div class="cbox-h" style="flex-wrap:wrap;gap:10px">
             <div class="cbox-t" id="matr-cnt">0 matriculados</div>
             <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-              <select class="fsel2" id="matr-anio" onchange="renderMatriculados()"><option value="">Todos los ciclos</option><option value="2025">2025</option><option value="2026">2026</option><option value="2027">2027</option><option value="2028">2028</option><option value="2029">2029</option><option value="2030">2030</option><option value="2031">2031</option><option value="2032">2032</option></select>
-              <select class="fsel2" id="matr-niv" onchange="renderMatriculados()"><option value="">Todos los niveles</option><option value="Kindergarten">Kindergarten</option><option value="Elementary">Elementary</option><option value="High School">High School</option></select>
+              <span id="matr-filtros"></span>
               <input class="fsrch" id="matr-q" placeholder="🔍 Buscar..." oninput="renderMatriculados()">
             </div>
           </div>
@@ -1289,8 +1270,7 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
           <div class="cbox-h" style="flex-wrap:wrap;gap:10px">
             <div class="cbox-t" id="bajas-cnt">0 familias</div>
             <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-              <select class="fsel2" id="bajas-anio" onchange="renderBajas()"><option value="">Todos los ciclos</option><option value="2025">2025</option><option value="2026">2026</option><option value="2027">2027</option><option value="2028">2028</option><option value="2029">2029</option><option value="2030">2030</option><option value="2031">2031</option><option value="2032">2032</option></select>
-              <select class="fsel2" id="bajas-niv" onchange="renderBajas()"><option value="">Todos los niveles</option><option value="Kindergarten">Kindergarten</option><option value="Elementary">Elementary</option><option value="High School">High School</option></select>
+              <span id="bajas-filtros"></span>
               <input class="fsrch" id="bajas-q" placeholder="🔍 Buscar..." oninput="renderBajas()">
             </div>
           </div>
@@ -2354,7 +2334,7 @@ function showV(v){
   if(v==='dashboard') renderDashboard();
   if(v==='pipeline'){ poblarCursosPipeline(); renderPipeline(); }
   if(v==='entrevistas') { renderAdminCal(); renderEntAdminLista('proximas'); if(!chequearAsistencias()) chequearRecordatorios(); }
-  if(v==='post'){ poblarCursosPost(); filterT(); }
+  if(v==='post'){ pintarFiltrosPost(); filterT(); }
   if(v==='matriculados') renderMatriculados();
   if(v==='bajas') renderBajas();
   if(v==='bajasesc') renderBajasEsc();
@@ -2721,45 +2701,165 @@ function dismissAllN(){ DB.pendingNotif=[]; saveDB(); renderDashboard(); }
 // ═══════════════════════════
 // PIPELINE
 // ═══════════════════════════
-// Los cursos y las salas dependen del nivel elegido: mostrar los 16 cursos y las 31
-// secciones siempre volvía inservibles los desplegables.
+// Las columnas del pipeline ya son los estados, así que el filtro de estado acá funciona
+// como "mostrar sólo estas columnas": con K3 y "citado" tildados se ve una sola columna
+// con los K3 citados, que es exactamente la pregunta que no se podía hacer antes.
 function poblarCursosPipeline(){
-  const niv=document.getElementById('pipeline-niv')?.value||'';
-  const selC=document.getElementById('pipeline-curso');
-  const selS=document.getElementById('pipeline-sec');
-  if(selC){
-    const prev=selC.value;
-    const cursos=CURSOS.filter(c=>!niv||NIVEL(c)===niv);
-    selC.innerHTML='<option value="">Todos los cursos</option>'+cursos.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
-    selC.value=cursos.indexOf(prev)!==-1?prev:'';
-  }
-  if(selS){
-    const prev=selS.value;
-    const secs=SCHOOL_CURSOS.filter(sc=>{
-      if(!niv) return true;
-      const n=SCHOOL_NIVEL(sc);
-      return niv==='Kindergarten' ? n==='Inicial' : n===niv;
-    });
-    selS.innerHTML='<option value="">Todas las salas</option>'+secs.map(sc=>`<option value="${esc(sc)}">${esc(sc)}</option>`).join('');
-    selS.value=secs.indexOf(prev)!==-1?prev:'';
-  }
+  const cont=document.getElementById('pipeline-filtros'); if(!cont) return;
+  if(cont.dataset.listo) return;   // las opciones son fijas: se arma una sola vez
+  cont.innerHTML=
+    mselHTML('pipeline-est','Todas las columnas', mselOpcionesEstado(), 'renderPipeline()')+
+    mselHTML('pipeline-anio','Todos los ciclos',  mselOpcionesCiclo(),  'renderPipeline()')+
+    mselHTML('pipeline-niv','Todos los niveles',  mselOpcionesNivel(),  'renderPipeline()')+
+    mselHTML('pipeline-curso','Todos los cursos', mselOpcionesCurso(),  'renderPipeline()')+
+    mselHTML('pipeline-sec','Todas las salas',    SCHOOL_CURSOS.map(s=>({v:s,l:s})), 'renderPipeline()');
+  cont.dataset.listo='1';
+  ['pipeline-est','pipeline-anio','pipeline-niv','pipeline-curso','pipeline-sec'].forEach(mselPintar);
 }
 
 function limpiarFiltrosPipeline(){
-  ['pipeline-anio','pipeline-niv','pipeline-curso','pipeline-sec','pipeline-mod','pipeline-q'].forEach(id=>{
+  ['pipeline-mod','pipeline-q'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.value='';
   });
-  poblarCursosPipeline();
+  mselClear(['pipeline-est','pipeline-anio','pipeline-niv','pipeline-curso','pipeline-sec']);
   renderPipeline();
 }
 
 // Filtro compartido por el pipeline y la tabla de postulantes, para que los dos
 // entiendan lo mismo por "nivel", "sala" o "modificado hace X".
+// ═══════════════════════════
+// FILTROS DE SELECCIÓN MÚLTIPLE
+// ═══════════════════════════
+// Un solo componente para todas las vistas: antes cada filtro era un <select> que dejaba
+// elegir una cosa sola, así que "K3, K4 y K5" o "K3 pero sólo los citados" no se podían
+// pedir. Cada filtro guarda un Set de valores elegidos; vacío = sin filtrar (todos).
+const MSEL = {};
+
+function mselVals(id){ return [...(MSEL[id]||[])]; }
+
+function mselSet(id, vals){
+  MSEL[id] = new Set(vals||[]);
+  const nodo = document.getElementById('msel-'+id);
+  if(nodo){
+    nodo.querySelectorAll('input[type=checkbox]').forEach(c=>{ c.checked = MSEL[id].has(c.value); });
+    mselPintar(id);
+  }
+}
+
+function mselClear(ids){ (Array.isArray(ids)?ids:[ids]).forEach(id=>mselSet(id, [])); }
+
+// Opciones: lista de {v,l} o de {grupo, items:[{v,l}]} para agrupar (los cursos por nivel).
+// `onchange` es el nombre de la función de render de la vista, igual que en los <select>.
+function mselHTML(id, label, opciones, onchange){
+  MSEL[id] = MSEL[id] || new Set();
+  const opt = o => `<label class="msel-o"><input type="checkbox" value="${esc(o.v)}"
+      ${MSEL[id].has(String(o.v))?'checked':''}
+      onchange="mselToggle('${id}',this);${onchange}"><span>${esc(o.l!=null?o.l:o.v)}</span></label>`;
+  const cuerpo = opciones.map(o => o.grupo
+    ? `<div class="msel-g">${esc(o.grupo)}</div>${o.items.map(opt).join('')}`
+    : opt(o)).join('');
+  return `<div class="msel" id="msel-${id}" data-label="${esc(label)}">
+    <button type="button" class="msel-b" onclick="mselAbrir('${id}',event)"><span class="msel-t">${esc(label)}</span></button>
+    <div class="msel-p">
+      ${cuerpo}
+      <div class="msel-f">
+        <button type="button" onclick="mselClear('${id}');${onchange}">Limpiar selección</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function mselToggle(id, chk){
+  MSEL[id] = MSEL[id] || new Set();
+  if(chk.checked) MSEL[id].add(chk.value); else MSEL[id].delete(chk.value);
+  mselPintar(id);
+}
+
+// El botón dice qué hay elegido, no cuántos: "K3, K4" se lee de un vistazo y "2 cursos"
+// obliga a abrir el panel para saber cuáles. Recién con 3 o más se pasa al número.
+function mselPintar(id){
+  const nodo = document.getElementById('msel-'+id); if(!nodo) return;
+  const btn = nodo.querySelector('.msel-b');
+  // Por clase y no por 'span': con 3 o más elegidos el botón también contiene la píldora
+  // con el número, que es otro span y aparece primero en el DOM.
+  const txt = btn.querySelector('.msel-t');
+  const sel = mselVals(id);
+  const labels = sel.map(v=>{
+    const c = nodo.querySelector(`input[value="${CSS.escape(v)}"]`);
+    return c ? c.parentElement.querySelector('span').textContent : v;
+  });
+  btn.classList.toggle('sel', sel.length>0);
+  const vieja = btn.querySelector('.msel-n'); if(vieja) vieja.remove();
+  if(sel.length===0){ txt.textContent = nodo.dataset.label; return; }
+  if(sel.length<=2){ txt.textContent = labels.join(', '); return; }
+  // Con 3 o más, el botón pasa a "⑷ cursos": la cuenta va primero porque es el dato que
+  // se busca de un vistazo, y los nombres ya no entrarían sin cortarse a la mitad.
+  txt.textContent = nodo.dataset.label.replace(/^Tod[oa]s l[oa]s?\s+/i,'');
+  const n = document.createElement('span'); n.className='msel-n'; n.textContent=sel.length;
+  btn.insertBefore(n, txt);
+}
+
+function mselAbrir(id, ev){
+  ev.stopPropagation();
+  const nodo = document.getElementById('msel-'+id); if(!nodo) return;
+  const abierto = nodo.classList.contains('on');
+  document.querySelectorAll('.msel.on').forEach(n=>n.classList.remove('on'));
+  if(!abierto) nodo.classList.add('on');
+}
+
+// Un click en cualquier otro lado cierra el panel abierto. Sin esto quedan dos paneles
+// superpuestos apenas se tocan dos filtros seguidos.
+document.addEventListener('click', e=>{
+  if(!e.target.closest('.msel')) document.querySelectorAll('.msel.on').forEach(n=>n.classList.remove('on'));
+});
+document.addEventListener('keydown', e=>{
+  if(e.key==='Escape') document.querySelectorAll('.msel.on').forEach(n=>n.classList.remove('on'));
+});
+
+// Opciones de curso agrupadas por nivel, que es como las piensa el equipo.
+function mselOpcionesCurso(){
+  return ['Kindergarten','Elementary','High School']
+    .map(n=>({grupo:n, items:CURSOS.filter(c=>NIVEL(c)===n).map(c=>({v:c,l:c}))}))
+    .filter(g=>g.items.length);
+}
+
+function mselOpcionesEstado(){ return ESTADOS.map(e=>({v:e, l:EL[e]||e})); }
+
+function mselOpcionesCiclo(){
+  return ['2025','2026','2027','2028','2029','2030','2031','2032'].map(a=>({v:a,l:a}));
+}
+
+function mselOpcionesNivel(){
+  return ['Kindergarten','Elementary','High School'].map(n=>({v:n,l:n}));
+}
+
+// Ciclo + nivel + curso: el juego que repiten Matriculados y Desistieron. Se arma una
+// sola vez por vista — volver a pintarlo en cada render borraría lo tildado.
+function pintarFiltrosSimples(pref, onchange){
+  const cont=document.getElementById(pref+'-filtros');
+  if(!cont || cont.dataset.listo) return;
+  cont.innerHTML=
+    mselHTML(pref+'-anio','Todos los ciclos',  mselOpcionesCiclo(), onchange)+
+    mselHTML(pref+'-niv','Todos los niveles',  mselOpcionesNivel(), onchange)+
+    mselHTML(pref+'-curso','Todos los cursos', mselOpcionesCurso(), onchange);
+  cont.dataset.listo='1';
+  [pref+'-anio',pref+'-niv',pref+'-curso'].forEach(mselPintar);
+}
+
+// Un filtro vacío no filtra. Con valores, alcanza con que el postulante caiga en uno.
+// Acepta un string suelto además de un array: quedan vistas con <select> simple (las
+// salas del padrón, por ejemplo) que siguen pasando un valor único.
+function enFiltro(valor, sel){
+  if(!sel || !sel.length) return true;
+  return (typeof sel==='string' ? [sel] : sel).includes(String(valor==null?'':valor));
+}
+
 function filtraPostulante(p, f){
-  if(f.anio && String(p.anio)!==f.anio) return false;
-  if(f.niv && p.nivel!==f.niv) return false;
-  if(f.curso && p.curso!==f.curso) return false;
-  if(f.sec && p.seccion!==f.sec) return false;
+  if(!enFiltro(p.anio, f.anio)) return false;
+  if(!enFiltro(p.nivel, f.niv)) return false;
+  if(!enFiltro(p.curso, f.curso)) return false;
+  if(!enFiltro(p.seccion, f.sec)) return false;
+  if(!enFiltro(p.estado, f.est)) return false;
   if(f.mod){
     const d=diasDesde(p.ultAccion||p.fecha);
     if(f.mod.charAt(0)==='i'){ if(d < parseInt(f.mod.slice(1),10)) return false; }
@@ -2775,16 +2875,20 @@ function filtraPostulante(p, f){
 
 function _filtrosPipeline(){
   const v=id=>document.getElementById(id)?.value||'';
-  return {anio:v('pipeline-anio'), niv:v('pipeline-niv'), curso:v('pipeline-curso'),
-          sec:v('pipeline-sec'), mod:v('pipeline-mod'), q:v('pipeline-q').trim()};
+  // `est` queda afuera del objeto que va a filtraPostulante: acá el estado no descarta
+  // postulantes, decide qué columnas se dibujan.
+  return {anio:mselVals('pipeline-anio'), niv:mselVals('pipeline-niv'),
+          curso:mselVals('pipeline-curso'), sec:mselVals('pipeline-sec'),
+          mod:v('pipeline-mod'), q:v('pipeline-q').trim()};
 }
 
 function renderPipeline(){
   const f=_filtrosPipeline();
-  const hayFiltro=Object.keys(f).some(k=>f[k]);
+  const cols=mselVals('pipeline-est');
+  const hayFiltro=cols.length>0||Object.keys(f).some(k=>f[k]&&f[k].length);
   const ACTIVE=['contactado','citado','entrevistado','eoe_ingles','pendiente_dg','postulado','matriculado','nuevo'];
   let total=0;
-  document.getElementById('pcols').innerHTML=ESTADOS.map(e=>{
+  document.getElementById('pcols').innerHTML=ESTADOS.filter(e=>enFiltro(e,cols)).map(e=>{
     const ps=DB.postulantes.filter(p=>p.estado===e&&filtraPostulante(p,f));
     if(ACTIVE.includes(e)) total+=ps.length;
     return `<div class="pcol">
@@ -2808,7 +2912,9 @@ function renderPipeline(){
   }).join('');
   const cnt=document.getElementById('pipeline-count');
   if(cnt){
-    const enPantalla=DB.postulantes.filter(p=>filtraPostulante(p,f)).length;
+    // Cuenta lo que quedó a la vista, columnas ocultas incluidas: si se filtró a "citado",
+    // los de otras columnas no están en pantalla y no tienen que sumar.
+    const enPantalla=DB.postulantes.filter(p=>enFiltro(p.estado,cols)&&filtraPostulante(p,f)).length;
     cnt.textContent=hayFiltro?`${enPantalla} de ${DB.postulantes.length} · ${total} activos`:'';
   }
   const ley=document.getElementById('pipeline-leyenda');
@@ -2835,43 +2941,33 @@ function renderTable(list=null){
       <td onclick="event.stopPropagation()"><button class="btn btn-sm btn-td" onclick="openDetalle(${p.id})">Gestionar</button></td>
     </tr>`).join('');
 }
-// Mismos desplegables que el pipeline, poblados segun el nivel elegido.
-function poblarCursosPost(){
-  const niv=document.getElementById('fniv')?.value||'';
-  const selC=document.getElementById('fcurso');
-  const selS=document.getElementById('fsec');
-  if(selC){
-    const prev=selC.value;
-    const cursos=CURSOS.filter(c=>!niv||NIVEL(c)===niv);
-    selC.innerHTML='<option value="">Todos los cursos</option>'+cursos.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
-    selC.value=cursos.indexOf(prev)!==-1?prev:'';
-  }
-  if(selS){
-    const prev=selS.value;
-    const secs=SCHOOL_CURSOS.filter(sc=>{
-      if(!niv) return true;
-      const n=SCHOOL_NIVEL(sc);
-      return niv==='Kindergarten' ? n==='Inicial' : n===niv;
-    });
-    selS.innerHTML='<option value="">Todas las salas</option>'+secs.map(sc=>`<option value="${esc(sc)}">${esc(sc)}</option>`).join('');
-    selS.value=secs.indexOf(prev)!==-1?prev:'';
-  }
+// Los filtros del listado de postulantes. Se pintan una sola vez: los cursos ya no se
+// recortan según el nivel elegido — con multi-selección, elegir "Elementary" y además
+// "K3" es una pregunta legítima ("primaria entera más los de K3"), y vaciar la lista de
+// cursos cada vez que cambiaba el nivel hacía perder lo ya tildado.
+function pintarFiltrosPost(){
+  const cont=document.getElementById('post-filtros'); if(!cont) return;
+  cont.innerHTML=
+    mselHTML('fest','Todos los estados', mselOpcionesEstado(), 'filterT()')+
+    mselHTML('fniv','Todos los niveles', mselOpcionesNivel(),  'filterT()')+
+    mselHTML('fanio','Todos los ciclos', mselOpcionesCiclo(),  'filterT()')+
+    mselHTML('fcurso','Todos los cursos',mselOpcionesCurso(),  'filterT()')+
+    mselHTML('fsec','Todas las salas',   SCHOOL_CURSOS.map(s=>({v:s,l:s})), 'filterT()');
+  ['fest','fniv','fanio','fcurso','fsec'].forEach(mselPintar);
 }
 
 function limpiarFiltrosPost(){
-  ['fq','fest','fniv','fanio','fcurso','fsec','fmod'].forEach(id=>{
-    const el=document.getElementById(id); if(el) el.value='';
-  });
-  poblarCursosPost();
+  ['fq','fmod'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  mselClear(['fest','fniv','fanio','fcurso','fsec']);
   filterT();
 }
 
 function filterT(){
   const v=id=>document.getElementById(id)?.value||'';
-  const est=v('fest');
-  const f={anio:v('fanio'), niv:v('fniv'), curso:v('fcurso'), sec:v('fsec'),
+  const f={anio:mselVals('fanio'), niv:mselVals('fniv'), curso:mselVals('fcurso'),
+           sec:mselVals('fsec'), est:mselVals('fest'),
            mod:v('fmod'), q:v('fq').trim()};
-  renderTable(DB.postulantes.filter(p=>(!est||p.estado===est)&&filtraPostulante(p,f)));
+  renderTable(DB.postulantes.filter(p=>filtraPostulante(p,f)));
 }
 
 // ═══════════════════════════
@@ -6238,13 +6334,13 @@ function propagarEdicionEOE(p){
 // VISTA BAJAS
 // ═══════════════════════════
 function renderBajas(){
+  pintarFiltrosSimples('bajas','renderBajas()');
   const q=(document.getElementById('bajas-q')?.value||'').toLowerCase();
-  const anio=document.getElementById('bajas-anio')?.value||'';
-  const niv=document.getElementById('bajas-niv')?.value||'';
   const bajas=DB.postulantes.filter(p=>
     p.estado==='desiste'&&
     (!q||[p.alumno,p.padre,p.curso].some(v=>String(v||'').toLowerCase().includes(q)))&&
-    (!anio||String(p.anio)===anio)&&(!niv||p.nivel===niv)
+    enFiltro(p.anio,mselVals('bajas-anio'))&&enFiltro(p.nivel,mselVals('bajas-niv'))&&
+    enFiltro(p.curso,mselVals('bajas-curso'))
   ).sort((a,b)=>(b.ultAccion||b.fecha||'').localeCompare(a.ultAccion||a.fecha||''));
   const cnt=document.getElementById('bajas-cnt');
   if(cnt) cnt.textContent=`${bajas.length} familia${bajas.length!==1?'s':''}`;
@@ -6272,16 +6368,16 @@ function renderBajas(){
 // pipeline en el momento. Enviar la citación no mueve a nadie de estado.
 function matriculadosFiltrados(){
   const q=(document.getElementById('matr-q')?.value||'').toLowerCase();
-  const anio=document.getElementById('matr-anio')?.value||'';
-  const niv=document.getElementById('matr-niv')?.value||'';
   return DB.postulantes.filter(p=>
     p.estado==='matriculado'&&
     (!q||String(p.alumno||'').toLowerCase().includes(q)||String(p.padre||'').toLowerCase().includes(q)||String(p.curso||'').toLowerCase().includes(q))&&
-    (!anio||String(p.anio)===anio)&&(!niv||p.nivel===niv)
+    enFiltro(p.anio,mselVals('matr-anio'))&&enFiltro(p.nivel,mselVals('matr-niv'))&&
+    enFiltro(p.curso,mselVals('matr-curso'))
   ).sort((a,b)=>String(a.curso||'').localeCompare(String(b.curso||''))||String(a.alumno||'').localeCompare(String(b.alumno||'')));
 }
 
 function renderMatriculados(){
+  pintarFiltrosSimples('matr','renderMatriculados()');
   const ms=matriculadosFiltrados();
   const cnt=document.getElementById('matr-cnt');
   if(cnt) cnt.textContent=`${ms.length} matriculado${ms.length!==1?'s':''}`;
