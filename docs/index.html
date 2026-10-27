@@ -345,7 +345,14 @@ td{padding:10px 14px;font-size:12.5px;color:var(--tx);vertical-align:middle}
 
 /* NOTAS */
 .nota-item{background:var(--cr);border-radius:8px;padding:9px 11px;margin-bottom:7px;border-left:3px solid var(--bd2)}
-.nota-ts{font-size:10.5px;color:var(--tx3);margin-bottom:3px}
+.nota-ts{font-size:10.5px;color:var(--tx3);margin-bottom:3px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+/* Atenuados en reposo y plenos al pasar por arriba: invisibles del todo no se descubren,
+   y con 20 notas 40 iconos a plena tinta convierten el historial en un tablero de botones. */
+.nota-acc{display:flex;gap:2px;opacity:.38;transition:opacity .13s}
+.nota-item:hover .nota-acc,.nota-acc:focus-within{opacity:1}
+.nota-acc button{border:none;background:transparent;cursor:pointer;font-size:12px;line-height:1;padding:3px 5px;border-radius:5px;color:var(--tx3)}
+.nota-acc button:hover{background:#fff;color:var(--tx)}
+.nota-ed{width:100%;box-sizing:border-box;padding:8px 10px;border:1.5px solid var(--tl);border-radius:7px;font-size:12.5px;line-height:1.55;color:var(--tx);background:#fff;outline:none;font-family:'DM Sans',sans-serif;resize:vertical}
 .nota-txt{font-size:12.5px;color:var(--tx);line-height:1.55}
 .nota-new{display:flex;gap:8px;margin-top:8px}
 .nota-new input{flex:1;padding:8px 11px;border:1.5px solid var(--bd2);border-radius:8px;font-size:13px;color:var(--tx);background:#fff;outline:none;font-family:'DM Sans',sans-serif}
@@ -3142,13 +3149,80 @@ function guardarEdicionPostulante(id){
 function renderNotas(p){
   const notas=p.notas||[];
   if(notas.length===0) return `<div style="font-size:12px;color:var(--tx3);padding:6px 0">Sin notas. Agregá la primera nota arriba.</div>`;
+  // Se muestran de la más nueva a la más vieja, pero el índice que viaja a editar/borrar
+  // es el del array real: si se mandara el de la vista, se editaría la nota equivocada.
   // esc() obligatorio: la primera nota de un postulante es el campo libre "Consultas"
   // del formulario público, que cualquiera puede completar con markup.
-  return notas.slice().reverse().map(n=>`
-    <div class="nota-item">
-      <div class="nota-ts">${esc(n.fecha)} ${esc(n.hora)}</div>
+  return notas.map((n,i)=>`
+    <div class="nota-item" id="nota-${p.id}-${i}">
+      <div class="nota-ts">
+        <span>${esc(n.fecha)} ${esc(n.hora)}${n.edit?' · <em style="font-style:normal;color:var(--or)">editada '+esc(n.edit)+'</em>':''}</span>
+        <span class="nota-acc">
+          <button title="Editar nota" onclick="editarNota(${p.id},${i})">✎</button>
+          <button title="Borrar nota" onclick="borrarNota(${p.id},${i})">🗑</button>
+        </span>
+      </div>
       <div class="nota-txt">${esc(n.txt)}</div>
-    </div>`).join('');
+    </div>`).reverse().join('');
+}
+
+// Las notas se identifican por posición en el array, que es lo único que hay: no tienen id.
+// Alcanza porque el array sólo crece por el final, pero dos personas en el panel a la vez
+// pueden desfasarlo. Por eso cada escritura verifica que el texto siga siendo el que se
+// abrió a editar, en vez de pisar a ciegas lo que haya en ese lugar.
+function notaEn(id, i, txtEsperado){
+  const p=DB.postulantes.find(x=>x.id===id);
+  const n=p && (p.notas||[])[i];
+  if(!n || (txtEsperado!=null && n.txt!==txtEsperado)){
+    toast('La nota cambió desde que abriste el caso. Cerrá y volvé a abrirlo.','err');
+    return null;
+  }
+  return {p,n};
+}
+
+function editarNota(id, i){
+  const r=notaEn(id,i); if(!r) return;
+  const caja=document.getElementById(`nota-${id}-${i}`); if(!caja) return;
+  caja.innerHTML=`
+    <textarea class="nota-ed" id="nota-ed-${id}-${i}" rows="3">${esc(r.n.txt)}</textarea>
+    <div class="nota-new" style="margin-top:7px">
+      <button class="btn btn-td btn-sm" onclick="guardarNota(${id},${i})">Guardar</button>
+      <button class="btn btn-out btn-sm" onclick="document.getElementById('notas-${id}').innerHTML=renderNotas(DB.postulantes.find(x=>x.id===${id}))">Cancelar</button>
+    </div>`;
+  const ta=document.getElementById(`nota-ed-${id}-${i}`);
+  // Guarda el texto con el que se abrió: es la referencia que notaEn() compara al escribir.
+  ta.dataset.orig=r.n.txt;
+  ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length);
+}
+
+function guardarNota(id, i){
+  const ta=document.getElementById(`nota-ed-${id}-${i}`); if(!ta) return;
+  const r=notaEn(id,i,ta.dataset.orig); if(!r) return;
+  const txt=ta.value.trim();
+  if(!txt){ toast('Una nota vacía se borra, no se guarda','err'); return; }
+  if(txt!==r.n.txt){
+    r.n.txt=txt;
+    // Formato corto y en 24 h a propósito: la marca va pegada al timestamp original, en
+    // una línea de 10px, y "27/10/2026 11:41 a. m." la parte en dos.
+    const ahora=new Date();
+    r.n.edit=ahora.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'2-digit'})+' '+
+             ahora.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',hour12:false});
+    r.p.ultAccion=today();
+    saveDB();
+    toast('Nota actualizada','ok');
+  }
+  document.getElementById('notas-'+id).innerHTML=renderNotas(r.p);
+}
+
+function borrarNota(id, i){
+  const r=notaEn(id,i); if(!r) return;
+  const corte=r.n.txt.length>70 ? r.n.txt.slice(0,70)+'…' : r.n.txt;
+  if(!confirm('¿Borrar esta nota?\n\n"'+corte+'"\n\nNo se puede deshacer.')) return;
+  r.p.notas.splice(i,1);
+  r.p.ultAccion=today();
+  saveDB();
+  document.getElementById('notas-'+id).innerHTML=renderNotas(r.p);
+  toast('Nota borrada','ok');
 }
 
 function addNota(id){
