@@ -2718,8 +2718,35 @@ function gcalLink(p){
   const details=`Familia: ${p.padre}\nEmail: ${p.email}\nTel: ${p.tel||'—'}\nNivel: ${p.nivel}`;
   return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${tStart}/${tEnd}&details=${encodeURIComponent(details)}&location=${encodeURIComponent('Planta alta de High School — Austin EBS')}&sf=true`;
 }
-function today(){ return new Date().toISOString().split('T')[0]; }
+// Fecha de hoy en hora de Argentina, no en UTC. Con toISOString() el día cambiaba a las
+// 21:00 locales, así que todo lo cargado de noche (notas, cambios de estado, historial)
+// quedaba fechado al día siguiente — y los plazos se comparaban contra ese "mañana".
+function today(){ return toDateStr(new Date()); }
 function diasDesde(d){ if(!d) return 0; return Math.floor((new Date()-new Date(d+'T00:00:00'))/(1000*60*60*24)); }
+
+// ── PLAZO DE DIRECCIÓN GENERAL ──
+// El plazo se guarda como instante exacto (ISO con hora). Antes se guardaba sólo la fecha
+// (`...toISOString().split('T')[0]`) y se vencía comparando `dgDeadline <= today()`, con
+// today() también en UTC. Dos cosas se sumaban ahí:
+//   1) al tirar la hora, todo el día del vencimiento contaba como vencido;
+//   2) en Argentina (UTC-3) el día UTC arranca a las 21:00 locales, así que today() ya
+//      devolvía "mañana" desde la noche anterior.
+// Resultado medido: un OK del EOE a las 15:00 vencía a las 21:00 del día siguiente —
+// 30 horas, no 48. Según la hora del OK el plazo real iba de 25 a 38 horas.
+function dgPlazoNuevo(){ const d=new Date(); d.setHours(d.getHours()+48); return d.toISOString(); }
+// Fichas que ya están en vuelo con el formato viejo 'YYYY-MM-DD': se leen como el final de
+// ese día en hora local. Es lo más cercano a las 48hs prometidas y nunca las acorta.
+function dgVence(p){
+  if(!p||!p.dgDeadline) return null;
+  const d=/^\d{4}-\d{2}-\d{2}$/.test(p.dgDeadline) ? new Date(p.dgDeadline+'T23:59:59') : new Date(p.dgDeadline);
+  return isNaN(d) ? null : d;
+}
+function dgVencido(p){ const d=dgVence(p); return !!d && d.getTime()<=Date.now(); }
+function dgVenceTxt(p){
+  const d=dgVence(p); if(!d) return '';
+  return d.toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long'})+
+         ' a las '+d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',hour12:false})+' hs';
+}
 
 // Nombre de persona reducido a su forma comparable: sin tildes, sin mayúsculas, sin
 // comas ni puntos, y con las palabras ordenadas. Así "TISSONE, Juan Cruz",
@@ -3205,7 +3232,7 @@ function openDetalle(id){
     ${p.estado==='pendiente_dg'?`
     <div style="margin-top:12px;background:#FEF3C7;border:1px solid #F59E0B;border-radius:10px;padding:13px 15px">
       <div style="font-size:11px;font-weight:600;color:#92400E;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">⏳ Pendiente Dirección General</div>
-      <div style="font-size:12.5px;color:#78350F;margin-bottom:10px">DG tiene 48hs para confirmar. Si no responde, el sistema avanza automáticamente a Postulado.${p.dgDeadline?' Vence: <strong>'+fDateFull(p.dgDeadline)+'</strong>':''}</div>
+      <div style="font-size:12.5px;color:#78350F;margin-bottom:10px">DG tiene 48hs para confirmar. Si no responde, el sistema avanza automáticamente a Postulado.${p.dgDeadline?' Vence el <strong>'+dgVenceTxt(p)+'</strong>':''}</div>
       <button class="btn btn-gr" onclick="confirmarDG(${id})">✓ DG confirmó — pasar a Postulado</button>
     </div>`:''}
     ${p.estado==='matriculado'?`
@@ -3707,8 +3734,7 @@ function changeE(id){
 
   // Estado pendiente_dg → marcar deadline 48hs
   if(newEst==='pendiente_dg'){
-    const dl=new Date(); dl.setHours(dl.getHours()+48);
-    p.dgDeadline=dl.toISOString().split('T')[0];
+    p.dgDeadline=dgPlazoNuevo();
   }
 
   saveDB();
@@ -6088,8 +6114,7 @@ async function pollEOEResults(){
       if(veredicto==='aprobado'){
         p.estado='pendiente_dg';
         p.ultAccion=today();
-        const dl=new Date(); dl.setHours(dl.getHours()+48);
-        p.dgDeadline=dl.toISOString().split('T')[0];
+        p.dgDeadline=dgPlazoNuevo();
         p.hist=p.hist||[];
         p.hist.push({e:'pendiente_dg',f:today(),auto:true,mailOk:false});
         saveDB();
@@ -6259,8 +6284,7 @@ function aprobarEOE(id){
   const p=DB.postulantes.find(x=>x.id===id); if(!p) return;
   p.estado='pendiente_dg';
   p.ultAccion=today();
-  const dl=new Date(); dl.setHours(dl.getHours()+48);
-  p.dgDeadline=dl.toISOString().split('T')[0];
+  p.dgDeadline=dgPlazoNuevo();
   p.hist=p.hist||[];
   p.hist.push({e:'pendiente_dg',f:today(),mailOk:false});
   saveDB();
@@ -6310,10 +6334,10 @@ function confirmarDG(id){
 // AUTO-AVANCE pendiente_dg (48hs)
 // ═══════════════════════════
 function checkPendienteDG(){
-  const hoy=today();
   let changed=false;
   DB.postulantes.forEach(p=>{
-    if(p.estado==='pendiente_dg'&&p.dgDeadline&&p.dgDeadline<=hoy){
+    // dgVencido compara instantes, no cadenas de fecha: el plazo se cumple a la hora exacta.
+    if(p.estado==='pendiente_dg'&&dgVencido(p)){
       p.estado='postulado';
       p.ultAccion=today();
       p.hist=p.hist||[];
