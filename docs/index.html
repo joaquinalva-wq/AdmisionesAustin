@@ -1887,17 +1887,28 @@ async function procesarInbox(){
   if(!docs.length) return 0;
 
   let nuevos=0;
+  let cambios=false;     // hubo escrituras en fichas aunque no haya registros nuevos
+  let noAplicados=0;     // registros que quedaron sin procesar, para avisarle al staff
   const incorporados=[];
   docs.forEach(d=>{
     let body;
     try{ body = JSON.parse(d.fields?.data?.stringValue || '{}'); }catch(e){ return; }
+    let sinAplicar=0;
     (body.postulantes||[]).forEach(p=>{
       // Reagenda: la familia eligió una nueva fecha desde el link de auto-reserva. No es
       // una postulación nueva — se actualiza la ficha que ya existe, vuelve a 'citado',
       // se limpia el "no vino" y se agenda la entrevista en ambos calendarios.
       if(p.__reagenda){
-        const ficha = DB.postulantes.find(x=>String(x.id)===String(p.id));
-        if(ficha && p.entFecha){
+        if(!p.entFecha){ sinAplicar++; return; }
+        // El id sale del link que se le mandó a la familia por mail. Si ese link es viejo
+        // o la ficha se recreó, el id ya no matchea: antes la reagenda se descartaba en
+        // silencio y el documento se borraba igual, así que la entrevista no quedaba en la
+        // agenda aunque la familia ya tuviera el mail de confirmación y el turno bloqueado.
+        // Ahora cae al mismo reconocimiento por email que usa la auto-agenda.
+        let ficha = DB.postulantes.find(x=>String(x.id)===String(p.id));
+        let porEmail = false;
+        if(!ficha){ ficha = fichaParaAutoAgenda(p); porEmail = !!ficha; }
+        if(ficha){
           const fVieja=ficha.entFecha, hVieja=ficha.entHora;
           ficha.entFecha = p.entFecha;
           ficha.entHora = p.entHora||'';
@@ -1915,8 +1926,33 @@ async function procesarInbox(){
           ficha.notas = ficha.notas||[];
           ficha.notas.push({txt:'La familia reprogramó su entrevista para el '+formatFechaLinda(p.entFecha)+(p.entHora?' a las '+p.entHora:'')+' desde el link de auto-reserva.',fecha:ahora.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}),hora:ahora.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})});
           ficha.hist = ficha.hist||[]; ficha.hist.push({e:'citado',f:today(),nota:'reagenda familia'});
+          if(porEmail){
+            ficha.notas.push({txt:'El link que usó la familia apuntaba a una ficha que ya no existe (id '+p.id+'). Se reconoció a la familia por el mail '+(p.email||'')+'.',fecha:ahora.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}),hora:ahora.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})});
+          }
           agendarEntrevista(ficha);
           nuevos++;
+        } else if(p.email){
+          // Ni por id ni por email. La entrevista existe igual: la familia tiene el mail de
+          // confirmación y el turno quedó bloqueado, así que se va a presentar ese día.
+          // Se crea la ficha para que aparezca en la agenda — descartarla era lo que hacía
+          // que el turno no figurara en ningún lado.
+          const ahora=new Date();
+          const ficha2 = {
+            id:DB.nextId++, alumno:p.alumno||'', padre:p.padre||'', email:p.email||'', tel:'',
+            curso:p.curso||'', nivel:NIVEL(p.curso||''), jornada:'',
+            anio:parseInt(p.anio)||new Date().getFullYear(), colegio:'', hermano:'no',
+            estado:'citado', fecha:today(), ultAccion:today(),
+            entFecha:p.entFecha, entHora:p.entHora||'',
+            notas:[{txt:'La familia reprogramó su entrevista para el '+formatFechaLinda(p.entFecha)+(p.entHora?' a las '+p.entHora:'')+' desde el link de auto-reserva, pero el link apuntaba a una ficha que ya no existe (id '+p.id+') y no se pudo reconocer a la familia por mail. Se creó esta ficha para no perder el turno: revisá si corresponde unirla a una existente.',fecha:ahora.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}),hora:ahora.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})}],
+            hist:[{e:'citado',f:today(),nota:'reagenda familia (ficha no encontrada)'}]
+          };
+          DB.postulantes.unshift(ficha2);
+          DB.pendingNotif.push(ficha2.id);
+          agendarEntrevista(ficha2);
+          nuevos++;
+        } else {
+          // Sin mail no hay con qué identificarla. Queda en la bandeja para que la vea el staff.
+          sinAplicar++;
         }
         return;
       }
@@ -1927,7 +1963,7 @@ async function procesarInbox(){
       // existe se crea una ficha mínima. En ambos casos queda 'citado' y se agenda en los
       // dos calendarios (sistema + Google Calendar de Admisiones).
       if(p.__agendarNuevo){
-        if(!p.entFecha) return;
+        if(!p.entFecha){ sinAplicar++; return; }
         const ahora=new Date();
         const nota = {txt:'La familia agendó su entrevista para el '+formatFechaLinda(p.entFecha)+(p.entHora?' a las '+p.entHora:'')+' desde el link de auto-agenda.',fecha:ahora.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}),hora:ahora.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})};
         let ficha = fichaParaAutoAgenda(p);
@@ -1979,6 +2015,7 @@ async function procesarInbox(){
           fecha:ahora.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}),
           hora:ahora.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})
         });
+        cambios=true;
         return;
       }
       const nuevo = {...p, id: DB.nextId++};
@@ -1991,12 +2028,19 @@ async function procesarInbox(){
       if(nuevo.entFecha && nuevo.entHora) agendarEntrevista(nuevo);
       nuevos++;
     });
-    incorporados.push(d.name);
+    // Un documento se borra de la bandeja sólo si TODOS sus registros se pudieron aplicar.
+    // Antes se borraba siempre: lo que el sistema no sabia donde poner desaparecia sin
+    // dejar rastro, aunque la familia ya tuviera el mail de confirmacion.
+    if(sinAplicar===0) incorporados.push(d.name);
+    else noAplicados+=sinAplicar;
   });
 
-  if(nuevos) saveDB();
+  if(nuevos||cambios) saveDB();
   for(const name of incorporados){
     try{ await fetch('https://firestore.googleapis.com/v1/'+name, {method:'DELETE', headers:{'Authorization':'Bearer '+tk}}); }catch(e){}
+  }
+  if(noAplicados){
+    toast('⚠ '+noAplicados+' pedido'+(noAplicados!==1?'s':'')+' de la bandeja no se pudo asignar a ninguna ficha. Quedó guardado, avisale a Joaquín.','err');
   }
   return nuevos;
 }
@@ -5410,7 +5454,11 @@ async function confirmarReagenda(){
   // trae el id y actualiza la ficha existente.
   const rec = reagCtx.__nuevo
     ? { __agendarNuevo:true, alumno:reagCtx.alumno||'', padre:reagCtx.padre||'', email:reagCtx.email||'', curso:reagCtx.curso||'', anio:reagCtx.anio||new Date().getFullYear(), entFecha:reagSlot.fecha, entHora:reagSlot.hora }
-    : { __reagenda:true, id:reagCtx.id, alumno:reagCtx.alumno||'', entFecha:reagSlot.fecha, entHora:reagSlot.hora };
+    // Van también padre/email/curso aunque la ficha ya exista: si el id del link no
+    // matchea (link viejo, ficha recreada), procesarInbox necesita estos datos para
+    // encontrar la ficha por email o, en última instancia, crearla. Sin ellos la
+    // entrevista confirmada se perdía.
+    : { __reagenda:true, id:reagCtx.id, alumno:reagCtx.alumno||'', padre:reagCtx.padre||'', email:reagCtx.email||'', curso:reagCtx.curso||'', anio:reagCtx.anio||'', entFecha:reagSlot.fecha, entHora:reagSlot.hora };
   const guardada = await enviarAInbox([rec], '');
   if(!guardada){
     if(btn){ btn.disabled=false; btn.textContent='Confirmar entrevista →'; }
