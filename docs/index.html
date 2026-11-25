@@ -2085,6 +2085,9 @@ async function syncFromCloud(){
   const ok = await fsSave();
   updateSyncStatus(ok ? 'synced' : 'error');
   if(ok) toast('☁ Datos sincronizados con la nube','ok');
+  // Las plantillas que ya estaban editadas en la nube antes de que existiera la hoja
+  // "Plantillas" se publican solas acá, sin que nadie tenga que volver a guardarlas.
+  publicarPlantillas();
   // Incorporar las postulaciones que dejaron las familias mientras nadie estaba en el panel
   try{
     const n = await procesarInbox();
@@ -4260,6 +4263,8 @@ function saveEmail(e, auto){
   DB.config.emailsProtegidos[e] = true;
   saveDB();
   clearTimeout(_fsSaveTimer); _fsSaveTimer=null; triggerCloudSave();
+  // Guardar en la nube no alcanza: el formulario público no lee la nube. Hay que publicar.
+  publicarPlantillas(true);
   const st=document.getElementById('est-'+e);
   if(st){ st.textContent='✓ Guardado'; st.style.color='#3A6A0A'; }
   if(!auto && !cambio){ if(st){ st.textContent='✓ Sin cambios'; st.style.color='var(--tx3)'; } }
@@ -4561,7 +4566,10 @@ function saveCfg(){
     hashPw(pwInp.value.trim()).then(h=>{if(h){DB.config.password=h;saveDB();}});
     pwInp.value='';
   }
-  updateEjsBadge(); saveDB(); toast('Configuración guardada','ok');
+  updateEjsBadge(); saveDB();
+  // El link de Drive sale en los mails de las familias: si cambió, hay que republicar.
+  publicarPlantillas();
+  toast('Configuración guardada','ok');
 }
 function updateEjsBadge(){
   const b=document.getElementById('ejs-badge'); if(!b) return;
@@ -4999,7 +5007,7 @@ async function apiCall(action, data){
   const url = DB.config.appsScriptUrl;
   if(!url) return {ok:false, error:'Sin URL'};
 
-  const READ_ACTIONS = ['ping','getTurnos','getBloqueos','getDisponibilidad'];
+  const READ_ACTIONS = ['ping','getTurnos','getBloqueos','getDisponibilidad','getPlantillas'];
   const isRead = READ_ACTIONS.includes(action);
 
   try{
@@ -5082,6 +5090,80 @@ function aplicarDispRemota(rd){
   try{ localStorage.setItem('austin_disp', JSON.stringify(calDispRemota)); }catch(e){}
   aplicarTextosDuracion();
   return true;
+}
+
+// ── PLANTILLAS DE MAIL PUBLICADAS ──
+// Mismo problema que la disponibilidad y la misma solución. El navegador de una familia
+// nunca está logueado, así que no corre syncFromCloud() y DB.emails se queda con los
+// textos por defecto que están escritos en el código. Caso real: el staff editó la
+// plantilla "citado" en el panel y una familia que reagendó recibió igual la versión
+// vieja, palabra por palabra la del default.
+// Ahora el panel publica las plantillas en la hoja "Plantillas" del Apps Script y el
+// formulario público las lee junto con los turnos, bastante antes de poder mandar nada.
+// La hoja es sólo el canal de publicación: la fuente de verdad sigue siendo el panel.
+function aplicarPlantillasPub(pub){
+  // Nunca en el panel: ahí DB.emails viene de la nube y pisarlo con la hoja sería
+  // meter un segundo origen de datos que puede estar atrasado.
+  if(_authUser) return false;
+  if(!(pub && pub.emails && Object.keys(pub.emails).length)) return false;
+  Object.keys(pub.emails).forEach(function(k){
+    const t = pub.emails[k];
+    if(t && typeof t.subj==='string' && typeof t.body==='string') DB.emails[k] = {subj:t.subj, body:t.body};
+  });
+  // Los links que los mails interpolan viven en config y viajan por el mismo camino:
+  // sin esto la plantilla publicada saldría con el link de Drive viejo del código.
+  if(pub.config){
+    if(pub.config.drive) DB.config.drive = pub.config.drive;
+    if(pub.config.calendar) DB.config.calendar = pub.config.calendar;
+  }
+  return true;
+}
+// Se cachea igual que turnos, bloqueos y disponibilidad: si el Apps Script tarda o falla,
+// la familia recibe la última plantilla conocida en vez del default del código.
+function plantillasPubDesdeCache(){
+  let c;
+  try{ c = JSON.parse(localStorage.getItem('austin_plantillas')||'null'); }catch(e){ return; }
+  aplicarPlantillasPub(c);
+}
+function aplicarPlantillasRemotas(rp){
+  if(!(rp && rp.ok)) return false;
+  const pub = {emails: rp.emails||{}, config: rp.config||{}};
+  if(!aplicarPlantillasPub(pub)) return false;
+  try{ localStorage.setItem('austin_plantillas', JSON.stringify(pub)); }catch(e){}
+  return true;
+}
+
+// ── Publicación (lado panel) ──
+let _tplPubTimer = null;
+// Se manda el set completo, no la plantilla que se tocó: así una sola edición alcanza
+// para que la hoja quede al día con todo, incluidas las que se editaron antes de que
+// este camino existiera.
+function _tplPubPayload(){
+  return {emails: DB.emails, config: {drive: DB.config.drive||'', calendar: DB.config.calendar||''}};
+}
+// Sólo se publica si algo cambió realmente: syncFromCloud llama a esto en cada carga del
+// panel y no tiene sentido reescribir la hoja entera cuando nadie tocó nada.
+function publicarPlantillas(avisar){
+  if(!_authUser || !DB.config.appsScriptUrl) return;
+  const payload = _tplPubPayload();
+  const sig = JSON.stringify(payload);
+  if(!avisar){
+    let prev = null;
+    try{ prev = localStorage.getItem('austin_tplpub'); }catch(e){}
+    if(prev === sig) return;
+  }
+  clearTimeout(_tplPubTimer);
+  // saveEmail corre en cada blur de cada campo: sin el retraso se reescribiría la hoja
+  // una vez por campo tocado.
+  _tplPubTimer = setTimeout(function(){
+    _tplPubTimer = null;
+    apiCall('setPlantillas', payload).then(function(r){
+      if(r && r.ok){ try{ localStorage.setItem('austin_tplpub', sig); }catch(e){} }
+      else if(avisar) toast('Las plantillas quedaron guardadas, pero no se pudieron publicar para el formulario público: '+((r&&r.error)||'sin respuesta'),'err');
+    }).catch(function(){
+      if(avisar) toast('Las plantillas quedaron guardadas, pero no se pudieron publicar para el formulario público.','err');
+    });
+  }, avisar ? 1500 : 0);
 }
 
 // Los parámetros del calendario, con la misma prioridad que los horarios: lo que el
@@ -5201,12 +5283,16 @@ async function cargarTurnosYRenderizar(){
   const conTimeout = (pr, ms) => Promise.race([
     pr, new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')), ms))
   ]);
-  const [rt, rb, rd] = await Promise.all([
+  const [rt, rb, rd, rp] = await Promise.all([
     conTimeout(apiCall('getTurnos',{}), 8000).catch(()=>null),
     conTimeout(apiCall('getBloqueos',{}), 8000).catch(()=>null),
-    conTimeout(apiCall('getDisponibilidad',{}), 8000).catch(()=>null)
+    conTimeout(apiCall('getDisponibilidad',{}), 8000).catch(()=>null),
+    conTimeout(apiCall('getPlantillas',{}), 8000).catch(()=>null)
   ]);
 
+  // Las plantillas se piden acá y no al enviar: cuando la familia aprieta Confirmar el
+  // mail tiene que salir ya, sin esperar una llamada más al Apps Script.
+  aplicarPlantillasRemotas(rp);
   let cambio = aplicarDispRemota(rd);
   if(rt && rt.ok && rt.turnos){
     calTurnosReservados = rt.turnos.filter(function(t){
@@ -5370,11 +5456,13 @@ async function cargarTurnosReag(){
   else if(loading) loading.style.display='block';
   if(!DB.config.appsScriptUrl){ if(loading) loading.style.display='none'; renderReagCal(); return; }
   const conTimeout = (pr,ms)=>Promise.race([pr,new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),ms))]);
-  const [rt,rb,rd] = await Promise.all([
+  const [rt,rb,rd,rp] = await Promise.all([
     conTimeout(apiCall('getTurnos',{}),8000).catch(()=>null),
     conTimeout(apiCall('getBloqueos',{}),8000).catch(()=>null),
-    conTimeout(apiCall('getDisponibilidad',{}),8000).catch(()=>null)
+    conTimeout(apiCall('getDisponibilidad',{}),8000).catch(()=>null),
+    conTimeout(apiCall('getPlantillas',{}),8000).catch(()=>null)
   ]);
+  aplicarPlantillasRemotas(rp);
   aplicarDispRemota(rd);
   if(rt&&rt.ok&&rt.turnos){
     calTurnosReservados = rt.turnos.filter(t=>t.Estado==='reservado'||t.Estado==='recordatorio_enviado');
@@ -8276,6 +8364,7 @@ calBloqueos = DB.bloqueos||[];
 // "Dura aproximadamente 1 hora" antes de pedirle nada al Apps Script, y sin esto el
 // texto quedaba clavado en el del HTML aunque el panel dijera otra cosa.
 dispRemotaDesdeCache();
+plantillasPubDesdeCache();
 // Si la URL trae ?reagenda=TOKEN, una familia viene a elegir un nuevo día de entrevista.
 detectarReagenda();
 // Si la URL trae ?agendar=1, es el link genérico: familia sin ficha que viene a agendarse.

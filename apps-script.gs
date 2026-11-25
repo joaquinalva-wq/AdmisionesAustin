@@ -22,7 +22,7 @@ const MAIL_LOGO = 'https://admisionesaustin.com.ar/logo-email.png';
 
 // Marca de versión: sirve para confirmar que la implementación se publicó.
 // Al abrir la URL del script con ?action=ping tiene que aparecer este valor.
-const API_VERSION = '2026-10-22-v11-duracion';
+const API_VERSION = '2026-11-25-v12-plantillas';
 
 // ── Calendario ────────────────────────────────────────────────
 const CAL_ADMISIONES        = 'admisiones@austinebs-ah.edu.ar';
@@ -74,10 +74,12 @@ const DG_FS_COL     = 'dg-decisiones';
 const SHEET_TURNOS   = 'Turnos';
 const SHEET_BLOQUEOS = 'Bloqueos';
 const SHEET_DISP     = 'Disponibilidad';
+const SHEET_TPL      = 'Plantillas';
 
 const COLS_TURNOS   = ['ID','Fecha','Hora','AlumnoId','Alumno','Padre','Email','Tel','Curso','Estado','Creado'];
 const COLS_BLOQUEOS = ['Fecha','Hora','Motivo','Creado'];
 const COLS_DISP     = ['Clave','Horas','Actualizado'];
+const COLS_TPL      = ['Clave','Asunto','Cuerpo','Actualizado'];
 // Parámetros del calendario que también tiene que ver una familia sin login. Van en
 // la hoja de Disponibilidad, una fila cada uno, con un número en la columna Horas.
 const PARAMS_DISP   = ['anticipacion','semanas','duracion'];
@@ -410,6 +412,8 @@ function handleAPI_(e) {
       case 'setBloqueo':    result = setBloqueo_(data); break;
       case 'getDisponibilidad': result = getDisponibilidad_(); break;
       case 'setDisponibilidad': result = setDisponibilidad_(data); break;
+      case 'getPlantillas': result = getPlantillas_(); break;
+      case 'setPlantillas': result = setPlantillas_(data); break;
       case 'sendMail':      result = sendMailDirect_(data); break;
       case 'sendDGNotif':   result = sendDGNotif_(data); break;
       case 'crearEventoEntrevista': result = crearEventoEntrevista(data); break;
@@ -692,6 +696,79 @@ function setDisponibilidad_(data) {
     // Clave y Horas como texto, o Sheets convierte "3" en número y "08:30" en hora.
     sh.getRange(2, 1, filas.length, 2).setNumberFormat('@');
     sh.getRange(2, 1, filas.length, COLS_DISP.length).setValues(filas);
+  }
+  return { ok: true, filas: filas.length };
+}
+
+/*****************************************************
+ * PLANTILLAS DE MAIL — canal de publicación al público *
+ *****************************************************/
+// El navegador de una familia no está logueado: nunca lee la nube, así que se queda con
+// los textos por defecto escritos en el código del sitio. Pasó de verdad: el staff editó
+// la plantilla de "entrevista confirmada" en el panel y una familia que reagendó recibió
+// igual la versión vieja.
+// Esta hoja es el único camino por el que un texto editado en el panel llega a una
+// familia. Es un canal de publicación, no una fuente de datos: el panel la reescribe
+// entera cada vez que se guarda una plantilla. Editarla a mano acá no sirve — se pierde
+// en el próximo guardado. Las plantillas se editan en el panel, solapa Plantillas.
+
+// Dos links que los mails interpolan ({{link_drive}}, {{link_calendario}}) y que también
+// viven en la config del panel, así que viajan por el mismo camino. El link va en la
+// columna Asunto.
+const TPL_CFG = { '__drive': 'drive', '__calendario': 'calendar' };
+
+function getPlantillas_() {
+  const sh = getOrCreate_(SHEET_TPL, COLS_TPL);
+  const rows = sh.getDataRange().getValues();
+  const emails = {}, config = {};
+
+  for (let i = 1; i < rows.length; i++) {
+    const clave = String(rows[i][0] == null ? '' : rows[i][0]).trim();
+    if (!clave) continue;
+    if (TPL_CFG[clave]) {
+      const link = String(rows[i][1] == null ? '' : rows[i][1]).trim();
+      if (link) config[TPL_CFG[clave]] = link;
+      continue;
+    }
+    const subj = String(rows[i][1] == null ? '' : rows[i][1]);
+    const body = String(rows[i][2] == null ? '' : rows[i][2]);
+    // Una fila a medias no se publica: mejor que la familia reciba el texto por defecto
+    // del sitio que un mail sin asunto o sin cuerpo.
+    if (!subj || !body) continue;
+    emails[clave] = { subj: subj, body: body };
+  }
+  return { ok: true, emails: emails, config: config };
+}
+
+function setPlantillas_(data) {
+  const sh = getOrCreate_(SHEET_TPL, COLS_TPL);
+  const ahora = new Date().toISOString();
+  const filas = [];
+
+  const emails = (data && data.emails) || {};
+  Object.keys(emails).sort().forEach(function (clave) {
+    const t = emails[clave] || {};
+    const subj = String(t.subj == null ? '' : t.subj);
+    const body = String(t.body == null ? '' : t.body);
+    if (!clave || !subj || !body) return;
+    filas.push([String(clave), subj, body, ahora]);
+  });
+
+  const cfg = (data && data.config) || {};
+  Object.keys(TPL_CFG).forEach(function (clave) {
+    const link = String(cfg[TPL_CFG[clave]] == null ? '' : cfg[TPL_CFG[clave]]).trim();
+    if (link) filas.push([clave, link, '', ahora]);
+  });
+
+  // Se reescribe la hoja entera, igual que Disponibilidad: el panel manda siempre el
+  // estado completo y así una plantilla borrada allá desaparece también de acá.
+  if (sh.getLastRow() > 1) {
+    sh.getRange(2, 1, sh.getLastRow() - 1, COLS_TPL.length).clearContent();
+  }
+  if (filas.length) {
+    // Texto, o Sheets interpreta como fórmula cualquier cuerpo que arranque con "=".
+    sh.getRange(2, 1, filas.length, 3).setNumberFormat('@');
+    sh.getRange(2, 1, filas.length, COLS_TPL.length).setValues(filas);
   }
   return { ok: true, filas: filas.length };
 }
